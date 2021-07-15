@@ -1,5 +1,5 @@
 <map id="sfrmodule::sfr_read_connectiondata" name="sfrmodule::sfr_read_connectiondata">
-<area shape="rect" id="node1" title=" " alt="" coords="5,49,155,90"/>
+<area shape="rect" id="node1" title="@ brief Read connectiondata for the package" alt="" coords="5,49,155,90"/>
 <area shape="rect" id="node2" href="$namespacesimmodule.html#a4c46e49de78d4498dd4ec106357775e6" title="Return number of errors." alt="" coords="203,5,387,32"/>
 <area shape="rect" id="node3" href="$namespacesimmodule.html#a536cb6f0e13fcd33755e414641ff931a" title="Store error message." alt="" coords="207,56,382,83"/>
 <area shape="rect" id="node4" href="$namespacesimmodule.html#a0be97214c1d4fcf42bc4ddc27b111b61" title="Stop the simulation." alt="" coords="225,107,364,133"/>

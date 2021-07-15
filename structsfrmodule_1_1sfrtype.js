@@ -21,7 +21,6 @@ var structsfrmodule_1_1sfrtype =
     [ "define_listlabel", "structsfrmodule_1_1sfrtype.html#a827fdd5ac63eaf4d01e6774d3f2310ab", null ],
     [ "perimeter_wet", "structsfrmodule_1_1sfrtype.html#a467bcfc9a76015f0a2268ec5f45601a1", null ],
     [ "read_dimensions", "structsfrmodule_1_1sfrtype.html#acf912ad79307180e27bacc7769aae542", null ],
-    [ "set_pointers", "structsfrmodule_1_1sfrtype.html#ae9ee8f30786c1567128e938bd4ed3db0", null ],
     [ "sfr_activate_density", "structsfrmodule_1_1sfrtype.html#a52402e2a4b9d9de5b5aa158902c15691", null ],
     [ "sfr_allocate_arrays", "structsfrmodule_1_1sfrtype.html#ac1e96ea66ac75c2881d998727954c4df", null ],
     [ "sfr_allocate_scalars", "structsfrmodule_1_1sfrtype.html#afea84918f56bba7ab727b07a79883d58", null ],

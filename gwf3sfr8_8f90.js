@@ -43,7 +43,6 @@ var gwf3sfr8_8f90 =
     [ "sfr_rectch_depth", "gwf3sfr8_8f90.html#a0434ac92fc2fc5ef2812ac323aed9d0b", null ],
     [ "sfr_rp", "gwf3sfr8_8f90.html#a8384c7cbe28ad9a362df94f26295481c", null ],
     [ "sfr_rp_obs", "gwf3sfr8_8f90.html#ad9f92e161b51b34427f1b12cfbb79815", null ],
-    [ "sfr_set_pointers", "gwf3sfr8_8f90.html#aef4940fae7801fe9061871c558094aed", null ],
     [ "sfr_set_stressperiod", "gwf3sfr8_8f90.html#ac8852a544449ad581a8cabf7d9e94e36", null ],
     [ "sfr_setup_budobj", "gwf3sfr8_8f90.html#a7fa3402fe639ad226e2ade9195cc66b3", null ],
     [ "sfr_setup_tableobj", "gwf3sfr8_8f90.html#a126527f0b5361bc25a93acfd502b01cd", null ],
