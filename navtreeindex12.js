@@ -1,6 +1,5 @@
 var NAVTREEINDEX12 =
 {
-"namespacemawmodule.html":[1,0,79],
 "namespacemembers.html":[1,1,0],
 "namespacemembers.html":[1,1,0,0],
 "namespacemembers_b.html":[1,1,0,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX12 =
 "structbasedismodule_1_1disbasetype.html#ac152f1c6437a2ef9c65462a3ee60c27c":[2,0,3,0,15],
 "structbasedismodule_1_1disbasetype.html#ace29d2b175c4971847dc36effd54bce0":[2,0,3,0,40],
 "structbasedismodule_1_1disbasetype.html#ad08a7463f8765bedb540ba8271efa26b":[2,0,3,0,56],
-"structbasedismodule_1_1disbasetype.html#ad0a36eed8347ba8fe27da8ab54788a21":[2,0,3,0,22]
+"structbasedismodule_1_1disbasetype.html#ad0a36eed8347ba8fe27da8ab54788a21":[2,0,3,0,22],
+"structbasedismodule_1_1disbasetype.html#ad64e46df248ab983d58741b00b4fd2e3":[2,0,3,0,44]
 };
