@@ -7,6 +7,6 @@ var searchData=
   ['obsoutputmodule_4021',['obsoutputmodule',['../namespaceobsoutputmodule.html',1,'']]],
   ['obsutilitymodule_4022',['obsutilitymodule',['../namespaceobsutilitymodule.html',1,'']]],
   ['openspecmodule_4023',['openspecmodule',['../namespaceopenspecmodule.html',1,'']]],
-  ['outputcontroldata_4024',['outputcontroldata',['../namespaceoutputcontroldata.html',1,'']]],
+  ['outputcontroldatamodule_4024',['outputcontroldatamodule',['../namespaceoutputcontroldatamodule.html',1,'']]],
   ['outputcontrolmodule_4025',['outputcontrolmodule',['../namespaceoutputcontrolmodule.html',1,'']]]
 ];

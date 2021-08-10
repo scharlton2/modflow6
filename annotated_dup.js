@@ -83,7 +83,7 @@ var annotated_dup =
     [ "obsmodule", "namespaceobsmodule.html", "namespaceobsmodule" ],
     [ "obsoutputlistmodule", "namespaceobsoutputlistmodule.html", "namespaceobsoutputlistmodule" ],
     [ "obsoutputmodule", "namespaceobsoutputmodule.html", "namespaceobsoutputmodule" ],
-    [ "outputcontroldata", "namespaceoutputcontroldata.html", "namespaceoutputcontroldata" ],
+    [ "outputcontroldatamodule", "namespaceoutputcontroldatamodule.html", "namespaceoutputcontroldatamodule" ],
     [ "outputcontrolmodule", "namespaceoutputcontrolmodule.html", "namespaceoutputcontrolmodule" ],
     [ "packagebudgetmodule", "namespacepackagebudgetmodule.html", "namespacepackagebudgetmodule" ],
     [ "packagemovermodule", "namespacepackagemovermodule.html", "namespacepackagemovermodule" ],

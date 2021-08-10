@@ -1,5 +1,5 @@
 <map id="outputcontrolmodule::oc_rp" name="outputcontrolmodule::oc_rp">
-<area shape="rect" id="node1" title=" " alt="" coords="5,49,164,90"/>
+<area shape="rect" id="node1" title="@ brief Read and prepare OutputControlType" alt="" coords="5,49,164,90"/>
 <area shape="rect" id="node2" href="$namespacesimmodule.html#a4c46e49de78d4498dd4ec106357775e6" title="Return number of errors." alt="" coords="223,5,407,32"/>
 <area shape="rect" id="node3" href="$namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e" title="Store error message." alt="" coords="228,56,403,83"/>
 <area shape="rect" id="node9" href="$namespacesimmodule.html#a83910ed20af1fec9bdf46cad8c276538" title="Store the file unit number." alt="" coords="212,107,419,133"/>

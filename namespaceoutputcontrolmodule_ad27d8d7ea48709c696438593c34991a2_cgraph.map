@@ -1,5 +1,5 @@
 <map id="outputcontrolmodule::read_options" name="outputcontrolmodule::read_options">
-<area shape="rect" id="node1" title=" " alt="" coords="5,61,164,102"/>
+<area shape="rect" id="node1" title="@ brief Read options for OutputControlType" alt="" coords="5,61,164,102"/>
 <area shape="rect" id="node2" href="$namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e" title="Store error message." alt="" coords="228,43,403,69"/>
 <area shape="rect" id="node8" href="$namespacesimmodule.html#a83910ed20af1fec9bdf46cad8c276538" title="Store the file unit number." alt="" coords="212,93,419,120"/>
 <area shape="rect" id="node3" href="$namespacesimmodule.html#a0be97214c1d4fcf42bc4ddc27b111b61" title="Stop the simulation." alt="" coords="467,68,605,95"/>

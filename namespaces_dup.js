@@ -105,7 +105,7 @@ var namespaces_dup =
     [ "obsoutputmodule", "namespaceobsoutputmodule.html", null ],
     [ "obsutilitymodule", "namespaceobsutilitymodule.html", null ],
     [ "openspecmodule", "namespaceopenspecmodule.html", null ],
-    [ "outputcontroldata", "namespaceoutputcontroldata.html", null ],
+    [ "outputcontroldatamodule", "namespaceoutputcontroldatamodule.html", null ],
     [ "outputcontrolmodule", "namespaceoutputcontrolmodule.html", null ],
     [ "packagebudgetmodule", "namespacepackagebudgetmodule.html", null ],
     [ "packagemovermodule", "namespacepackagemovermodule.html", null ],

@@ -6,6 +6,6 @@ var searchData=
   ['obsoutputlisttype_3869',['obsoutputlisttype',['../structobsoutputlistmodule_1_1obsoutputlisttype.html',1,'obsoutputlistmodule']]],
   ['obsoutputtype_3870',['obsoutputtype',['../structobsoutputmodule_1_1obsoutputtype.html',1,'obsoutputmodule']]],
   ['obstype_3871',['obstype',['../structobsmodule_1_1obstype.html',1,'obsmodule']]],
-  ['outputcontroldatatype_3872',['outputcontroldatatype',['../structoutputcontroldata_1_1outputcontroldatatype.html',1,'outputcontroldata']]],
+  ['outputcontroldatatype_3872',['outputcontroldatatype',['../structoutputcontroldatamodule_1_1outputcontroldatatype.html',1,'outputcontroldatamodule']]],
   ['outputcontroltype_3873',['outputcontroltype',['../structoutputcontrolmodule_1_1outputcontroltype.html',1,'outputcontrolmodule']]]
 ];
