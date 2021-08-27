@@ -551,15 +551,15 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;          this%iconf_ss = 1</div>
 <div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;          this%iorig_ss = 0</div>
 <div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;          <span class="keyword">write</span> (this%iout, fmtconfss)</div>
-<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        <span class="keywordflow">case</span> (<span class="stringliteral">&#39;TVS&#39;</span>)</div>
+<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        <span class="keywordflow">case</span> (<span class="stringliteral">&#39;TVS6&#39;</span>)</div>
 <div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;          <span class="keywordflow">if</span> (this%intvs /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;            errmsg = <span class="stringliteral">&#39;Multiple TVS keywords detected in OPTIONS block. &#39;</span> // &amp;</div>
-<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;                     <span class="stringliteral">&#39;Only one TVS entry allowed.&#39;</span></div>
+<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;            errmsg = <span class="stringliteral">&#39;Multiple TVS6 keywords detected in OPTIONS block.&#39;</span> // &amp;</div>
+<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;                     <span class="stringliteral">&#39; Only one TVS6 entry allowed.&#39;</span></div>
 <div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;            <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
 <div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;<span class="keywordflow">          end if</span></div>
 <div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;          <span class="keyword">call </span>this%parser%GetStringCaps(keyword)</div>
 <div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;          <span class="keywordflow">if</span>(trim(adjustl(keyword)) /= <span class="stringliteral">&#39;FILEIN&#39;</span>) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;            errmsg = <span class="stringliteral">&#39;TVS keyword must be followed by &quot;FILEIN&quot; &#39;</span> //          &amp;</div>
+<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;            errmsg = <span class="stringliteral">&#39;TVS6 keyword must be followed by &quot;FILEIN&quot; &#39;</span> // &amp;</div>
 <div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160;                     <span class="stringliteral">&#39;then by filename.&#39;</span></div>
 <div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;            <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
 <div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;<span class="keywordflow">          endif</span></div>
@@ -1885,7 +1885,7 @@ Here is the call graph for this function:</div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacegwfstomodule.html">gwfstomodule</a></li>
-    <li class="footer">Generated on Fri Aug 27 2021 16:38:05 for MODFLOW 6 by
+    <li class="footer">Generated on Fri Aug 27 2021 19:05:27 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>
