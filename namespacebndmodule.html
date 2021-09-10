@@ -3719,44 +3719,48 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l01890"></a><span class="lineno"> 1890</span>&#160;          <span class="comment">! -- If cell is no-flow or constant-head, then ignore it.</span></div>
 <div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;          rrate = dzero</div>
 <div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160;          <span class="keywordflow">if</span> (node &gt; 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;              <span class="comment">!</span></div>
-<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;              <span class="comment">! -- Use simval, which was calculated in cq()</span></div>
-<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;              rrate = flow(i)</div>
-<div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;              <span class="comment">!</span></div>
-<div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;              <span class="comment">! -- Print the individual rates if the budget is being printed</span></div>
-<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;              <span class="comment">!    and PRINT_FLOWS was specified (iprflow &lt; 0)</span></div>
-<div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;              <span class="keywordflow">if</span> (ibudfl /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;                <span class="keywordflow">if</span> (iprflow /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;                  <span class="comment">!</span></div>
-<div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;                  <span class="comment">! -- set nodestr and write outputtab table</span></div>
-<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;                  nodeu = dis%get_nodeuser(node)</div>
-<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;                  <span class="keyword">call </span>dis%nodeu_to_string(nodeu, nodestr)</div>
-<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;                  <span class="keyword">call </span>outputtab%print_list_entry(i, trim(adjustl(nodestr<span class="comment">)),  &amp;</span></div>
-<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;<span class="comment"></span>                                                      rrate, bname)</div>
-<div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;<span class="keywordflow">                end if</span></div>
-<div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;<span class="keywordflow">              end if</span></div>
-<div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;            <span class="comment">!</span></div>
-<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;            <span class="comment">! -- If saving cell-by-cell flows in list, write flow</span></div>
-<div class="line"><a name="l01911"></a><span class="lineno"> 1911</span>&#160;            <span class="keywordflow">if</span> (ibinun /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;              n2 = i</div>
-<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;              <span class="keywordflow">if</span> (<span class="keyword">present</span>(imap)) n2 = imap(i)</div>
-<div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;              <span class="keyword">call </span>dis%record_mf6_list_entry(ibinun, node, n2, rrate,   <span class="comment">      &amp;</span></div>
-<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;<span class="comment"></span>                                                  naux, auxvar(:,i),    <span class="comment">      &amp;</span></div>
-<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;<span class="comment"></span>                                                  olconv2=.false.)</div>
-<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;<span class="keywordflow">            end if</span></div>
-<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;<span class="keywordflow">          end if</span></div>
-<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;          <span class="comment">!</span></div>
-<div class="line"><a name="l01920"></a><span class="lineno"> 1920</span>&#160;<span class="keywordflow">        end do</span></div>
-<div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;        <span class="keywordflow">if</span> (ibudfl /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;          <span class="keywordflow">if</span> (iprflow /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;            <span class="keyword">write</span>(iout,<span class="stringliteral">&#39;(1x)&#39;</span>)</div>
-<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;<span class="keywordflow">          end if</span></div>
-<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;<span class="keywordflow">        end if</span></div>
-<div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160; </div>
-<div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;<span class="keywordflow">      endif</span></div>
-<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;      <span class="comment">!</span></div>
-<div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160;      <span class="comment">! -- return</span></div>
-<div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160;      <span class="keywordflow">return</span></div>
+<div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;            <span class="comment">!</span></div>
+<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;            <span class="comment">! -- Use simval, which was calculated in cq()</span></div>
+<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;            rrate = flow(i)</div>
+<div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;            <span class="comment">!</span></div>
+<div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;            <span class="comment">! -- Print the individual rates if the budget is being printed</span></div>
+<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;            <span class="comment">!    and PRINT_FLOWS was specified (iprflow &lt; 0).  Rates are only</span></div>
+<div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;            <span class="comment">!    printed only if ibound &gt; 0.  This is different from budget</span></div>
+<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;            <span class="comment">!    output where entries are written to the binary file even if</span></div>
+<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;            <span class="comment">!    ibound &lt;= 0.</span></div>
+<div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;            <span class="keywordflow">if</span> (ibudfl /= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;              <span class="keywordflow">if</span> (iprflow /= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;                <span class="keywordflow">if</span> (ibound(node) &gt; 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;                  <span class="comment">!</span></div>
+<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;                  <span class="comment">! -- set nodestr and write outputtab table</span></div>
+<div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;                  nodeu = dis%get_nodeuser(node)</div>
+<div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;                  <span class="keyword">call </span>dis%nodeu_to_string(nodeu, nodestr)</div>
+<div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;                  <span class="keyword">call </span>outputtab%print_list_entry(i, trim(adjustl(nodestr<span class="comment">)),   &amp;</span></div>
+<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;<span class="comment"></span>                                                      rrate, bname)</div>
+<div class="line"><a name="l01911"></a><span class="lineno"> 1911</span>&#160;<span class="keywordflow">                end if</span></div>
+<div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;<span class="keywordflow">              end if</span></div>
+<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;<span class="keywordflow">            end if</span></div>
+<div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;            <span class="comment">!</span></div>
+<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;            <span class="comment">! -- If saving cell-by-cell flows in list, write flow</span></div>
+<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;            <span class="keywordflow">if</span> (ibinun /= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;              n2 = i</div>
+<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;              <span class="keywordflow">if</span> (<span class="keyword">present</span>(imap)) n2 = imap(i)</div>
+<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;              <span class="keyword">call </span>dis%record_mf6_list_entry(ibinun, node, n2, rrate, naux<span class="comment">,    &amp;</span></div>
+<div class="line"><a name="l01920"></a><span class="lineno"> 1920</span>&#160;<span class="comment"></span>                                             auxvar(:,i), olconv2=.false<span class="comment">.)</span></div>
+<div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;<span class="comment"></span><span class="keywordflow">            end if</span></div>
+<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;<span class="keywordflow">          end if</span></div>
+<div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;          <span class="comment">!</span></div>
+<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;<span class="keywordflow">        end do</span></div>
+<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;        <span class="keywordflow">if</span> (ibudfl /= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160;          <span class="keywordflow">if</span> (iprflow /= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;            <span class="keyword">write</span>(iout,<span class="stringliteral">&#39;(1x)&#39;</span>)</div>
+<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;<span class="keywordflow">          end if</span></div>
+<div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160;<span class="keywordflow">        end if</span></div>
+<div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160; </div>
+<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;<span class="keywordflow">      endif</span></div>
+<div class="line"><a name="l01932"></a><span class="lineno"> 1932</span>&#160;      <span class="comment">!</span></div>
+<div class="line"><a name="l01933"></a><span class="lineno"> 1933</span>&#160;      <span class="comment">! -- return</span></div>
+<div class="line"><a name="l01934"></a><span class="lineno"> 1934</span>&#160;      <span class="keywordflow">return</span></div>
 </div><!-- fragment --><div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -3892,7 +3896,7 @@ Here is the caller graph for this function:</div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacebndmodule.html">bndmodule</a></li>
-    <li class="footer">Generated on Wed Sep 8 2021 16:28:10 for MODFLOW 6 by
+    <li class="footer">Generated on Fri Sep 10 2021 21:45:12 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>
