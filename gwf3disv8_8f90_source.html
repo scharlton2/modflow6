@@ -2016,10 +2016,10 @@ $(document).ready(function(){initNavTree('gwf3disv8_8f90_source.html',''); initR
 <div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: inunit</div>
 <div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: iout</div>
 <div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;    <span class="comment">! -- local</span></div>
-<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: il, ir, ic, ncol, nrow, nlay, nval, ipos, noder, nodeu</div>
-<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;    <span class="keywordtype">logical</span> :: found</div>
-<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: ir, ic, ncol, nrow, nlay, nval, ipos, nodeu</div>
+<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;    <span class="comment">! -- set variables</span></div>
 <div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;    nlay = this%mshape(1)</div>
 <div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;    nrow = 1</div>
 <div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;    ncol = this%mshape(2)</div>
@@ -2028,263 +2028,247 @@ $(document).ready(function(){initNavTree('gwf3disv8_8f90_source.html',''); initR
 <div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;    nval = ncol * nrow</div>
 <div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;    <span class="keyword">call </span><a class="code" href="interfacearrayreadersmodule_1_1readarray.html">readarray</a>(inunit, this%dbuff, aname, this%ndim, nval, iout, 0)</div>
 <div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;    <span class="comment">! -- Copy array into bound</span></div>
-<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;    ipos = 1</div>
-<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;    <span class="keywordflow">do</span> ir = 1, nrow</div>
-<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;      columnloop: <span class="keywordflow">do</span> ic = 1, ncol</div>
-<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;        <span class="comment">!</span></div>
-<div class="line"><a name="l01920"></a><span class="lineno"> 1920</span>&#160;        <span class="comment">! -- look down through all layers and see if nodeu == nodelist(ipos)</span></div>
-<div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;        <span class="comment">!    cycle if not, because node must be inactive or pass through</span></div>
-<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;        found = .false.</div>
-<div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;        layerloop: <span class="keywordflow">do</span> il = 1, nlay</div>
-<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;          nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(il, ir, ic, nlay, nrow, ncol)</div>
-<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;          noder = this%get_nodenumber(nodeu, 0)</div>
-<div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160;          <span class="keywordflow">if</span>(noder == 0) cycle layerloop</div>
-<div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;          <span class="keywordflow">if</span>(noder == nodelist(ipos)) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;            found = .true.</div>
-<div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160;            <span class="keywordflow">exit</span> layerloop</div>
-<div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160;<span class="keywordflow">          endif</span></div>
-<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;<span class="keywordflow">        enddo</span> layerloop</div>
-<div class="line"><a name="l01932"></a><span class="lineno"> 1932</span>&#160;        <span class="keywordflow">if</span>(.not. found) cycle columnloop</div>
-<div class="line"><a name="l01933"></a><span class="lineno"> 1933</span>&#160;        <span class="comment">!</span></div>
-<div class="line"><a name="l01934"></a><span class="lineno"> 1934</span>&#160;        <span class="comment">! -- Assign the array value to darray</span></div>
-<div class="line"><a name="l01935"></a><span class="lineno"> 1935</span>&#160;        nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(1, ir, ic, nlay, nrow, ncol)</div>
-<div class="line"><a name="l01936"></a><span class="lineno"> 1936</span>&#160;        darray(icolbnd, ipos) = this%dbuff(nodeu)</div>
-<div class="line"><a name="l01937"></a><span class="lineno"> 1937</span>&#160;        ipos = ipos + 1</div>
-<div class="line"><a name="l01938"></a><span class="lineno"> 1938</span>&#160;        <span class="comment">!</span></div>
-<div class="line"><a name="l01939"></a><span class="lineno"> 1939</span>&#160;<span class="keywordflow">      enddo</span> columnloop</div>
-<div class="line"><a name="l01940"></a><span class="lineno"> 1940</span>&#160;<span class="keywordflow">    enddo</span></div>
-<div class="line"><a name="l01941"></a><span class="lineno"> 1941</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l01942"></a><span class="lineno"> 1942</span>&#160;    <span class="comment">! -- return</span></div>
-<div class="line"><a name="l01943"></a><span class="lineno"> 1943</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a8ecc0ec2a000ecf747ea723104766d55">read_layer_array</a></div>
-<div class="line"><a name="l01944"></a><span class="lineno"> 1944</span>&#160; </div>
-<div class="line"><a name="l01945"></a><span class="lineno"> 1945</span>&#160;  <span class="keyword">subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c">record_array</a>(this, darray, iout, iprint, idataun, aname,     &amp;</div>
-<div class="line"><a name="l01946"></a><span class="lineno"> 1946</span>&#160;                           cdatafmp, nvaluesp, nwidthp, editdesc, dinact)</div>
-<div class="line"><a name="l01947"></a><span class="lineno"><a class="line" href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c"> 1947</a></span>&#160;<span class="comment">! ******************************************************************************</span></div>
-<div class="line"><a name="l01948"></a><span class="lineno"> 1948</span>&#160;<span class="comment">! record_array -- Record a double precision array.  The array will be</span></div>
-<div class="line"><a name="l01949"></a><span class="lineno"> 1949</span>&#160;<span class="comment">!   printed to an external file and/or written to an unformatted external file</span></div>
-<div class="line"><a name="l01950"></a><span class="lineno"> 1950</span>&#160;<span class="comment">!   depending on the argument specifications.</span></div>
-<div class="line"><a name="l01951"></a><span class="lineno"> 1951</span>&#160;<span class="comment">! ******************************************************************************</span></div>
-<div class="line"><a name="l01952"></a><span class="lineno"> 1952</span>&#160;<span class="comment">!</span></div>
-<div class="line"><a name="l01953"></a><span class="lineno"> 1953</span>&#160;<span class="comment">!    SPECIFICATIONS:</span></div>
-<div class="line"><a name="l01954"></a><span class="lineno"> 1954</span>&#160;<span class="comment">!      darray is the double precision array to record</span></div>
-<div class="line"><a name="l01955"></a><span class="lineno"> 1955</span>&#160;<span class="comment">!      iout is the unit number for ascii output</span></div>
-<div class="line"><a name="l01956"></a><span class="lineno"> 1956</span>&#160;<span class="comment">!      iprint is a flag indicating whether or not to print the array</span></div>
-<div class="line"><a name="l01957"></a><span class="lineno"> 1957</span>&#160;<span class="comment">!      idataun is the unit number to which the array will be written in binary</span></div>
-<div class="line"><a name="l01958"></a><span class="lineno"> 1958</span>&#160;<span class="comment">!        form; if negative then do not write by layers, write entire array</span></div>
-<div class="line"><a name="l01959"></a><span class="lineno"> 1959</span>&#160;<span class="comment">!      aname is the text descriptor of the array</span></div>
-<div class="line"><a name="l01960"></a><span class="lineno"> 1960</span>&#160;<span class="comment">!      cdatafmp is the fortran format for writing the array</span></div>
-<div class="line"><a name="l01961"></a><span class="lineno"> 1961</span>&#160;<span class="comment">!      nvaluesp is the number of values per line for printing</span></div>
-<div class="line"><a name="l01962"></a><span class="lineno"> 1962</span>&#160;<span class="comment">!      nwidthp is the width of the number for printing</span></div>
-<div class="line"><a name="l01963"></a><span class="lineno"> 1963</span>&#160;<span class="comment">!      editdesc is the format type (I, G, F, S, E)</span></div>
-<div class="line"><a name="l01964"></a><span class="lineno"> 1964</span>&#160;<span class="comment">!      dinact is the double precision value to use for cells that are excluded</span></div>
-<div class="line"><a name="l01965"></a><span class="lineno"> 1965</span>&#160;<span class="comment">!        from the model domain</span></div>
-<div class="line"><a name="l01966"></a><span class="lineno"> 1966</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l01967"></a><span class="lineno"> 1967</span>&#160;    <span class="comment">! -- modules</span></div>
-<div class="line"><a name="l01968"></a><span class="lineno"> 1968</span>&#160;    <span class="comment">! -- dummy</span></div>
-<div class="line"><a name="l01969"></a><span class="lineno"> 1969</span>&#160;    <span class="keywordtype">class</span>(<a class="code" href="structgwfdisvmodule_1_1gwfdisvtype.html">gwfdisvtype</a>), <span class="keywordtype">intent(inout)</span>              :: this</div>
-<div class="line"><a name="l01970"></a><span class="lineno"> 1970</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span>, <span class="keywordtype">intent(inout)</span> :: darray</div>
-<div class="line"><a name="l01971"></a><span class="lineno"> 1971</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: iout</div>
-<div class="line"><a name="l01972"></a><span class="lineno"> 1972</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: iprint</div>
-<div class="line"><a name="l01973"></a><span class="lineno"> 1973</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: idataun</div>
-<div class="line"><a name="l01974"></a><span class="lineno"> 1974</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>                   :: aname</div>
-<div class="line"><a name="l01975"></a><span class="lineno"> 1975</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>                   :: cdatafmp</div>
-<div class="line"><a name="l01976"></a><span class="lineno"> 1976</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: nvaluesp</div>
-<div class="line"><a name="l01977"></a><span class="lineno"> 1977</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: nwidthp</div>
-<div class="line"><a name="l01978"></a><span class="lineno"> 1978</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>                   :: editdesc</div>
-<div class="line"><a name="l01979"></a><span class="lineno"> 1979</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">intent(in)</span>                           :: dinact</div>
-<div class="line"><a name="l01980"></a><span class="lineno"> 1980</span>&#160;    <span class="comment">! -- local</span></div>
-<div class="line"><a name="l01981"></a><span class="lineno"> 1981</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: k, ifirst</div>
-<div class="line"><a name="l01982"></a><span class="lineno"> 1982</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nlay</div>
-<div class="line"><a name="l01983"></a><span class="lineno"> 1983</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nrow</div>
-<div class="line"><a name="l01984"></a><span class="lineno"> 1984</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: ncol</div>
-<div class="line"><a name="l01985"></a><span class="lineno"> 1985</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nval</div>
-<div class="line"><a name="l01986"></a><span class="lineno"> 1986</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nodeu, noder</div>
-<div class="line"><a name="l01987"></a><span class="lineno"> 1987</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: istart, istop</div>
-<div class="line"><a name="l01988"></a><span class="lineno"> 1988</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span> :: dtemp</div>
-<div class="line"><a name="l01989"></a><span class="lineno"> 1989</span>&#160;    <span class="comment">! -- formats</span></div>
-<div class="line"><a name="l01990"></a><span class="lineno"> 1990</span>&#160;    <span class="keywordtype">character(len=*)</span>,<span class="keywordtype">parameter</span> :: fmthsv = &amp;</div>
-<div class="line"><a name="l01991"></a><span class="lineno"> 1991</span>&#160;      <span class="stringliteral">&quot;(1X,/1X,a,&#39; WILL BE SAVED ON UNIT &#39;,I4, &amp;</span></div>
-<div class="line"><a name="l01992"></a><span class="lineno"> 1992</span>&#160;<span class="stringliteral"></span><span class="stringliteral">       &amp;&#39; AT END OF TIME STEP&#39;,I5,&#39;, STRESS PERIOD &#39;,I4)&quot;</span></div>
-<div class="line"><a name="l01993"></a><span class="lineno"> 1993</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l01994"></a><span class="lineno"> 1994</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l01995"></a><span class="lineno"> 1995</span>&#160;    <span class="comment">! -- set variables</span></div>
-<div class="line"><a name="l01996"></a><span class="lineno"> 1996</span>&#160;    nlay = this%mshape(1)</div>
-<div class="line"><a name="l01997"></a><span class="lineno"> 1997</span>&#160;    nrow = 1</div>
-<div class="line"><a name="l01998"></a><span class="lineno"> 1998</span>&#160;    ncol = this%mshape(2)</div>
-<div class="line"><a name="l01999"></a><span class="lineno"> 1999</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02000"></a><span class="lineno"> 2000</span>&#160;    <span class="comment">! -- If this is a reduced model, then copy the values from darray into</span></div>
-<div class="line"><a name="l02001"></a><span class="lineno"> 2001</span>&#160;    <span class="comment">!    dtemp.</span></div>
-<div class="line"><a name="l02002"></a><span class="lineno"> 2002</span>&#160;    <span class="keywordflow">if</span>(this%nodes &lt; this%nodesuser) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02003"></a><span class="lineno"> 2003</span>&#160;      nval = this%nodes</div>
-<div class="line"><a name="l02004"></a><span class="lineno"> 2004</span>&#160;      dtemp =&gt; this%dbuff</div>
-<div class="line"><a name="l02005"></a><span class="lineno"> 2005</span>&#160;      <span class="keywordflow">do</span> nodeu = 1, this%nodesuser</div>
-<div class="line"><a name="l02006"></a><span class="lineno"> 2006</span>&#160;        noder = this%get_nodenumber(nodeu, 0)</div>
-<div class="line"><a name="l02007"></a><span class="lineno"> 2007</span>&#160;        <span class="keywordflow">if</span>(noder &lt;= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02008"></a><span class="lineno"> 2008</span>&#160;          dtemp(nodeu) = dinact</div>
-<div class="line"><a name="l02009"></a><span class="lineno"> 2009</span>&#160;          cycle</div>
-<div class="line"><a name="l02010"></a><span class="lineno"> 2010</span>&#160;<span class="keywordflow">        endif</span></div>
-<div class="line"><a name="l02011"></a><span class="lineno"> 2011</span>&#160;        dtemp(nodeu) = darray(noder)</div>
+<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;    <span class="comment">! -- Copy array into bound.  Note that this routine was substantially</span></div>
+<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;    <span class="comment">!    changed on 9/21/2021 to support changes to READASARRAYS input</span></div>
+<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;    <span class="comment">!    for recharge and evapotranspiration.  nodelist and bound are of</span></div>
+<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;    <span class="comment">!    size nrow * ncol and correspond directly to dbuff.</span></div>
+<div class="line"><a name="l01919"></a><span class="lineno"> 1919</span>&#160;    ipos = 1</div>
+<div class="line"><a name="l01920"></a><span class="lineno"> 1920</span>&#160;    <span class="keywordflow">do</span> ir = 1, nrow</div>
+<div class="line"><a name="l01921"></a><span class="lineno"> 1921</span>&#160;      <span class="keywordflow">do</span> ic = 1, ncol</div>
+<div class="line"><a name="l01922"></a><span class="lineno"> 1922</span>&#160;        nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(1, ir, ic, nlay, nrow, ncol)</div>
+<div class="line"><a name="l01923"></a><span class="lineno"> 1923</span>&#160;        darray(icolbnd, ipos) = this%dbuff(nodeu)</div>
+<div class="line"><a name="l01924"></a><span class="lineno"> 1924</span>&#160;        ipos = ipos + 1</div>
+<div class="line"><a name="l01925"></a><span class="lineno"> 1925</span>&#160;<span class="keywordflow">      enddo</span></div>
+<div class="line"><a name="l01926"></a><span class="lineno"> 1926</span>&#160;<span class="keywordflow">    enddo</span></div>
+<div class="line"><a name="l01927"></a><span class="lineno"> 1927</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l01928"></a><span class="lineno"> 1928</span>&#160;    <span class="comment">! -- return</span></div>
+<div class="line"><a name="l01929"></a><span class="lineno"> 1929</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a8ecc0ec2a000ecf747ea723104766d55">read_layer_array</a></div>
+<div class="line"><a name="l01930"></a><span class="lineno"> 1930</span>&#160; </div>
+<div class="line"><a name="l01931"></a><span class="lineno"> 1931</span>&#160;  <span class="keyword">subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c">record_array</a>(this, darray, iout, iprint, idataun, aname,     &amp;</div>
+<div class="line"><a name="l01932"></a><span class="lineno"> 1932</span>&#160;                           cdatafmp, nvaluesp, nwidthp, editdesc, dinact)</div>
+<div class="line"><a name="l01933"></a><span class="lineno"><a class="line" href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c"> 1933</a></span>&#160;<span class="comment">! ******************************************************************************</span></div>
+<div class="line"><a name="l01934"></a><span class="lineno"> 1934</span>&#160;<span class="comment">! record_array -- Record a double precision array.  The array will be</span></div>
+<div class="line"><a name="l01935"></a><span class="lineno"> 1935</span>&#160;<span class="comment">!   printed to an external file and/or written to an unformatted external file</span></div>
+<div class="line"><a name="l01936"></a><span class="lineno"> 1936</span>&#160;<span class="comment">!   depending on the argument specifications.</span></div>
+<div class="line"><a name="l01937"></a><span class="lineno"> 1937</span>&#160;<span class="comment">! ******************************************************************************</span></div>
+<div class="line"><a name="l01938"></a><span class="lineno"> 1938</span>&#160;<span class="comment">!</span></div>
+<div class="line"><a name="l01939"></a><span class="lineno"> 1939</span>&#160;<span class="comment">!    SPECIFICATIONS:</span></div>
+<div class="line"><a name="l01940"></a><span class="lineno"> 1940</span>&#160;<span class="comment">!      darray is the double precision array to record</span></div>
+<div class="line"><a name="l01941"></a><span class="lineno"> 1941</span>&#160;<span class="comment">!      iout is the unit number for ascii output</span></div>
+<div class="line"><a name="l01942"></a><span class="lineno"> 1942</span>&#160;<span class="comment">!      iprint is a flag indicating whether or not to print the array</span></div>
+<div class="line"><a name="l01943"></a><span class="lineno"> 1943</span>&#160;<span class="comment">!      idataun is the unit number to which the array will be written in binary</span></div>
+<div class="line"><a name="l01944"></a><span class="lineno"> 1944</span>&#160;<span class="comment">!        form; if negative then do not write by layers, write entire array</span></div>
+<div class="line"><a name="l01945"></a><span class="lineno"> 1945</span>&#160;<span class="comment">!      aname is the text descriptor of the array</span></div>
+<div class="line"><a name="l01946"></a><span class="lineno"> 1946</span>&#160;<span class="comment">!      cdatafmp is the fortran format for writing the array</span></div>
+<div class="line"><a name="l01947"></a><span class="lineno"> 1947</span>&#160;<span class="comment">!      nvaluesp is the number of values per line for printing</span></div>
+<div class="line"><a name="l01948"></a><span class="lineno"> 1948</span>&#160;<span class="comment">!      nwidthp is the width of the number for printing</span></div>
+<div class="line"><a name="l01949"></a><span class="lineno"> 1949</span>&#160;<span class="comment">!      editdesc is the format type (I, G, F, S, E)</span></div>
+<div class="line"><a name="l01950"></a><span class="lineno"> 1950</span>&#160;<span class="comment">!      dinact is the double precision value to use for cells that are excluded</span></div>
+<div class="line"><a name="l01951"></a><span class="lineno"> 1951</span>&#160;<span class="comment">!        from the model domain</span></div>
+<div class="line"><a name="l01952"></a><span class="lineno"> 1952</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l01953"></a><span class="lineno"> 1953</span>&#160;    <span class="comment">! -- modules</span></div>
+<div class="line"><a name="l01954"></a><span class="lineno"> 1954</span>&#160;    <span class="comment">! -- dummy</span></div>
+<div class="line"><a name="l01955"></a><span class="lineno"> 1955</span>&#160;    <span class="keywordtype">class</span>(<a class="code" href="structgwfdisvmodule_1_1gwfdisvtype.html">gwfdisvtype</a>), <span class="keywordtype">intent(inout)</span>              :: this</div>
+<div class="line"><a name="l01956"></a><span class="lineno"> 1956</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span>, <span class="keywordtype">intent(inout)</span> :: darray</div>
+<div class="line"><a name="l01957"></a><span class="lineno"> 1957</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: iout</div>
+<div class="line"><a name="l01958"></a><span class="lineno"> 1958</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: iprint</div>
+<div class="line"><a name="l01959"></a><span class="lineno"> 1959</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: idataun</div>
+<div class="line"><a name="l01960"></a><span class="lineno"> 1960</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>                   :: aname</div>
+<div class="line"><a name="l01961"></a><span class="lineno"> 1961</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>                   :: cdatafmp</div>
+<div class="line"><a name="l01962"></a><span class="lineno"> 1962</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: nvaluesp</div>
+<div class="line"><a name="l01963"></a><span class="lineno"> 1963</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span>                       :: nwidthp</div>
+<div class="line"><a name="l01964"></a><span class="lineno"> 1964</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>                   :: editdesc</div>
+<div class="line"><a name="l01965"></a><span class="lineno"> 1965</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">intent(in)</span>                           :: dinact</div>
+<div class="line"><a name="l01966"></a><span class="lineno"> 1966</span>&#160;    <span class="comment">! -- local</span></div>
+<div class="line"><a name="l01967"></a><span class="lineno"> 1967</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: k, ifirst</div>
+<div class="line"><a name="l01968"></a><span class="lineno"> 1968</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nlay</div>
+<div class="line"><a name="l01969"></a><span class="lineno"> 1969</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nrow</div>
+<div class="line"><a name="l01970"></a><span class="lineno"> 1970</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: ncol</div>
+<div class="line"><a name="l01971"></a><span class="lineno"> 1971</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nval</div>
+<div class="line"><a name="l01972"></a><span class="lineno"> 1972</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nodeu, noder</div>
+<div class="line"><a name="l01973"></a><span class="lineno"> 1973</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: istart, istop</div>
+<div class="line"><a name="l01974"></a><span class="lineno"> 1974</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span> :: dtemp</div>
+<div class="line"><a name="l01975"></a><span class="lineno"> 1975</span>&#160;    <span class="comment">! -- formats</span></div>
+<div class="line"><a name="l01976"></a><span class="lineno"> 1976</span>&#160;    <span class="keywordtype">character(len=*)</span>,<span class="keywordtype">parameter</span> :: fmthsv = &amp;</div>
+<div class="line"><a name="l01977"></a><span class="lineno"> 1977</span>&#160;      <span class="stringliteral">&quot;(1X,/1X,a,&#39; WILL BE SAVED ON UNIT &#39;,I4, &amp;</span></div>
+<div class="line"><a name="l01978"></a><span class="lineno"> 1978</span>&#160;<span class="stringliteral"></span><span class="stringliteral">       &amp;&#39; AT END OF TIME STEP&#39;,I5,&#39;, STRESS PERIOD &#39;,I4)&quot;</span></div>
+<div class="line"><a name="l01979"></a><span class="lineno"> 1979</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l01980"></a><span class="lineno"> 1980</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l01981"></a><span class="lineno"> 1981</span>&#160;    <span class="comment">! -- set variables</span></div>
+<div class="line"><a name="l01982"></a><span class="lineno"> 1982</span>&#160;    nlay = this%mshape(1)</div>
+<div class="line"><a name="l01983"></a><span class="lineno"> 1983</span>&#160;    nrow = 1</div>
+<div class="line"><a name="l01984"></a><span class="lineno"> 1984</span>&#160;    ncol = this%mshape(2)</div>
+<div class="line"><a name="l01985"></a><span class="lineno"> 1985</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l01986"></a><span class="lineno"> 1986</span>&#160;    <span class="comment">! -- If this is a reduced model, then copy the values from darray into</span></div>
+<div class="line"><a name="l01987"></a><span class="lineno"> 1987</span>&#160;    <span class="comment">!    dtemp.</span></div>
+<div class="line"><a name="l01988"></a><span class="lineno"> 1988</span>&#160;    <span class="keywordflow">if</span>(this%nodes &lt; this%nodesuser) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01989"></a><span class="lineno"> 1989</span>&#160;      nval = this%nodes</div>
+<div class="line"><a name="l01990"></a><span class="lineno"> 1990</span>&#160;      dtemp =&gt; this%dbuff</div>
+<div class="line"><a name="l01991"></a><span class="lineno"> 1991</span>&#160;      <span class="keywordflow">do</span> nodeu = 1, this%nodesuser</div>
+<div class="line"><a name="l01992"></a><span class="lineno"> 1992</span>&#160;        noder = this%get_nodenumber(nodeu, 0)</div>
+<div class="line"><a name="l01993"></a><span class="lineno"> 1993</span>&#160;        <span class="keywordflow">if</span>(noder &lt;= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l01994"></a><span class="lineno"> 1994</span>&#160;          dtemp(nodeu) = dinact</div>
+<div class="line"><a name="l01995"></a><span class="lineno"> 1995</span>&#160;          cycle</div>
+<div class="line"><a name="l01996"></a><span class="lineno"> 1996</span>&#160;<span class="keywordflow">        endif</span></div>
+<div class="line"><a name="l01997"></a><span class="lineno"> 1997</span>&#160;        dtemp(nodeu) = darray(noder)</div>
+<div class="line"><a name="l01998"></a><span class="lineno"> 1998</span>&#160;<span class="keywordflow">      enddo</span></div>
+<div class="line"><a name="l01999"></a><span class="lineno"> 1999</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l02000"></a><span class="lineno"> 2000</span>&#160;      nval = this%nodes</div>
+<div class="line"><a name="l02001"></a><span class="lineno"> 2001</span>&#160;      dtemp =&gt; darray</div>
+<div class="line"><a name="l02002"></a><span class="lineno"> 2002</span>&#160;<span class="keywordflow">    endif</span></div>
+<div class="line"><a name="l02003"></a><span class="lineno"> 2003</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02004"></a><span class="lineno"> 2004</span>&#160;    <span class="comment">! -- Print to iout if iprint /= 0</span></div>
+<div class="line"><a name="l02005"></a><span class="lineno"> 2005</span>&#160;    <span class="keywordflow">if</span>(iprint /= 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02006"></a><span class="lineno"> 2006</span>&#160;      istart = 1</div>
+<div class="line"><a name="l02007"></a><span class="lineno"> 2007</span>&#160;      <span class="keywordflow">do</span> k = 1, nlay</div>
+<div class="line"><a name="l02008"></a><span class="lineno"> 2008</span>&#160;        istop = istart + nrow * ncol - 1</div>
+<div class="line"><a name="l02009"></a><span class="lineno"> 2009</span>&#160;        <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#abf73c4b0c1d30ebe486c4a04586aaabd">ulaprufw</a>(ncol, nrow, <a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>, k, iout, dtemp(istart:istop),  &amp;</div>
+<div class="line"><a name="l02010"></a><span class="lineno"> 2010</span>&#160;                      aname, cdatafmp, nvaluesp, nwidthp, editdesc)</div>
+<div class="line"><a name="l02011"></a><span class="lineno"> 2011</span>&#160;        istart = istop + 1</div>
 <div class="line"><a name="l02012"></a><span class="lineno"> 2012</span>&#160;<span class="keywordflow">      enddo</span></div>
-<div class="line"><a name="l02013"></a><span class="lineno"> 2013</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l02014"></a><span class="lineno"> 2014</span>&#160;      nval = this%nodes</div>
-<div class="line"><a name="l02015"></a><span class="lineno"> 2015</span>&#160;      dtemp =&gt; darray</div>
-<div class="line"><a name="l02016"></a><span class="lineno"> 2016</span>&#160;<span class="keywordflow">    endif</span></div>
-<div class="line"><a name="l02017"></a><span class="lineno"> 2017</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02018"></a><span class="lineno"> 2018</span>&#160;    <span class="comment">! -- Print to iout if iprint /= 0</span></div>
-<div class="line"><a name="l02019"></a><span class="lineno"> 2019</span>&#160;    <span class="keywordflow">if</span>(iprint /= 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02020"></a><span class="lineno"> 2020</span>&#160;      istart = 1</div>
-<div class="line"><a name="l02021"></a><span class="lineno"> 2021</span>&#160;      <span class="keywordflow">do</span> k = 1, nlay</div>
-<div class="line"><a name="l02022"></a><span class="lineno"> 2022</span>&#160;        istop = istart + nrow * ncol - 1</div>
-<div class="line"><a name="l02023"></a><span class="lineno"> 2023</span>&#160;        <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#abf73c4b0c1d30ebe486c4a04586aaabd">ulaprufw</a>(ncol, nrow, <a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>, k, iout, dtemp(istart:istop),  &amp;</div>
-<div class="line"><a name="l02024"></a><span class="lineno"> 2024</span>&#160;                      aname, cdatafmp, nvaluesp, nwidthp, editdesc)</div>
-<div class="line"><a name="l02025"></a><span class="lineno"> 2025</span>&#160;        istart = istop + 1</div>
-<div class="line"><a name="l02026"></a><span class="lineno"> 2026</span>&#160;<span class="keywordflow">      enddo</span></div>
-<div class="line"><a name="l02027"></a><span class="lineno"> 2027</span>&#160;<span class="keywordflow">    endif</span></div>
-<div class="line"><a name="l02028"></a><span class="lineno"> 2028</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02029"></a><span class="lineno"> 2029</span>&#160;    <span class="comment">! -- Save array to an external file.</span></div>
-<div class="line"><a name="l02030"></a><span class="lineno"> 2030</span>&#160;    <span class="keywordflow">if</span>(idataun &gt; 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02031"></a><span class="lineno"> 2031</span>&#160;      <span class="comment">! -- write to binary file by layer</span></div>
-<div class="line"><a name="l02032"></a><span class="lineno"> 2032</span>&#160;      ifirst = 1</div>
-<div class="line"><a name="l02033"></a><span class="lineno"> 2033</span>&#160;      istart = 1</div>
-<div class="line"><a name="l02034"></a><span class="lineno"> 2034</span>&#160;      <span class="keywordflow">do</span> k=1, nlay</div>
-<div class="line"><a name="l02035"></a><span class="lineno"> 2035</span>&#160;        istop = istart + nrow * ncol - 1</div>
-<div class="line"><a name="l02036"></a><span class="lineno"> 2036</span>&#160;        <span class="keywordflow">if</span>(ifirst == 1) <span class="keyword">write</span>(iout, fmthsv)                                    &amp;</div>
-<div class="line"><a name="l02037"></a><span class="lineno"> 2037</span>&#160;                            trim(adjustl(aname)), idataun,                     &amp;</div>
-<div class="line"><a name="l02038"></a><span class="lineno"> 2038</span>&#160;                            <a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a></div>
-<div class="line"><a name="l02039"></a><span class="lineno"> 2039</span>&#160;        ifirst = 0</div>
-<div class="line"><a name="l02040"></a><span class="lineno"> 2040</span>&#160;        <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#a07b5a678851f1bbbca15c9c058818e28">ulasav</a>(dtemp(istart:istop), aname, <a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>,                    &amp;</div>
-<div class="line"><a name="l02041"></a><span class="lineno"> 2041</span>&#160;                    <a class="code" href="namespacetdismodule.html#a011f43ae7ec20b725b0092529bda2b73">pertim</a>, <a class="code" href="namespacetdismodule.html#a5f22ad41ccf3be8d4bb899e8a1834ff4">totim</a>, ncol, nrow, k, idataun)</div>
-<div class="line"><a name="l02042"></a><span class="lineno"> 2042</span>&#160;        istart = istop + 1</div>
-<div class="line"><a name="l02043"></a><span class="lineno"> 2043</span>&#160;<span class="keywordflow">      enddo</span></div>
-<div class="line"><a name="l02044"></a><span class="lineno"> 2044</span>&#160;    <span class="keywordflow">elseif</span>(idataun &lt; 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02045"></a><span class="lineno"> 2045</span>&#160;      <span class="comment">!</span></div>
-<div class="line"><a name="l02046"></a><span class="lineno"> 2046</span>&#160;      <span class="comment">! -- write entire array as one record</span></div>
-<div class="line"><a name="l02047"></a><span class="lineno"> 2047</span>&#160;      <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#a42617189557a97acfaf25af37a14a321">ubdsv1</a>(<a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>, aname, -idataun, dtemp, ncol, nrow, nlay,        &amp;</div>
-<div class="line"><a name="l02048"></a><span class="lineno"> 2048</span>&#160;                  iout, <a class="code" href="namespacetdismodule.html#ae9a8dbe15bd2bcb8a85d53d570407ae6">delt</a>, <a class="code" href="namespacetdismodule.html#a011f43ae7ec20b725b0092529bda2b73">pertim</a>, <a class="code" href="namespacetdismodule.html#a5f22ad41ccf3be8d4bb899e8a1834ff4">totim</a>)</div>
-<div class="line"><a name="l02049"></a><span class="lineno"> 2049</span>&#160;<span class="keywordflow">    endif</span></div>
-<div class="line"><a name="l02050"></a><span class="lineno"> 2050</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02051"></a><span class="lineno"> 2051</span>&#160;    <span class="comment">! -- return</span></div>
-<div class="line"><a name="l02052"></a><span class="lineno"> 2052</span>&#160;    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l02053"></a><span class="lineno"> 2053</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c">record_array</a></div>
-<div class="line"><a name="l02054"></a><span class="lineno"> 2054</span>&#160; </div>
-<div class="line"><a name="l02055"></a><span class="lineno"> 2055</span>&#160;  <span class="keyword">subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d">record_srcdst_list_header</a>(this, text, textmodel, textpackage,      &amp;</div>
-<div class="line"><a name="l02056"></a><span class="lineno"> 2056</span>&#160;                                       dstmodel, dstpackage, naux, auxtxt,      &amp;</div>
-<div class="line"><a name="l02057"></a><span class="lineno"> 2057</span>&#160;                                       ibdchn, nlist, iout)</div>
-<div class="line"><a name="l02058"></a><span class="lineno"><a class="line" href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d"> 2058</a></span>&#160;<span class="comment">! ******************************************************************************</span></div>
-<div class="line"><a name="l02059"></a><span class="lineno"> 2059</span>&#160;<span class="comment">! record_srcdst_list_header -- Record list header for imeth=6</span></div>
-<div class="line"><a name="l02060"></a><span class="lineno"> 2060</span>&#160;<span class="comment">! ******************************************************************************</span></div>
-<div class="line"><a name="l02061"></a><span class="lineno"> 2061</span>&#160;<span class="comment">!</span></div>
-<div class="line"><a name="l02062"></a><span class="lineno"> 2062</span>&#160;<span class="comment">!    SPECIFICATIONS:</span></div>
-<div class="line"><a name="l02063"></a><span class="lineno"> 2063</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l02064"></a><span class="lineno"> 2064</span>&#160;    <span class="comment">! -- dummy</span></div>
-<div class="line"><a name="l02065"></a><span class="lineno"> 2065</span>&#160;    <span class="keywordtype">class</span>(<a class="code" href="structgwfdisvmodule_1_1gwfdisvtype.html">gwfdisvtype</a>) :: this</div>
-<div class="line"><a name="l02066"></a><span class="lineno"> 2066</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: text</div>
-<div class="line"><a name="l02067"></a><span class="lineno"> 2067</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: textmodel</div>
-<div class="line"><a name="l02068"></a><span class="lineno"> 2068</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: textpackage</div>
-<div class="line"><a name="l02069"></a><span class="lineno"> 2069</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: dstmodel</div>
-<div class="line"><a name="l02070"></a><span class="lineno"> 2070</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: dstpackage</div>
-<div class="line"><a name="l02071"></a><span class="lineno"> 2071</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: naux</div>
-<div class="line"><a name="l02072"></a><span class="lineno"> 2072</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">intent(in)</span> :: auxtxt</div>
-<div class="line"><a name="l02073"></a><span class="lineno"> 2073</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: ibdchn</div>
-<div class="line"><a name="l02074"></a><span class="lineno"> 2074</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: nlist</div>
-<div class="line"><a name="l02075"></a><span class="lineno"> 2075</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: iout</div>
-<div class="line"><a name="l02076"></a><span class="lineno"> 2076</span>&#160;    <span class="comment">! -- local</span></div>
-<div class="line"><a name="l02077"></a><span class="lineno"> 2077</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nlay, nrow, ncol</div>
-<div class="line"><a name="l02078"></a><span class="lineno"> 2078</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l02079"></a><span class="lineno"> 2079</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02080"></a><span class="lineno"> 2080</span>&#160;    nlay = this%mshape(1)</div>
-<div class="line"><a name="l02081"></a><span class="lineno"> 2081</span>&#160;    nrow = 1</div>
-<div class="line"><a name="l02082"></a><span class="lineno"> 2082</span>&#160;    ncol = this%mshape(2)</div>
-<div class="line"><a name="l02083"></a><span class="lineno"> 2083</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02084"></a><span class="lineno"> 2084</span>&#160;    <span class="comment">! -- Use ubdsv06 to write list header</span></div>
-<div class="line"><a name="l02085"></a><span class="lineno"> 2085</span>&#160;    <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#acbfe2090f8aa18049afae5fa4fca29a9">ubdsv06</a>(<a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>, text, textmodel, textpackage, dstmodel, dstpackage,&amp;</div>
-<div class="line"><a name="l02086"></a><span class="lineno"> 2086</span>&#160;                 ibdchn, naux, auxtxt, ncol, nrow, nlay,                        &amp;</div>
-<div class="line"><a name="l02087"></a><span class="lineno"> 2087</span>&#160;                 nlist, iout, <a class="code" href="namespacetdismodule.html#ae9a8dbe15bd2bcb8a85d53d570407ae6">delt</a>, <a class="code" href="namespacetdismodule.html#a011f43ae7ec20b725b0092529bda2b73">pertim</a>, <a class="code" href="namespacetdismodule.html#a5f22ad41ccf3be8d4bb899e8a1834ff4">totim</a>)</div>
-<div class="line"><a name="l02088"></a><span class="lineno"> 2088</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02089"></a><span class="lineno"> 2089</span>&#160;    <span class="comment">! -- return</span></div>
-<div class="line"><a name="l02090"></a><span class="lineno"> 2090</span>&#160;    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l02091"></a><span class="lineno"> 2091</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d">record_srcdst_list_header</a></div>
-<div class="line"><a name="l02092"></a><span class="lineno"> 2092</span>&#160; </div>
-<div class="line"><a name="l02093"></a><span class="lineno"> 2093</span>&#160;  <span class="keyword">subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c">nlarray_to_nodelist</a>(this, nodelist, maxbnd, nbound, aname, &amp;</div>
-<div class="line"><a name="l02094"></a><span class="lineno"> 2094</span>&#160;                                 inunit, iout)</div>
-<div class="line"><a name="l02095"></a><span class="lineno"><a class="line" href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c"> 2095</a></span>&#160;<span class="comment">! ******************************************************************************</span></div>
-<div class="line"><a name="l02096"></a><span class="lineno"> 2096</span>&#160;<span class="comment">! nlarray_to_nodelist -- Read an integer array into nodelist. For structured</span></div>
-<div class="line"><a name="l02097"></a><span class="lineno"> 2097</span>&#160;<span class="comment">!                        model, integer array is layer number; for unstructured</span></div>
-<div class="line"><a name="l02098"></a><span class="lineno"> 2098</span>&#160;<span class="comment">!                        model, integer array is node number.</span></div>
-<div class="line"><a name="l02099"></a><span class="lineno"> 2099</span>&#160;<span class="comment">! ******************************************************************************</span></div>
-<div class="line"><a name="l02100"></a><span class="lineno"> 2100</span>&#160;<span class="comment">!</span></div>
-<div class="line"><a name="l02101"></a><span class="lineno"> 2101</span>&#160;<span class="comment">!    SPECIFICATIONS:</span></div>
-<div class="line"><a name="l02102"></a><span class="lineno"> 2102</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l02103"></a><span class="lineno"> 2103</span>&#160;    <span class="comment">! -- modules</span></div>
-<div class="line"><a name="l02104"></a><span class="lineno"> 2104</span>&#160;    <span class="keywordtype">use </span><a class="code" href="namespaceinputoutputmodule.html">inputoutputmodule</a>, <span class="keywordtype">only</span>: <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a></div>
-<div class="line"><a name="l02105"></a><span class="lineno"> 2105</span>&#160;    <span class="keywordtype">use </span><a class="code" href="namespacesimmodule.html">simmodule</a>, <span class="keywordtype">only</span>: <a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a></div>
-<div class="line"><a name="l02106"></a><span class="lineno"> 2106</span>&#160;    <span class="keywordtype">use </span><a class="code" href="namespaceconstantsmodule.html">constantsmodule</a>, <span class="keywordtype">only</span>: <a class="code" href="namespaceconstantsmodule.html#a060d310ded5535ce2dc85bd1ca1afd3d">linelength</a></div>
-<div class="line"><a name="l02107"></a><span class="lineno"> 2107</span>&#160;    <span class="comment">! -- dummy</span></div>
-<div class="line"><a name="l02108"></a><span class="lineno"> 2108</span>&#160;    <span class="keywordtype">class</span>(<a class="code" href="structgwfdisvmodule_1_1gwfdisvtype.html">gwfdisvtype</a>) :: this</div>
-<div class="line"><a name="l02109"></a><span class="lineno"> 2109</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: maxbnd</div>
-<div class="line"><a name="l02110"></a><span class="lineno"> 2110</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">dimension(maxbnd)</span>, <span class="keywordtype">intent(inout)</span> :: nodelist</div>
-<div class="line"><a name="l02111"></a><span class="lineno"> 2111</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(inout)</span> :: nbound</div>
-<div class="line"><a name="l02112"></a><span class="lineno"> 2112</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span> :: aname</div>
-<div class="line"><a name="l02113"></a><span class="lineno"> 2113</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: inunit</div>
-<div class="line"><a name="l02114"></a><span class="lineno"> 2114</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: iout</div>
-<div class="line"><a name="l02115"></a><span class="lineno"> 2115</span>&#160;    <span class="comment">! -- local</span></div>
-<div class="line"><a name="l02116"></a><span class="lineno"> 2116</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: il, ir, ic, ncol, nrow, nlay, nval, nodeu, noder, ipos, ierr</div>
-<div class="line"><a name="l02117"></a><span class="lineno"> 2117</span>&#160;    <span class="keywordtype">character(len=LINELENGTH)</span> :: errmsg</div>
-<div class="line"><a name="l02118"></a><span class="lineno"> 2118</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l02119"></a><span class="lineno"> 2119</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02120"></a><span class="lineno"> 2120</span>&#160;    <span class="comment">! -- set variables</span></div>
-<div class="line"><a name="l02121"></a><span class="lineno"> 2121</span>&#160;    nlay = this%mshape(1)</div>
-<div class="line"><a name="l02122"></a><span class="lineno"> 2122</span>&#160;    nrow = 1</div>
-<div class="line"><a name="l02123"></a><span class="lineno"> 2123</span>&#160;    ncol = this%mshape(2)</div>
-<div class="line"><a name="l02124"></a><span class="lineno"> 2124</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02125"></a><span class="lineno"> 2125</span>&#160;    nval = ncol * nrow</div>
-<div class="line"><a name="l02126"></a><span class="lineno"> 2126</span>&#160;    <span class="keyword">call </span><a class="code" href="interfacearrayreadersmodule_1_1readarray.html">readarray</a>(inunit, this%ibuff, aname, this%ndim, nval, iout, 0)</div>
-<div class="line"><a name="l02127"></a><span class="lineno"> 2127</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02128"></a><span class="lineno"> 2128</span>&#160;    <span class="comment">! -- Copy array into nodelist</span></div>
-<div class="line"><a name="l02129"></a><span class="lineno"> 2129</span>&#160;    ipos = 1</div>
-<div class="line"><a name="l02130"></a><span class="lineno"> 2130</span>&#160;    ierr = 0</div>
-<div class="line"><a name="l02131"></a><span class="lineno"> 2131</span>&#160;    <span class="keywordflow">do</span> ir = 1, nrow</div>
-<div class="line"><a name="l02132"></a><span class="lineno"> 2132</span>&#160;      <span class="keywordflow">do</span> ic = 1, ncol</div>
-<div class="line"><a name="l02133"></a><span class="lineno"> 2133</span>&#160;        nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(1, ir, ic, nlay, nrow, ncol)</div>
-<div class="line"><a name="l02134"></a><span class="lineno"> 2134</span>&#160;        il = this%ibuff(nodeu)</div>
-<div class="line"><a name="l02135"></a><span class="lineno"> 2135</span>&#160;        <span class="keywordflow">if</span>(il &lt; 1 .or. il &gt; nlay) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02136"></a><span class="lineno"> 2136</span>&#160;          <span class="keyword">write</span>(errmsg, *) <span class="stringliteral">&#39;ERROR.  INVALID LAYER NUMBER: &#39;</span>, il</div>
-<div class="line"><a name="l02137"></a><span class="lineno"> 2137</span>&#160;          <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
-<div class="line"><a name="l02138"></a><span class="lineno"> 2138</span>&#160;<span class="keywordflow">        endif</span></div>
-<div class="line"><a name="l02139"></a><span class="lineno"> 2139</span>&#160;        nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(il, ir, ic, nlay, nrow, ncol)</div>
-<div class="line"><a name="l02140"></a><span class="lineno"> 2140</span>&#160;        noder = this%get_nodenumber(nodeu, 0)</div>
-<div class="line"><a name="l02141"></a><span class="lineno"> 2141</span>&#160;        <span class="keywordflow">if</span>(noder &gt; 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02142"></a><span class="lineno"> 2142</span>&#160;          <span class="keywordflow">if</span>(ipos &gt; maxbnd) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02143"></a><span class="lineno"> 2143</span>&#160;            ierr = ipos</div>
-<div class="line"><a name="l02144"></a><span class="lineno"> 2144</span>&#160;          <span class="keywordflow">else</span></div>
-<div class="line"><a name="l02145"></a><span class="lineno"> 2145</span>&#160;            nodelist(ipos) = noder</div>
-<div class="line"><a name="l02146"></a><span class="lineno"> 2146</span>&#160;<span class="keywordflow">          endif</span></div>
-<div class="line"><a name="l02147"></a><span class="lineno"> 2147</span>&#160;          ipos = ipos + 1</div>
-<div class="line"><a name="l02148"></a><span class="lineno"> 2148</span>&#160;<span class="keywordflow">        endif</span></div>
+<div class="line"><a name="l02013"></a><span class="lineno"> 2013</span>&#160;<span class="keywordflow">    endif</span></div>
+<div class="line"><a name="l02014"></a><span class="lineno"> 2014</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02015"></a><span class="lineno"> 2015</span>&#160;    <span class="comment">! -- Save array to an external file.</span></div>
+<div class="line"><a name="l02016"></a><span class="lineno"> 2016</span>&#160;    <span class="keywordflow">if</span>(idataun &gt; 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02017"></a><span class="lineno"> 2017</span>&#160;      <span class="comment">! -- write to binary file by layer</span></div>
+<div class="line"><a name="l02018"></a><span class="lineno"> 2018</span>&#160;      ifirst = 1</div>
+<div class="line"><a name="l02019"></a><span class="lineno"> 2019</span>&#160;      istart = 1</div>
+<div class="line"><a name="l02020"></a><span class="lineno"> 2020</span>&#160;      <span class="keywordflow">do</span> k=1, nlay</div>
+<div class="line"><a name="l02021"></a><span class="lineno"> 2021</span>&#160;        istop = istart + nrow * ncol - 1</div>
+<div class="line"><a name="l02022"></a><span class="lineno"> 2022</span>&#160;        <span class="keywordflow">if</span>(ifirst == 1) <span class="keyword">write</span>(iout, fmthsv)                                    &amp;</div>
+<div class="line"><a name="l02023"></a><span class="lineno"> 2023</span>&#160;                            trim(adjustl(aname)), idataun,                     &amp;</div>
+<div class="line"><a name="l02024"></a><span class="lineno"> 2024</span>&#160;                            <a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a></div>
+<div class="line"><a name="l02025"></a><span class="lineno"> 2025</span>&#160;        ifirst = 0</div>
+<div class="line"><a name="l02026"></a><span class="lineno"> 2026</span>&#160;        <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#a07b5a678851f1bbbca15c9c058818e28">ulasav</a>(dtemp(istart:istop), aname, <a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>,                    &amp;</div>
+<div class="line"><a name="l02027"></a><span class="lineno"> 2027</span>&#160;                    <a class="code" href="namespacetdismodule.html#a011f43ae7ec20b725b0092529bda2b73">pertim</a>, <a class="code" href="namespacetdismodule.html#a5f22ad41ccf3be8d4bb899e8a1834ff4">totim</a>, ncol, nrow, k, idataun)</div>
+<div class="line"><a name="l02028"></a><span class="lineno"> 2028</span>&#160;        istart = istop + 1</div>
+<div class="line"><a name="l02029"></a><span class="lineno"> 2029</span>&#160;<span class="keywordflow">      enddo</span></div>
+<div class="line"><a name="l02030"></a><span class="lineno"> 2030</span>&#160;    <span class="keywordflow">elseif</span>(idataun &lt; 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02031"></a><span class="lineno"> 2031</span>&#160;      <span class="comment">!</span></div>
+<div class="line"><a name="l02032"></a><span class="lineno"> 2032</span>&#160;      <span class="comment">! -- write entire array as one record</span></div>
+<div class="line"><a name="l02033"></a><span class="lineno"> 2033</span>&#160;      <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#a42617189557a97acfaf25af37a14a321">ubdsv1</a>(<a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>, aname, -idataun, dtemp, ncol, nrow, nlay,        &amp;</div>
+<div class="line"><a name="l02034"></a><span class="lineno"> 2034</span>&#160;                  iout, <a class="code" href="namespacetdismodule.html#ae9a8dbe15bd2bcb8a85d53d570407ae6">delt</a>, <a class="code" href="namespacetdismodule.html#a011f43ae7ec20b725b0092529bda2b73">pertim</a>, <a class="code" href="namespacetdismodule.html#a5f22ad41ccf3be8d4bb899e8a1834ff4">totim</a>)</div>
+<div class="line"><a name="l02035"></a><span class="lineno"> 2035</span>&#160;<span class="keywordflow">    endif</span></div>
+<div class="line"><a name="l02036"></a><span class="lineno"> 2036</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02037"></a><span class="lineno"> 2037</span>&#160;    <span class="comment">! -- return</span></div>
+<div class="line"><a name="l02038"></a><span class="lineno"> 2038</span>&#160;    <span class="keywordflow">return</span></div>
+<div class="line"><a name="l02039"></a><span class="lineno"> 2039</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c">record_array</a></div>
+<div class="line"><a name="l02040"></a><span class="lineno"> 2040</span>&#160; </div>
+<div class="line"><a name="l02041"></a><span class="lineno"> 2041</span>&#160;  <span class="keyword">subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d">record_srcdst_list_header</a>(this, text, textmodel, textpackage,      &amp;</div>
+<div class="line"><a name="l02042"></a><span class="lineno"> 2042</span>&#160;                                       dstmodel, dstpackage, naux, auxtxt,      &amp;</div>
+<div class="line"><a name="l02043"></a><span class="lineno"> 2043</span>&#160;                                       ibdchn, nlist, iout)</div>
+<div class="line"><a name="l02044"></a><span class="lineno"><a class="line" href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d"> 2044</a></span>&#160;<span class="comment">! ******************************************************************************</span></div>
+<div class="line"><a name="l02045"></a><span class="lineno"> 2045</span>&#160;<span class="comment">! record_srcdst_list_header -- Record list header for imeth=6</span></div>
+<div class="line"><a name="l02046"></a><span class="lineno"> 2046</span>&#160;<span class="comment">! ******************************************************************************</span></div>
+<div class="line"><a name="l02047"></a><span class="lineno"> 2047</span>&#160;<span class="comment">!</span></div>
+<div class="line"><a name="l02048"></a><span class="lineno"> 2048</span>&#160;<span class="comment">!    SPECIFICATIONS:</span></div>
+<div class="line"><a name="l02049"></a><span class="lineno"> 2049</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l02050"></a><span class="lineno"> 2050</span>&#160;    <span class="comment">! -- dummy</span></div>
+<div class="line"><a name="l02051"></a><span class="lineno"> 2051</span>&#160;    <span class="keywordtype">class</span>(<a class="code" href="structgwfdisvmodule_1_1gwfdisvtype.html">gwfdisvtype</a>) :: this</div>
+<div class="line"><a name="l02052"></a><span class="lineno"> 2052</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: text</div>
+<div class="line"><a name="l02053"></a><span class="lineno"> 2053</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: textmodel</div>
+<div class="line"><a name="l02054"></a><span class="lineno"> 2054</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: textpackage</div>
+<div class="line"><a name="l02055"></a><span class="lineno"> 2055</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: dstmodel</div>
+<div class="line"><a name="l02056"></a><span class="lineno"> 2056</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">intent(in)</span> :: dstpackage</div>
+<div class="line"><a name="l02057"></a><span class="lineno"> 2057</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: naux</div>
+<div class="line"><a name="l02058"></a><span class="lineno"> 2058</span>&#160;    <span class="keywordtype">character(len=16)</span>, <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">intent(in)</span> :: auxtxt</div>
+<div class="line"><a name="l02059"></a><span class="lineno"> 2059</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: ibdchn</div>
+<div class="line"><a name="l02060"></a><span class="lineno"> 2060</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: nlist</div>
+<div class="line"><a name="l02061"></a><span class="lineno"> 2061</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: iout</div>
+<div class="line"><a name="l02062"></a><span class="lineno"> 2062</span>&#160;    <span class="comment">! -- local</span></div>
+<div class="line"><a name="l02063"></a><span class="lineno"> 2063</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: nlay, nrow, ncol</div>
+<div class="line"><a name="l02064"></a><span class="lineno"> 2064</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l02065"></a><span class="lineno"> 2065</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02066"></a><span class="lineno"> 2066</span>&#160;    nlay = this%mshape(1)</div>
+<div class="line"><a name="l02067"></a><span class="lineno"> 2067</span>&#160;    nrow = 1</div>
+<div class="line"><a name="l02068"></a><span class="lineno"> 2068</span>&#160;    ncol = this%mshape(2)</div>
+<div class="line"><a name="l02069"></a><span class="lineno"> 2069</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02070"></a><span class="lineno"> 2070</span>&#160;    <span class="comment">! -- Use ubdsv06 to write list header</span></div>
+<div class="line"><a name="l02071"></a><span class="lineno"> 2071</span>&#160;    <span class="keyword">call </span><a class="code" href="namespaceinputoutputmodule.html#acbfe2090f8aa18049afae5fa4fca29a9">ubdsv06</a>(<a class="code" href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">kstp</a>, <a class="code" href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">kper</a>, text, textmodel, textpackage, dstmodel, dstpackage,&amp;</div>
+<div class="line"><a name="l02072"></a><span class="lineno"> 2072</span>&#160;                 ibdchn, naux, auxtxt, ncol, nrow, nlay,                        &amp;</div>
+<div class="line"><a name="l02073"></a><span class="lineno"> 2073</span>&#160;                 nlist, iout, <a class="code" href="namespacetdismodule.html#ae9a8dbe15bd2bcb8a85d53d570407ae6">delt</a>, <a class="code" href="namespacetdismodule.html#a011f43ae7ec20b725b0092529bda2b73">pertim</a>, <a class="code" href="namespacetdismodule.html#a5f22ad41ccf3be8d4bb899e8a1834ff4">totim</a>)</div>
+<div class="line"><a name="l02074"></a><span class="lineno"> 2074</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02075"></a><span class="lineno"> 2075</span>&#160;    <span class="comment">! -- return</span></div>
+<div class="line"><a name="l02076"></a><span class="lineno"> 2076</span>&#160;    <span class="keywordflow">return</span></div>
+<div class="line"><a name="l02077"></a><span class="lineno"> 2077</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d">record_srcdst_list_header</a></div>
+<div class="line"><a name="l02078"></a><span class="lineno"> 2078</span>&#160; </div>
+<div class="line"><a name="l02079"></a><span class="lineno"> 2079</span>&#160;  <span class="keyword">subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c">nlarray_to_nodelist</a>(this, nodelist, maxbnd, nbound, aname, &amp;</div>
+<div class="line"><a name="l02080"></a><span class="lineno"> 2080</span>&#160;                                 inunit, iout)</div>
+<div class="line"><a name="l02081"></a><span class="lineno"><a class="line" href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c"> 2081</a></span>&#160;<span class="comment">! ******************************************************************************</span></div>
+<div class="line"><a name="l02082"></a><span class="lineno"> 2082</span>&#160;<span class="comment">! nlarray_to_nodelist -- Read an integer array into nodelist. For structured</span></div>
+<div class="line"><a name="l02083"></a><span class="lineno"> 2083</span>&#160;<span class="comment">!                        model, integer array is layer number; for unstructured</span></div>
+<div class="line"><a name="l02084"></a><span class="lineno"> 2084</span>&#160;<span class="comment">!                        model, integer array is node number.</span></div>
+<div class="line"><a name="l02085"></a><span class="lineno"> 2085</span>&#160;<span class="comment">! ******************************************************************************</span></div>
+<div class="line"><a name="l02086"></a><span class="lineno"> 2086</span>&#160;<span class="comment">!</span></div>
+<div class="line"><a name="l02087"></a><span class="lineno"> 2087</span>&#160;<span class="comment">!    SPECIFICATIONS:</span></div>
+<div class="line"><a name="l02088"></a><span class="lineno"> 2088</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l02089"></a><span class="lineno"> 2089</span>&#160;    <span class="comment">! -- modules</span></div>
+<div class="line"><a name="l02090"></a><span class="lineno"> 2090</span>&#160;    <span class="keywordtype">use </span><a class="code" href="namespaceinputoutputmodule.html">inputoutputmodule</a>, <span class="keywordtype">only</span>: <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a></div>
+<div class="line"><a name="l02091"></a><span class="lineno"> 2091</span>&#160;    <span class="keywordtype">use </span><a class="code" href="namespacesimmodule.html">simmodule</a>, <span class="keywordtype">only</span>: <a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a></div>
+<div class="line"><a name="l02092"></a><span class="lineno"> 2092</span>&#160;    <span class="keywordtype">use </span><a class="code" href="namespaceconstantsmodule.html">constantsmodule</a>, <span class="keywordtype">only</span>: <a class="code" href="namespaceconstantsmodule.html#a060d310ded5535ce2dc85bd1ca1afd3d">linelength</a></div>
+<div class="line"><a name="l02093"></a><span class="lineno"> 2093</span>&#160;    <span class="comment">! -- dummy</span></div>
+<div class="line"><a name="l02094"></a><span class="lineno"> 2094</span>&#160;    <span class="keywordtype">class</span>(<a class="code" href="structgwfdisvmodule_1_1gwfdisvtype.html">gwfdisvtype</a>) :: this</div>
+<div class="line"><a name="l02095"></a><span class="lineno"> 2095</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: maxbnd</div>
+<div class="line"><a name="l02096"></a><span class="lineno"> 2096</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">dimension(maxbnd)</span>, <span class="keywordtype">intent(inout)</span> :: nodelist</div>
+<div class="line"><a name="l02097"></a><span class="lineno"> 2097</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(inout)</span> :: nbound</div>
+<div class="line"><a name="l02098"></a><span class="lineno"> 2098</span>&#160;    <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span> :: aname</div>
+<div class="line"><a name="l02099"></a><span class="lineno"> 2099</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: inunit</div>
+<div class="line"><a name="l02100"></a><span class="lineno"> 2100</span>&#160;    <span class="keywordtype">integer(I4B)</span>, <span class="keywordtype">intent(in)</span> :: iout</div>
+<div class="line"><a name="l02101"></a><span class="lineno"> 2101</span>&#160;    <span class="comment">! -- local</span></div>
+<div class="line"><a name="l02102"></a><span class="lineno"> 2102</span>&#160;    <span class="keywordtype">integer(I4B)</span> :: il, ir, ic, ncol, nrow, nlay, nval, nodeu, noder, ipos, ierr</div>
+<div class="line"><a name="l02103"></a><span class="lineno"> 2103</span>&#160;    <span class="keywordtype">character(len=LINELENGTH)</span> :: errmsg</div>
+<div class="line"><a name="l02104"></a><span class="lineno"> 2104</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l02105"></a><span class="lineno"> 2105</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02106"></a><span class="lineno"> 2106</span>&#160;    <span class="comment">! -- set variables</span></div>
+<div class="line"><a name="l02107"></a><span class="lineno"> 2107</span>&#160;    nlay = this%mshape(1)</div>
+<div class="line"><a name="l02108"></a><span class="lineno"> 2108</span>&#160;    nrow = 1</div>
+<div class="line"><a name="l02109"></a><span class="lineno"> 2109</span>&#160;    ncol = this%mshape(2)</div>
+<div class="line"><a name="l02110"></a><span class="lineno"> 2110</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02111"></a><span class="lineno"> 2111</span>&#160;    nval = ncol * nrow</div>
+<div class="line"><a name="l02112"></a><span class="lineno"> 2112</span>&#160;    <span class="keyword">call </span><a class="code" href="interfacearrayreadersmodule_1_1readarray.html">readarray</a>(inunit, this%ibuff, aname, this%ndim, nval, iout, 0)</div>
+<div class="line"><a name="l02113"></a><span class="lineno"> 2113</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02114"></a><span class="lineno"> 2114</span>&#160;    <span class="comment">! -- Copy array into nodelist</span></div>
+<div class="line"><a name="l02115"></a><span class="lineno"> 2115</span>&#160;    ipos = 1</div>
+<div class="line"><a name="l02116"></a><span class="lineno"> 2116</span>&#160;    ierr = 0</div>
+<div class="line"><a name="l02117"></a><span class="lineno"> 2117</span>&#160;    <span class="keywordflow">do</span> ir = 1, nrow</div>
+<div class="line"><a name="l02118"></a><span class="lineno"> 2118</span>&#160;      <span class="keywordflow">do</span> ic = 1, ncol</div>
+<div class="line"><a name="l02119"></a><span class="lineno"> 2119</span>&#160;        nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(1, ir, ic, nlay, nrow, ncol)</div>
+<div class="line"><a name="l02120"></a><span class="lineno"> 2120</span>&#160;        il = this%ibuff(nodeu)</div>
+<div class="line"><a name="l02121"></a><span class="lineno"> 2121</span>&#160;        <span class="keywordflow">if</span>(il &lt; 1 .or. il &gt; nlay) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02122"></a><span class="lineno"> 2122</span>&#160;          <span class="keyword">write</span>(errmsg, *) <span class="stringliteral">&#39;ERROR.  INVALID LAYER NUMBER: &#39;</span>, il</div>
+<div class="line"><a name="l02123"></a><span class="lineno"> 2123</span>&#160;          <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
+<div class="line"><a name="l02124"></a><span class="lineno"> 2124</span>&#160;<span class="keywordflow">        endif</span></div>
+<div class="line"><a name="l02125"></a><span class="lineno"> 2125</span>&#160;        nodeu = <a class="code" href="namespaceinputoutputmodule.html#a22620cf6624502feca9621056c5c161a">get_node</a>(il, ir, ic, nlay, nrow, ncol)</div>
+<div class="line"><a name="l02126"></a><span class="lineno"> 2126</span>&#160;        noder = this%get_nodenumber(nodeu, 0)</div>
+<div class="line"><a name="l02127"></a><span class="lineno"> 2127</span>&#160;        <span class="keywordflow">if</span>(ipos &gt; maxbnd) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02128"></a><span class="lineno"> 2128</span>&#160;          ierr = ipos</div>
+<div class="line"><a name="l02129"></a><span class="lineno"> 2129</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l02130"></a><span class="lineno"> 2130</span>&#160;          nodelist(ipos) = noder</div>
+<div class="line"><a name="l02131"></a><span class="lineno"> 2131</span>&#160;<span class="keywordflow">        endif</span></div>
+<div class="line"><a name="l02132"></a><span class="lineno"> 2132</span>&#160;        ipos = ipos + 1</div>
+<div class="line"><a name="l02133"></a><span class="lineno"> 2133</span>&#160;<span class="keywordflow">      enddo</span></div>
+<div class="line"><a name="l02134"></a><span class="lineno"> 2134</span>&#160;<span class="keywordflow">    enddo</span></div>
+<div class="line"><a name="l02135"></a><span class="lineno"> 2135</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02136"></a><span class="lineno"> 2136</span>&#160;    <span class="comment">! -- Check for errors</span></div>
+<div class="line"><a name="l02137"></a><span class="lineno"> 2137</span>&#160;    nbound = ipos - 1</div>
+<div class="line"><a name="l02138"></a><span class="lineno"> 2138</span>&#160;    <span class="keywordflow">if</span>(ierr &gt; 0) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02139"></a><span class="lineno"> 2139</span>&#160;      <span class="keyword">write</span>(errmsg, *) <span class="stringliteral">&#39;ERROR. MAXBOUND DIMENSION IS TOO SMALL.&#39;</span></div>
+<div class="line"><a name="l02140"></a><span class="lineno"> 2140</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg)</div>
+<div class="line"><a name="l02141"></a><span class="lineno"> 2141</span>&#160;      <span class="keyword">write</span>(errmsg, *) <span class="stringliteral">&#39;INCREASE MAXBOUND TO: &#39;</span>, ierr</div>
+<div class="line"><a name="l02142"></a><span class="lineno"> 2142</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
+<div class="line"><a name="l02143"></a><span class="lineno"> 2143</span>&#160;<span class="keywordflow">    endif</span></div>
+<div class="line"><a name="l02144"></a><span class="lineno"> 2144</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l02145"></a><span class="lineno"> 2145</span>&#160;    <span class="comment">! -- If nbound &lt; maxbnd, then initialize nodelist to zero in this range</span></div>
+<div class="line"><a name="l02146"></a><span class="lineno"> 2146</span>&#160;    <span class="keywordflow">if</span>(nbound &lt; maxbnd) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l02147"></a><span class="lineno"> 2147</span>&#160;      <span class="keywordflow">do</span> ipos = nbound+1, maxbnd</div>
+<div class="line"><a name="l02148"></a><span class="lineno"> 2148</span>&#160;        nodelist(ipos) = 0</div>
 <div class="line"><a name="l02149"></a><span class="lineno"> 2149</span>&#160;<span class="keywordflow">      enddo</span></div>
-<div class="line"><a name="l02150"></a><span class="lineno"> 2150</span>&#160;<span class="keywordflow">    enddo</span></div>
+<div class="line"><a name="l02150"></a><span class="lineno"> 2150</span>&#160;<span class="keywordflow">    endif</span></div>
 <div class="line"><a name="l02151"></a><span class="lineno"> 2151</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02152"></a><span class="lineno"> 2152</span>&#160;    <span class="comment">! -- Check for errors</span></div>
-<div class="line"><a name="l02153"></a><span class="lineno"> 2153</span>&#160;    nbound = ipos - 1</div>
-<div class="line"><a name="l02154"></a><span class="lineno"> 2154</span>&#160;    <span class="keywordflow">if</span>(ierr &gt; 0) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02155"></a><span class="lineno"> 2155</span>&#160;      <span class="keyword">write</span>(errmsg, *) <span class="stringliteral">&#39;ERROR. MAXBOUND DIMENSION IS TOO SMALL.&#39;</span></div>
-<div class="line"><a name="l02156"></a><span class="lineno"> 2156</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg)</div>
-<div class="line"><a name="l02157"></a><span class="lineno"> 2157</span>&#160;      <span class="keyword">write</span>(errmsg, *) <span class="stringliteral">&#39;INCREASE MAXBOUND TO: &#39;</span>, ierr</div>
-<div class="line"><a name="l02158"></a><span class="lineno"> 2158</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
-<div class="line"><a name="l02159"></a><span class="lineno"> 2159</span>&#160;<span class="keywordflow">    endif</span></div>
-<div class="line"><a name="l02160"></a><span class="lineno"> 2160</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02161"></a><span class="lineno"> 2161</span>&#160;    <span class="comment">! -- If nbound &lt; maxbnd, then initialize nodelist to zero in this range</span></div>
-<div class="line"><a name="l02162"></a><span class="lineno"> 2162</span>&#160;    <span class="keywordflow">if</span>(nbound &lt; maxbnd) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l02163"></a><span class="lineno"> 2163</span>&#160;      <span class="keywordflow">do</span> ipos = nbound+1, maxbnd</div>
-<div class="line"><a name="l02164"></a><span class="lineno"> 2164</span>&#160;        nodelist(ipos) = 0</div>
-<div class="line"><a name="l02165"></a><span class="lineno"> 2165</span>&#160;<span class="keywordflow">      enddo</span></div>
-<div class="line"><a name="l02166"></a><span class="lineno"> 2166</span>&#160;<span class="keywordflow">    endif</span></div>
-<div class="line"><a name="l02167"></a><span class="lineno"> 2167</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l02168"></a><span class="lineno"> 2168</span>&#160;    <span class="comment">! -- return</span></div>
-<div class="line"><a name="l02169"></a><span class="lineno"> 2169</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c">nlarray_to_nodelist</a></div>
-<div class="line"><a name="l02170"></a><span class="lineno"> 2170</span>&#160; </div>
-<div class="line"><a name="l02171"></a><span class="lineno"> 2171</span>&#160;<span class="keyword">end module </span><a class="code" href="namespacegwfdisvmodule.html">gwfdisvmodule</a></div>
+<div class="line"><a name="l02152"></a><span class="lineno"> 2152</span>&#160;    <span class="comment">! -- return</span></div>
+<div class="line"><a name="l02153"></a><span class="lineno"> 2153</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c">nlarray_to_nodelist</a></div>
+<div class="line"><a name="l02154"></a><span class="lineno"> 2154</span>&#160; </div>
+<div class="line"><a name="l02155"></a><span class="lineno"> 2155</span>&#160;<span class="keyword">end module </span><a class="code" href="namespacegwfdisvmodule.html">gwfdisvmodule</a></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespacegwfdisvmodule_html_a8ecc0ec2a000ecf747ea723104766d55"><div class="ttname"><a href="namespacegwfdisvmodule.html#a8ecc0ec2a000ecf747ea723104766d55">gwfdisvmodule::read_layer_array</a></div><div class="ttdeci">subroutine read_layer_array(this, nodelist, darray, ncolbnd, maxbnd, icolbnd, aname, inunit, iout)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01882">gwf3disv8.f90:1882</a></div></div>
@@ -2300,7 +2284,7 @@ $(document).ready(function(){initNavTree('gwf3disv8_8f90_source.html',''); initR
 <div class="ttc" id="anamespacegwfdisvmodule_html_ae1d4b0f723ff32ad413582645f5dce80"><div class="ttname"><a href="namespacegwfdisvmodule.html#ae1d4b0f723ff32ad413582645f5dce80">gwfdisvmodule::read_options</a></div><div class="ttdeci">subroutine read_options(this)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l00260">gwf3disv8.f90:260</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_ac0c27bc27baf3c4a2b92301c2bb7d875"><div class="ttname"><a href="namespacegwfdisvmodule.html#ac0c27bc27baf3c4a2b92301c2bb7d875">gwfdisvmodule::allocate_scalars</a></div><div class="ttdeci">subroutine allocate_scalars(this, name_model)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01417">gwf3disv8.f90:1417</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_ad6c95014e9bfa51f303d1a9a3f7e401e"><div class="ttname"><a href="namespacegwfdisvmodule.html#ad6c95014e9bfa51f303d1a9a3f7e401e">gwfdisvmodule::allocate_arrays</a></div><div class="ttdeci">subroutine allocate_arrays(this)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01449">gwf3disv8.f90:1449</a></div></div>
-<div class="ttc" id="anamespacegwfdisvmodule_html_a73aed4531122ace2ebc4310a8abd836d"><div class="ttname"><a href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d">gwfdisvmodule::record_srcdst_list_header</a></div><div class="ttdeci">subroutine record_srcdst_list_header(this, text, textmodel, textpackage, dstmodel, dstpackage, naux, auxtxt, ibdchn, nlist, iout)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l02058">gwf3disv8.f90:2058</a></div></div>
+<div class="ttc" id="anamespacegwfdisvmodule_html_a73aed4531122ace2ebc4310a8abd836d"><div class="ttname"><a href="namespacegwfdisvmodule.html#a73aed4531122ace2ebc4310a8abd836d">gwfdisvmodule::record_srcdst_list_header</a></div><div class="ttdeci">subroutine record_srcdst_list_header(this, text, textmodel, textpackage, dstmodel, dstpackage, naux, auxtxt, ibdchn, nlist, iout)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l02044">gwf3disv8.f90:2044</a></div></div>
 <div class="ttc" id="anamespaceopenspecmodule_html"><div class="ttname"><a href="namespaceopenspecmodule.html">openspecmodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_open_spec_8f90_source.html#l00001">OpenSpec.f90:1</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_a3c45e6e4fc7a118ffb0779fdd6a76ff3"><div class="ttname"><a href="namespacegwfdisvmodule.html#a3c45e6e4fc7a118ffb0779fdd6a76ff3">gwfdisvmodule::grid_finalize</a></div><div class="ttdeci">subroutine grid_finalize(this)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l00535">gwf3disv8.f90:535</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_ac43bb4132b13566753f4460d28fc2f53"><div class="ttname"><a href="namespacegwfdisvmodule.html#ac43bb4132b13566753f4460d28fc2f53">gwfdisvmodule::read_int_array</a></div><div class="ttdeci">subroutine read_int_array(this, line, lloc, istart, istop, iout, in, iarray, aname)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01742">gwf3disv8.f90:1742</a></div></div>
@@ -2332,7 +2316,7 @@ $(document).ready(function(){initNavTree('gwf3disv8_8f90_source.html',''); initR
 <div class="ttc" id="anamespacegwfdisvmodule_html_a205c2d79b0201bcbea9f10e4c5571a92"><div class="ttname"><a href="namespacegwfdisvmodule.html#a205c2d79b0201bcbea9f10e4c5571a92">gwfdisvmodule::read_vertices</a></div><div class="ttdeci">subroutine read_vertices(this)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l00679">gwf3disv8.f90:679</a></div></div>
 <div class="ttc" id="anamespacekindmodule_html_a2f6861418b5e7d3d602b77228232a470"><div class="ttname"><a href="namespacekindmodule.html#a2f6861418b5e7d3d602b77228232a470">kindmodule::i4b</a></div><div class="ttdeci">integer, parameter i4b</div><div class="ttdoc">Integer kind.</div><div class="ttdef"><b>Definition:</b> <a href="kind_8f90_source.html#l00016">kind.f90:16</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_a34be39910f2ea98503e299531ab27542"><div class="ttname"><a href="namespacegwfdisvmodule.html#a34be39910f2ea98503e299531ab27542">gwfdisvmodule::disv_cr</a></div><div class="ttdeci">subroutine, public disv_cr(dis, name_model, inunit, iout)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l00073">gwf3disv8.f90:73</a></div></div>
-<div class="ttc" id="anamespacegwfdisvmodule_html_a3715d737b05f674e1289534147dd580c"><div class="ttname"><a href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c">gwfdisvmodule::record_array</a></div><div class="ttdeci">subroutine record_array(this, darray, iout, iprint, idataun, aname, cdatafmp, nvaluesp, nwidthp, editdesc, dinact)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01947">gwf3disv8.f90:1947</a></div></div>
+<div class="ttc" id="anamespacegwfdisvmodule_html_a3715d737b05f674e1289534147dd580c"><div class="ttname"><a href="namespacegwfdisvmodule.html#a3715d737b05f674e1289534147dd580c">gwfdisvmodule::record_array</a></div><div class="ttdeci">subroutine record_array(this, darray, iout, iprint, idataun, aname, cdatafmp, nvaluesp, nwidthp, editdesc, dinact)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01933">gwf3disv8.f90:1933</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html"><div class="ttname"><a href="namespacegwfdisvmodule.html">gwfdisvmodule</a></div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l00001">gwf3disv8.f90:1</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_adea15e81f0d76db2a8bfd9d05fc110ff"><div class="ttname"><a href="namespacegwfdisvmodule.html#adea15e81f0d76db2a8bfd9d05fc110ff">gwfdisvmodule::get_nodenumber_idx2</a></div><div class="ttdeci">integer(i4b) function get_nodenumber_idx2(this, k, j, icheck)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l01206">gwf3disv8.f90:1206</a></div></div>
 <div class="ttc" id="anamespacegwfdisvmodule_html_af5af5f1c17c4e8a8a52c08def2b49b29"><div class="ttname"><a href="namespacegwfdisvmodule.html#af5af5f1c17c4e8a8a52c08def2b49b29">gwfdisvmodule::disv_da</a></div><div class="ttdeci">subroutine disv_da(this)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l00223">gwf3disv8.f90:223</a></div></div>
@@ -2362,7 +2346,7 @@ $(document).ready(function(){initNavTree('gwf3disv8_8f90_source.html',''); initR
 <div class="ttc" id="anamespacetdismodule_html_ae9a8dbe15bd2bcb8a85d53d570407ae6"><div class="ttname"><a href="namespacetdismodule.html#ae9a8dbe15bd2bcb8a85d53d570407ae6">tdismodule::delt</a></div><div class="ttdeci">real(dp), pointer, public delt</div><div class="ttdoc">length of the current time step</div><div class="ttdef"><b>Definition:</b> <a href="tdis_8f90_source.html#l00030">tdis.f90:30</a></div></div>
 <div class="ttc" id="anamespacesparsemodule_html"><div class="ttname"><a href="namespacesparsemodule.html">sparsemodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_sparse_8f90_source.html#l00001">Sparse.f90:1</a></div></div>
 <div class="ttc" id="anamespaceinputoutputmodule_html_ae97851e3edae8d9809e384058a1a4d52"><div class="ttname"><a href="namespaceinputoutputmodule.html#ae97851e3edae8d9809e384058a1a4d52">inputoutputmodule::openfile</a></div><div class="ttdeci">subroutine, public openfile(iu, iout, fname, ftype, fmtarg_opt, accarg_opt, filstat_opt, mode_opt)</div><div class="ttdef"><b>Definition:</b> <a href="_input_output_8f90_source.html#l00033">InputOutput.f90:33</a></div></div>
-<div class="ttc" id="anamespacegwfdisvmodule_html_a20447ac3eab19c0238c69b084558f44c"><div class="ttname"><a href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c">gwfdisvmodule::nlarray_to_nodelist</a></div><div class="ttdeci">subroutine nlarray_to_nodelist(this, nodelist, maxbnd, nbound, aname, inunit, iout)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l02095">gwf3disv8.f90:2095</a></div></div>
+<div class="ttc" id="anamespacegwfdisvmodule_html_a20447ac3eab19c0238c69b084558f44c"><div class="ttname"><a href="namespacegwfdisvmodule.html#a20447ac3eab19c0238c69b084558f44c">gwfdisvmodule::nlarray_to_nodelist</a></div><div class="ttdeci">subroutine nlarray_to_nodelist(this, nodelist, maxbnd, nbound, aname, inunit, iout)</div><div class="ttdef"><b>Definition:</b> <a href="gwf3disv8_8f90_source.html#l02081">gwf3disv8.f90:2081</a></div></div>
 <div class="ttc" id="anamespacetdismodule_html_ae84d6ee69d7bba12d20a6255a398935b"><div class="ttname"><a href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">tdismodule::kper</a></div><div class="ttdeci">integer(i4b), pointer, public kper</div><div class="ttdoc">current stress period number</div><div class="ttdef"><b>Definition:</b> <a href="tdis_8f90_source.html#l00024">tdis.f90:24</a></div></div>
 <div class="ttc" id="anamespaceinputoutputmodule_html_a07b5a678851f1bbbca15c9c058818e28"><div class="ttname"><a href="namespaceinputoutputmodule.html#a07b5a678851f1bbbca15c9c058818e28">inputoutputmodule::ulasav</a></div><div class="ttdeci">subroutine, public ulasav(BUF, TEXT, KSTP, KPER, PERTIM, TOTIM, NCOL, NROW, ILAY, ICHN)</div><div class="ttdef"><b>Definition:</b> <a href="_input_output_8f90_source.html#l01242">InputOutput.f90:1242</a></div></div>
 <div class="ttc" id="astructdisvgeom_1_1disvgeomtype_html"><div class="ttname"><a href="structdisvgeom_1_1disvgeomtype.html">disvgeom::disvgeomtype</a></div><div class="ttdef"><b>Definition:</b> <a href="_disv_geom_8f90_source.html#l00010">DisvGeom.f90:10</a></div></div>
@@ -2371,7 +2355,7 @@ $(document).ready(function(){initNavTree('gwf3disv8_8f90_source.html',''); initR
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_32e188284d239da8bb14ec1dabb0c35f.html">Model</a></li><li class="navelem"><a class="el" href="dir_5aefb7a434fc869900e7ccf685166f81.html">GroundWaterFlow</a></li><li class="navelem"><a class="el" href="gwf3disv8_8f90.html">gwf3disv8.f90</a></li>
-    <li class="footer">Generated on Mon Sep 20 2021 11:34:44 for MODFLOW 6 by
+    <li class="footer">Generated on Tue Sep 21 2021 23:15:37 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>
