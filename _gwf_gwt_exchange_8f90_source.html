@@ -464,24 +464,25 @@ $(document).ready(function(){initNavTree('_gwf_gwt_exchange_8f90_source.html',''
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;      packobj =&gt; <a class="code" href="namespacebndmodule.html#a7ac2e1c143722a28d1f0ecb4c67a4a0a">getbndfromlist</a>(gwfmodel%bndlist, ip)</div>
 <div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;      <span class="keyword">call </span>gwtmodel%fmi%gwfpackages(ip)%set_pointers( &amp;</div>
 <div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                           packobj%packName, &amp;</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                           packobj%auxname, &amp;</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                           packobj%nbound, &amp;</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                           packobj%naux, &amp;</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                           packobj%nodelist, &amp;</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                           packobj%hcof, &amp;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                           packobj%rhs, &amp;</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                           packobj%auxvar, &amp;</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                           packobj%xnew)</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="keywordflow">    end do</span></div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="comment">!</span></div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="comment">! -- return</span></div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfgwtexchangemodule.html#abbedb30b5491b6d003c17354417c6e47">gwfbnd2gwtfmi</a></div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;<span class="keyword">end module </span>GwfGwtExchangeModule</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                           packobj%text, &amp;</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                           packobj%auxname, &amp;</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                           packobj%nbound, &amp;</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                           packobj%naux, &amp;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                           packobj%nodelist, &amp;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                           packobj%hcof, &amp;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                           packobj%rhs, &amp;</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                           packobj%auxvar, &amp;</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                           packobj%xnew)</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;<span class="keywordflow">    end do</span></div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="comment">!</span></div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <span class="comment">! -- return</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;  <span class="keyword">end subroutine </span><a class="code" href="namespacegwfgwtexchangemodule.html#abbedb30b5491b6d003c17354417c6e47">gwfbnd2gwtfmi</a></div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;<span class="keyword">end module </span>GwfGwtExchangeModule</div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="anamespacebndmodule_html"><div class="ttname"><a href="namespacebndmodule.html">bndmodule</a></div><div class="ttdoc">This module contains the base model package.</div><div class="ttdef"><b>Definition:</b> <a href="_boundary_package_8f90_source.html#l00008">BoundaryPackage.f90:8</a></div></div>
+<div class="ttc" id="anamespacebndmodule_html"><div class="ttname"><a href="namespacebndmodule.html">bndmodule</a></div><div class="ttdoc">This module contains the base boundary package.</div><div class="ttdef"><b>Definition:</b> <a href="_boundary_package_8f90_source.html#l00008">BoundaryPackage.f90:8</a></div></div>
 <div class="ttc" id="anamespacebasemodelmodule_html"><div class="ttname"><a href="namespacebasemodelmodule.html">basemodelmodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_base_model_8f90_source.html#l00003">BaseModel.f90:3</a></div></div>
 <div class="ttc" id="anamespacesimvariablesmodule_html_a08c1a8900029e311ac640e2319c6a234"><div class="ttname"><a href="namespacesimvariablesmodule.html#a08c1a8900029e311ac640e2319c6a234">simvariablesmodule::errmsg</a></div><div class="ttdeci">character(len=maxcharlen) errmsg</div><div class="ttdoc">error message string</div><div class="ttdef"><b>Definition:</b> <a href="_sim_variables_8f90_source.html#l00017">SimVariables.f90:17</a></div></div>
 <div class="ttc" id="anamespacekindmodule_html"><div class="ttname"><a href="namespacekindmodule.html">kindmodule</a></div><div class="ttdoc">This module defines variable data types.</div><div class="ttdef"><b>Definition:</b> <a href="kind_8f90_source.html#l00008">kind.f90:8</a></div></div>
@@ -502,7 +503,7 @@ $(document).ready(function(){initNavTree('_gwf_gwt_exchange_8f90_source.html',''
 <div class="ttc" id="anamespacesimvariablesmodule_html"><div class="ttname"><a href="namespacesimvariablesmodule.html">simvariablesmodule</a></div><div class="ttdoc">This module contains simulation variables.</div><div class="ttdef"><b>Definition:</b> <a href="_sim_variables_8f90_source.html#l00009">SimVariables.f90:9</a></div></div>
 <div class="ttc" id="anamespacebaseexchangemodule_html"><div class="ttname"><a href="namespacebaseexchangemodule.html">baseexchangemodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_base_exchange_8f90_source.html#l00001">BaseExchange.f90:1</a></div></div>
 <div class="ttc" id="anamespacekindmodule_html_a2f6861418b5e7d3d602b77228232a470"><div class="ttname"><a href="namespacekindmodule.html#a2f6861418b5e7d3d602b77228232a470">kindmodule::i4b</a></div><div class="ttdeci">integer, parameter i4b</div><div class="ttdoc">Integer kind.</div><div class="ttdef"><b>Definition:</b> <a href="kind_8f90_source.html#l00016">kind.f90:16</a></div></div>
-<div class="ttc" id="anamespacebndmodule_html_a7ac2e1c143722a28d1f0ecb4c67a4a0a"><div class="ttname"><a href="namespacebndmodule.html#a7ac2e1c143722a28d1f0ecb4c67a4a0a">bndmodule::getbndfromlist</a></div><div class="ttdeci">class(bndtype) function, pointer, public getbndfromlist(list, idx)</div><div class="ttdoc">Get boundary from package list.</div><div class="ttdef"><b>Definition:</b> <a href="_boundary_package_8f90_source.html#l01762">BoundaryPackage.f90:1762</a></div></div>
+<div class="ttc" id="anamespacebndmodule_html_a7ac2e1c143722a28d1f0ecb4c67a4a0a"><div class="ttname"><a href="namespacebndmodule.html#a7ac2e1c143722a28d1f0ecb4c67a4a0a">bndmodule::getbndfromlist</a></div><div class="ttdeci">class(bndtype) function, pointer, public getbndfromlist(list, idx)</div><div class="ttdoc">Get boundary from package list.</div><div class="ttdef"><b>Definition:</b> <a href="_boundary_package_8f90_source.html#l01767">BoundaryPackage.f90:1767</a></div></div>
 <div class="ttc" id="anamespacegwfgwtexchangemodule_html"><div class="ttname"><a href="namespacegwfgwtexchangemodule.html">gwfgwtexchangemodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_gwf_gwt_exchange_8f90_source.html#l00001">GwfGwtExchange.f90:1</a></div></div>
 <div class="ttc" id="anamespacegwfgwtexchangemodule_html_ae007a0b4a614c75aa3f055778cdaa1ce"><div class="ttname"><a href="namespacegwfgwtexchangemodule.html#ae007a0b4a614c75aa3f055778cdaa1ce">gwfgwtexchangemodule::allocate_scalars</a></div><div class="ttdeci">subroutine allocate_scalars(this)</div><div class="ttdef"><b>Definition:</b> <a href="_gwf_gwt_exchange_8f90_source.html#l00291">GwfGwtExchange.f90:291</a></div></div>
 <div class="ttc" id="anamespacegwfgwtexchangemodule_html_ae7df87968c62eebdd785510342852679"><div class="ttname"><a href="namespacegwfgwtexchangemodule.html#ae7df87968c62eebdd785510342852679">gwfgwtexchangemodule::set_model_pointers</a></div><div class="ttdeci">subroutine set_model_pointers(this)</div><div class="ttdef"><b>Definition:</b> <a href="_gwf_gwt_exchange_8f90_source.html#l00078">GwfGwtExchange.f90:78</a></div></div>
@@ -517,7 +518,7 @@ $(document).ready(function(){initNavTree('_gwf_gwt_exchange_8f90_source.html',''
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_95d5cc30a66cc7502f2f5157978bb5c3.html">Exchange</a></li><li class="navelem"><a class="el" href="_gwf_gwt_exchange_8f90.html">GwfGwtExchange.f90</a></li>
-    <li class="footer">Generated on Wed Sep 22 2021 11:02:38 for MODFLOW 6 by
+    <li class="footer">Generated on Wed Sep 22 2021 20:29:25 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>

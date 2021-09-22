@@ -64,6 +64,7 @@ var namespaces_dup =
     [ "gwtobsmodule", "namespacegwtobsmodule.html", null ],
     [ "gwtocmodule", "namespacegwtocmodule.html", null ],
     [ "gwtsftmodule", "namespacegwtsftmodule.html", null ],
+    [ "gwtspcmodule", "namespacegwtspcmodule.html", null ],
     [ "gwtsrcmodule", "namespacegwtsrcmodule.html", null ],
     [ "gwtssmmodule", "namespacegwtssmmodule.html", null ],
     [ "gwtuztmodule", "namespacegwtuztmodule.html", null ],

@@ -15,10 +15,10 @@ var hierarchy =
       [ "numericalmodelmodule::numericalmodeltype", "structnumericalmodelmodule_1_1numericalmodeltype.html", null ]
     ] ],
     [ "basemodelmodule::basemodeltype", "structbasemodelmodule_1_1basemodeltype.html", null ],
+    [ "basesolutionmodule::basesolutiontype", "structbasesolutionmodule_1_1basesolutiontype.html", null ],
     [ "basesolutiontype", null, [
       [ "numericalsolutionmodule::numericalsolutiontype", "structnumericalsolutionmodule_1_1numericalsolutiontype.html", null ]
     ] ],
-    [ "basesolutionmodule::basesolutiontype", "structbasesolutionmodule_1_1basesolutiontype.html", null ],
     [ "blockparsermodule::blockparsertype", "structblockparsermodule_1_1blockparsertype.html", null ],
     [ "bmif::bmi", "structbmif_1_1bmi.html", null ],
     [ "bmif::bmif_finalize", "interfacebmif_1_1bmif__finalize.html", null ],
@@ -120,6 +120,7 @@ var hierarchy =
       [ "gwtsftmodule::gwtsfttype", "structgwtsftmodule_1_1gwtsfttype.html", null ],
       [ "gwtuztmodule::gwtuzttype", "structgwtuztmodule_1_1gwtuzttype.html", null ]
     ] ],
+    [ "gwtspcmodule::gwtspctype", "structgwtspcmodule_1_1gwtspctype.html", null ],
     [ "hashtablemodule::hashlisttype", "structhashtablemodule_1_1hashlisttype.html", null ],
     [ "hashtablemodule::hashtabletype", "structhashtablemodule_1_1hashtabletype.html", null ],
     [ "headfilereadermodule::headfilereadertype", "structheadfilereadermodule_1_1headfilereadertype.html", null ],
@@ -452,6 +453,7 @@ var hierarchy =
     [ "GwtMvtType", null, null ],
     [ "GwtObsType", null, null ],
     [ "GwtOcType", null, null ],
+    [ "GwtSpcType", null, null ],
     [ "GwtSsmType", null, null ],
     [ "hash_table_cr", null, null ],
     [ "hash_table_da", null, null ],
@@ -714,8 +716,8 @@ var hierarchy =
     [ "UPCASE", null, null ],
     [ "upcase", null, null ],
     [ "urdaux", null, null ],
-    [ "URWORD", null, null ],
     [ "urword", null, null ],
+    [ "URWORD", null, null ],
     [ "ustop", null, null ],
     [ "uterminate_block", null, null ],
     [ "UWWORD", null, null ],

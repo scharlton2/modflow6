@@ -57,6 +57,7 @@ var annotated_dup =
     [ "gwtobsmodule", "namespacegwtobsmodule.html", "namespacegwtobsmodule" ],
     [ "gwtocmodule", "namespacegwtocmodule.html", "namespacegwtocmodule" ],
     [ "gwtsftmodule", "namespacegwtsftmodule.html", "namespacegwtsftmodule" ],
+    [ "gwtspcmodule", "namespacegwtspcmodule.html", "namespacegwtspcmodule" ],
     [ "gwtsrcmodule", "namespacegwtsrcmodule.html", "namespacegwtsrcmodule" ],
     [ "gwtssmmodule", "namespacegwtssmmodule.html", "namespacegwtssmmodule" ],
     [ "gwtuztmodule", "namespacegwtuztmodule.html", "namespacegwtuztmodule" ],
