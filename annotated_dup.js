@@ -40,6 +40,7 @@ var annotated_dup =
     [ "gwfnpfoptionsmodule", "namespacegwfnpfoptionsmodule.html", "namespacegwfnpfoptionsmodule" ],
     [ "gwfobsmodule", "namespacegwfobsmodule.html", "namespacegwfobsmodule" ],
     [ "gwfocmodule", "namespacegwfocmodule.html", "namespacegwfocmodule" ],
+    [ "gwfsfrcrosssectionutilsmodule", "namespacegwfsfrcrosssectionutilsmodule.html", "namespacegwfsfrcrosssectionutilsmodule" ],
     [ "gwfstomodule", "namespacegwfstomodule.html", "namespacegwfstomodule" ],
     [ "gwtadvmodule", "namespacegwtadvmodule.html", "namespacegwtadvmodule" ],
     [ "gwtaptmodule", "namespacegwtaptmodule.html", "namespacegwtaptmodule" ],

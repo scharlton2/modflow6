@@ -46,6 +46,7 @@ var namespaces_dup =
     [ "gwfnpfoptionsmodule", "namespacegwfnpfoptionsmodule.html", null ],
     [ "gwfobsmodule", "namespacegwfobsmodule.html", null ],
     [ "gwfocmodule", "namespacegwfocmodule.html", null ],
+    [ "gwfsfrcrosssectionutilsmodule", "namespacegwfsfrcrosssectionutilsmodule.html", null ],
     [ "gwfstomodule", "namespacegwfstomodule.html", null ],
     [ "gwfstorageutilsmodule", "namespacegwfstorageutilsmodule.html", null ],
     [ "gwtadvmodule", "namespacegwtadvmodule.html", null ],
