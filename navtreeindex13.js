@@ -1,5 +1,8 @@
 var NAVTREEINDEX13 =
 {
+"namespacetimeseriesmanagermodule.html":[1,0,134],
+"namespacetimeseriesmanagermodule.html":[2,0,106],
+"namespacetimeseriesmodule.html":[1,0,135],
 "namespacetimeseriesmodule.html":[2,0,107],
 "namespacetimeseriesrecordmodule.html":[1,0,136],
 "namespacetimeseriesrecordmodule.html":[2,0,108],
@@ -246,8 +249,5 @@ var NAVTREEINDEX13 =
 "structbndmodule_1_1bndtype.html#a23ce67aafe6a114992e2282e1210ca93":[2,0,10,0,28],
 "structbndmodule_1_1bndtype.html#a2d243e2c837af1473411e23a667d2444":[2,0,10,0,75],
 "structbndmodule_1_1bndtype.html#a2d68c9bf88a8cf153ee4c48aef096315":[2,0,10,0,45],
-"structbndmodule_1_1bndtype.html#a2d74ed8e17e6a52832876b219b74140f":[2,0,10,0,63],
-"structbndmodule_1_1bndtype.html#a2fd60f207af03e402d3715321b50f955":[2,0,10,0,23],
-"structbndmodule_1_1bndtype.html#a302b6a629403f13581f6a6579d25fa4e":[2,0,10,0,18],
-"structbndmodule_1_1bndtype.html#a30c1567418f9f38e55d762cfdaf3ab15":[2,0,10,0,65]
+"structbndmodule_1_1bndtype.html#a2d74ed8e17e6a52832876b219b74140f":[2,0,10,0,63]
 };

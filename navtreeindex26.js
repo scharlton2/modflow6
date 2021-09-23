@@ -1,5 +1,14 @@
 var NAVTREEINDEX26 =
 {
+"structtimeseriesmodule_1_1timeseriestype.html#ab3dfc0cd2db6ddafccf464f8aa4dd455":[2,0,107,2,8],
+"structtimeseriesmodule_1_1timeseriestype.html#ac04cc6e2e36f2d2f3d5d506175974722":[2,0,107,2,25],
+"structtimeseriesmodule_1_1timeseriestype.html#ac16570b05d042384638950c501ecf252":[2,0,107,2,20],
+"structtimeseriesmodule_1_1timeseriestype.html#ac5a19a222cf3a11371ea840dde2d3c4a":[2,0,107,2,19],
+"structtimeseriesmodule_1_1timeseriestype.html#adb3e4cc9edd2117dccbfbc10dcd84f14":[2,0,107,2,3],
+"structtimeseriesmodule_1_1timeseriestype.html#afe051d478f02744f29da016178eca21e":[2,0,107,2,22],
+"structtimeseriesrecordmodule_1_1timeseriesrecordtype.html":[2,0,108,0],
+"structtimeseriesrecordmodule_1_1timeseriesrecordtype.html#a025ebaba888f66c8d1bd0f472557565f":[2,0,108,0,1],
+"structtimeseriesrecordmodule_1_1timeseriesrecordtype.html#a51a4d0e8d6d62ccbf3a71f4f2b6ba101":[2,0,108,0,0],
 "structtvbasemodule_1_1tvbasetype.html":[2,0,109,5],
 "structtvbasemodule_1_1tvbasetype.html#a00d0e5007bba72a9d57977da0a2d0771":[2,0,109,5,6],
 "structtvbasemodule_1_1tvbasetype.html#a2595613f242e213b030d471c94984000":[2,0,109,5,10],
@@ -240,14 +249,5 @@ var NAVTREEINDEX26 =
 "structxt3dmodule_1_1xt3dtype.html#a495b0bffceb762b4ffdb069bfe945796":[2,0,115,0,52],
 "structxt3dmodule_1_1xt3dtype.html#a4a123e02015f5a389c13e1dac51fbdb1":[2,0,115,0,23],
 "structxt3dmodule_1_1xt3dtype.html#a51782dff10a578341dbb04df255d4991":[2,0,115,0,10],
-"structxt3dmodule_1_1xt3dtype.html#a52bd9ab89a8ef4d3506c06ace10e43b4":[2,0,115,0,43],
-"structxt3dmodule_1_1xt3dtype.html#a5abd6edc93f777407fc2bd88a4657ed9":[2,0,115,0,22],
-"structxt3dmodule_1_1xt3dtype.html#a5e4693110e8c5824d4fee253b4e08227":[2,0,115,0,42],
-"structxt3dmodule_1_1xt3dtype.html#a6819c301994aa2dad7297cb78b9a76b1":[2,0,115,0,32],
-"structxt3dmodule_1_1xt3dtype.html#a69cbfb8e39cc1529ef9a5f39669d5662":[2,0,115,0,20],
-"structxt3dmodule_1_1xt3dtype.html#a6a7f58dfc847322c8fab76b8f4d12d6c":[2,0,115,0,9],
-"structxt3dmodule_1_1xt3dtype.html#a6ab43ab30059d01f59f27272ea004a71":[2,0,115,0,50],
-"structxt3dmodule_1_1xt3dtype.html#a6c41e98fa24d785e5d70085ebad83647":[2,0,115,0,40],
-"structxt3dmodule_1_1xt3dtype.html#a6f98b38c8b50e2a159fa0eafe430ad53":[2,0,115,0,29],
-"structxt3dmodule_1_1xt3dtype.html#a74169dbc848b0925e9423f3d90776b5f":[2,0,115,0,49]
+"structxt3dmodule_1_1xt3dtype.html#a52bd9ab89a8ef4d3506c06ace10e43b4":[2,0,115,0,43]
 };

@@ -1,7 +1,7 @@
 <map id="budgetmodule::budgettype::addentry" name="budgetmodule::budgettype::addentry">
 <area shape="rect" id="node1" title=" " alt="" coords="5,39,204,80"/>
-<area shape="rect" id="node2" href="$namespacebudgetmodule.html#ad76969d53fb39887ed817359f4891c2b" title=" " alt="" coords="255,5,444,47"/>
-<area shape="rect" id="node10" href="$namespacebudgetmodule.html#a60641e5c71aa6a3e9f4660ceefe01ffe" title=" " alt="" coords="252,71,447,112"/>
+<area shape="rect" id="node2" href="$namespacebudgetmodule.html#ad76969d53fb39887ed817359f4891c2b" title="@ brief Add multiple rows of information" alt="" coords="255,5,444,47"/>
+<area shape="rect" id="node10" href="$namespacebudgetmodule.html#a60641e5c71aa6a3e9f4660ceefe01ffe" title="@ brief Add a single row of information" alt="" coords="252,71,447,112"/>
 <area shape="rect" id="node3" href="$namespacesimmodule.html#a4c46e49de78d4498dd4ec106357775e6" title="Return number of errors." alt="" coords="495,13,679,39"/>
 <area shape="rect" id="node4" href="$namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e" title="Store error message." alt="" coords="499,70,674,97"/>
 <area shape="rect" id="node5" href="$namespacesimmodule.html#a0be97214c1d4fcf42bc4ddc27b111b61" title="Stop the simulation." alt="" coords="727,70,865,97"/>

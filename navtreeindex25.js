@@ -1,5 +1,14 @@
 var NAVTREEINDEX25 =
 {
+"structsfrmodule_1_1sfrtype.html#ac08c8a17ec29e50ea582d80d84a6ffe2":[2,0,93,0,106],
+"structsfrmodule_1_1sfrtype.html#ac1e96ea66ac75c2881d998727954c4df":[2,0,93,0,25],
+"structsfrmodule_1_1sfrtype.html#ac33540a74e38acc0a698e26104e1d3c7":[2,0,93,0,41],
+"structsfrmodule_1_1sfrtype.html#ac8825d0e13bfda56f9d03953c2138887":[2,0,93,0,32],
+"structsfrmodule_1_1sfrtype.html#acba29adb825273ad86f17e624fd6becd":[2,0,93,0,120],
+"structsfrmodule_1_1sfrtype.html#acc9a04c02a79323e3ce0bc203a5eab94":[2,0,93,0,39],
+"structsfrmodule_1_1sfrtype.html#acf07707c954afde9ff7543624392d1e2":[2,0,93,0,34],
+"structsfrmodule_1_1sfrtype.html#acf470a05c1d5aa78c905f8f5bb488e58":[2,0,93,0,95],
+"structsfrmodule_1_1sfrtype.html#acf912ad79307180e27bacc7769aae542":[2,0,93,0,23],
 "structsfrmodule_1_1sfrtype.html#ad00a082e2d81ce8385d5c0df7b306e66":[2,0,93,0,19],
 "structsfrmodule_1_1sfrtype.html#ad244aaba99b820fab38c008bac179ead":[2,0,93,0,114],
 "structsfrmodule_1_1sfrtype.html#ad444bb030c22577adc48ca0dab90d347":[2,0,93,0,3],
@@ -240,14 +249,5 @@ var NAVTREEINDEX25 =
 "structtimeseriesmodule_1_1timeseriestype.html#a97143272112bde84ea13841cf6761b96":[2,0,107,2,2],
 "structtimeseriesmodule_1_1timeseriestype.html#a97294f846fa561a804bb2b630cc25b2d":[2,0,107,2,16],
 "structtimeseriesmodule_1_1timeseriestype.html#aa230f5f1810b40ba661e83df1a4213a4":[2,0,107,2,9],
-"structtimeseriesmodule_1_1timeseriestype.html#ab0b6a35502ac991eb0b0d334c9ea0a38":[2,0,107,2,24],
-"structtimeseriesmodule_1_1timeseriestype.html#ab3dfc0cd2db6ddafccf464f8aa4dd455":[2,0,107,2,8],
-"structtimeseriesmodule_1_1timeseriestype.html#ac04cc6e2e36f2d2f3d5d506175974722":[2,0,107,2,25],
-"structtimeseriesmodule_1_1timeseriestype.html#ac16570b05d042384638950c501ecf252":[2,0,107,2,20],
-"structtimeseriesmodule_1_1timeseriestype.html#ac5a19a222cf3a11371ea840dde2d3c4a":[2,0,107,2,19],
-"structtimeseriesmodule_1_1timeseriestype.html#adb3e4cc9edd2117dccbfbc10dcd84f14":[2,0,107,2,3],
-"structtimeseriesmodule_1_1timeseriestype.html#afe051d478f02744f29da016178eca21e":[2,0,107,2,22],
-"structtimeseriesrecordmodule_1_1timeseriesrecordtype.html":[2,0,108,0],
-"structtimeseriesrecordmodule_1_1timeseriesrecordtype.html#a025ebaba888f66c8d1bd0f472557565f":[2,0,108,0,1],
-"structtimeseriesrecordmodule_1_1timeseriesrecordtype.html#a51a4d0e8d6d62ccbf3a71f4f2b6ba101":[2,0,108,0,0]
+"structtimeseriesmodule_1_1timeseriestype.html#ab0b6a35502ac991eb0b0d334c9ea0a38":[2,0,107,2,24]
 };

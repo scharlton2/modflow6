@@ -434,7 +434,7 @@ Here is the call graph for this function:</div>
 <div class="center"><img src="namespacebudgetobjectmodule_a0b10034ed28f5a4131a181f960908a1d_cgraph.png" border="0" usemap="#namespacebudgetobjectmodule_a0b10034ed28f5a4131a181f960908a1d_cgraph" alt=""/></div>
 <map name="namespacebudgetobjectmodule_a0b10034ed28f5a4131a181f960908a1d_cgraph" id="namespacebudgetobjectmodule_a0b10034ed28f5a4131a181f960908a1d_cgraph">
 <area shape="rect" title=" " alt="" coords="5,5,161,47"/>
-<area shape="rect" href="namespacebudgetmodule.html#a5d07ccf1026ac718f510c44519685c0f" title=" " alt="" coords="209,13,397,39"/>
+<area shape="rect" href="namespacebudgetmodule.html#a5d07ccf1026ac718f510c44519685c0f" title="@ brief Create a new budget object" alt="" coords="209,13,397,39"/>
 </map>
 </div>
 <div class="dynheader">
@@ -572,7 +572,7 @@ Here is the call graph for this function:</div>
 <map name="namespacebudgetobjectmodule_aa7df76ed823c2253dc6d34757e29fbe0_cgraph" id="namespacebudgetobjectmodule_aa7df76ed823c2253dc6d34757e29fbe0_cgraph">
 <area shape="rect" title=" " alt="" coords="5,5,164,47"/>
 <area shape="rect" href="namespacebudgetobjectmodule.html#a0b10034ed28f5a4131a181f960908a1d" title=" " alt="" coords="212,5,368,47"/>
-<area shape="rect" href="namespacebudgetmodule.html#a5d07ccf1026ac718f510c44519685c0f" title=" " alt="" coords="416,13,604,39"/>
+<area shape="rect" href="namespacebudgetmodule.html#a5d07ccf1026ac718f510c44519685c0f" title="@ brief Create a new budget object" alt="" coords="416,13,604,39"/>
 </map>
 </div>
 <div class="dynheader">
@@ -1315,8 +1315,8 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;      <span class="keyword">call </span>this%flowtab%add_term(icv)</div>
 <div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;      <span class="comment">!</span></div>
 <div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;      <span class="comment">! -- initialize flow terms for the control volume</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;      qin = <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a></div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;      qout = <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a></div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;      qin = dzero</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;      qout = dzero</div>
 <div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;      <span class="comment">!</span></div>
 <div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;      <span class="comment">! -- add cellid if required</span></div>
 <div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;      <span class="keywordflow">if</span> (this%add_cellids) <span class="keywordflow">then</span></div>
@@ -1348,9 +1348,9 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;      <span class="keywordflow">do</span> j = 1, this%nflowterms</div>
 <div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        <span class="comment">! -- initialize flow terms for the row</span></div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;        q = <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a></div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        qinflow = <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a></div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        qoutflow = <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a></div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;        q = dzero</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        qinflow = dzero</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        qoutflow = dzero</div>
 <div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        <span class="comment">! -- determine the index, flowtype and length of  </span></div>
 <div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;        <span class="comment">!    the flowterm</span></div>
@@ -1372,7 +1372,7 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;<span class="keywordflow">          end if</span></div>
 <div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;          v = this%budterm(idx)%get_flow(i)</div>
 <div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;          <span class="keywordflow">if</span> (trim(adjustl(flowtype)) == <span class="stringliteral">&#39;FLOW-JA-FACE&#39;</span>) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;            <span class="keywordflow">if</span> (v &lt; <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a>) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;            <span class="keywordflow">if</span> (v &lt; dzero) <span class="keywordflow">then</span></div>
 <div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;              qoutflow = qoutflow + v</div>
 <div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;            <span class="keywordflow">else</span></div>
 <div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;              qinflow = qinflow + v</div>
@@ -1381,7 +1381,7 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;          <span class="comment">!</span></div>
 <div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;          <span class="comment">! -- accumulators</span></div>
 <div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;          q = q + v</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;          <span class="keywordflow">if</span> (v &lt; <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a>) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;          <span class="keywordflow">if</span> (v &lt; dzero) <span class="keywordflow">then</span></div>
 <div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;            qout = qout + v</div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;          <span class="keywordflow">else</span></div>
 <div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;            qin = qin + v</div>
@@ -1400,8 +1400,8 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;      <span class="comment">! -- calculate in-out and percent difference</span></div>
 <div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;      qerr = qin + qout</div>
 <div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;      qavg = dhalf * (qin - qout)</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;      qpd = <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a></div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;      <span class="keywordflow">if</span> (qavg &gt; <a class="code" href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">dzero</a>) <span class="keywordflow">then</span></div>
+<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;      qpd = dzero</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;      <span class="keywordflow">if</span> (qavg &gt; dzero) <span class="keywordflow">then</span></div>
 <div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;        qpd = dhundred * qerr / qavg</div>
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;<span class="keywordflow">      end if</span></div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;      <span class="keyword">call </span>this%flowtab%add_term(qerr)</div>
@@ -1415,7 +1415,6 @@ Here is the call graph for this function:</div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="anamespaceconstantsmodule_html_abab5757666b9ddd2726c20ce48dd0050"><div class="ttname"><a href="namespaceconstantsmodule.html#abab5757666b9ddd2726c20ce48dd0050">constantsmodule::dzero</a></div><div class="ttdeci">real(dp), parameter dzero</div><div class="ttdoc">real constant zero</div><div class="ttdef"><b>Definition:</b> <a href="_constants_8f90_source.html#l00053">Constants.f90:53</a></div></div>
 <div class="ttc" id="anamespacetablemodule_html_a7632d784ec9e94277a76705ef56725f2"><div class="ttname"><a href="namespacetablemodule.html#a7632d784ec9e94277a76705ef56725f2">tablemodule::table_cr</a></div><div class="ttdeci">subroutine, public table_cr(this, name, title)</div><div class="ttdef"><b>Definition:</b> <a href="_table_8f90_source.html#l00084">Table.f90:84</a></div></div>
 <div class="ttc" id="anamespacetdismodule_html"><div class="ttname"><a href="namespacetdismodule.html">tdismodule</a></div><div class="ttdef"><b>Definition:</b> <a href="tdis_8f90_source.html#l00005">tdis.f90:5</a></div></div>
 <div class="ttc" id="anamespacetdismodule_html_ad3443c7d7da2a67a75174c39c6d40c84"><div class="ttname"><a href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">tdismodule::kstp</a></div><div class="ttdeci">integer(i4b), pointer, public kstp</div><div class="ttdoc">current time step number</div><div class="ttdef"><b>Definition:</b> <a href="tdis_8f90_source.html#l00025">tdis.f90:25</a></div></div>
@@ -1425,7 +1424,7 @@ Here is the call graph for this function:</div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacebudgetobjectmodule.html">budgetobjectmodule</a></li>
-    <li class="footer">Generated on Wed Sep 22 2021 20:29:26 for MODFLOW 6 by
+    <li class="footer">Generated on Thu Sep 23 2021 21:54:45 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>

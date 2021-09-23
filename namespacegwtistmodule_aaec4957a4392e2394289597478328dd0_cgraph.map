@@ -1,6 +1,6 @@
 <map id="gwtistmodule::ist_ar" name="gwtistmodule::ist_ar">
 <area shape="rect" id="node1" title="@ brief Allocate and read method for package" alt="" coords="5,56,160,83"/>
-<area shape="rect" id="node2" href="$namespacebudgetmodule.html#a5d07ccf1026ac718f510c44519685c0f" title=" " alt="" coords="208,5,396,32"/>
+<area shape="rect" id="node2" href="$namespacebudgetmodule.html#a5d07ccf1026ac718f510c44519685c0f" title="@ brief Create a new budget object" alt="" coords="208,5,396,32"/>
 <area shape="rect" id="node3" href="$namespacesimmodule.html#a4c46e49de78d4498dd4ec106357775e6" title="Return number of errors." alt="" coords="210,56,394,83"/>
 <area shape="rect" id="node4" href="$namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e" title="Store error message." alt="" coords="215,107,389,133"/>
 <area shape="rect" id="node5" href="$namespacesimmodule.html#a0be97214c1d4fcf42bc4ddc27b111b61" title="Stop the simulation." alt="" coords="444,107,583,133"/>
