@@ -90,6 +90,5 @@ var searchData=
   ['outrate_2773',['outrate',['../structlakmodule_1_1laktype.html#ab3746bdf56ad7f73330abab34cca32c7',1,'lakmodule::laktype']]],
   ['outrough_2774',['outrough',['../structlakmodule_1_1laktype.html#ae886ff0cc89cafaaff2bb1c2033d6efe',1,'lakmodule::laktype']]],
   ['outslope_2775',['outslope',['../structlakmodule_1_1laktype.html#a8aaa73df34773b8e0cdebc6a2747435e',1,'lakmodule::laktype']]],
-  ['outunitbud_2776',['outunitbud',['../structuzfmodule_1_1uzftype.html#a04123df300656e2b0c0bd36a2ba85e02',1,'uzfmodule::uzftype']]],
-  ['outwidth_2777',['outwidth',['../structlakmodule_1_1laktype.html#a09970e8bd127e345d9c8ed190abcdd94',1,'lakmodule::laktype']]]
+  ['outwidth_2776',['outwidth',['../structlakmodule_1_1laktype.html#a09970e8bd127e345d9c8ed190abcdd94',1,'lakmodule::laktype']]]
 ];

@@ -76,6 +76,7 @@ var structsfrmodule_1_1sfrtype =
     [ "iadiv", "structsfrmodule_1_1sfrtype.html#a148406870e9317fa8fee8070d814c1c1", null ],
     [ "ianynone", "structsfrmodule_1_1sfrtype.html#a62f460fdd7196d8a62c6c02dcd967f48", null ],
     [ "iboundpak", "structsfrmodule_1_1sfrtype.html#a1430a8437a802004734ca4891325b6c0", null ],
+    [ "ibudcsv", "structsfrmodule_1_1sfrtype.html#a29eed7df88b60e988b63e293cc52165c", null ],
     [ "ibudgetout", "structsfrmodule_1_1sfrtype.html#a6aa6380add60d21e67d3d0d263597cdf", null ],
     [ "icheck", "structsfrmodule_1_1sfrtype.html#a1b88bfeb87cf135dc1263c8acfacd44e", null ],
     [ "iconvchk", "structsfrmodule_1_1sfrtype.html#a66790b8b4e80e89558d70aeb5d7dc1ac", null ],
