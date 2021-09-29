@@ -115,6 +115,7 @@ var namespaces_dup =
     [ "rchmodule", "namespacerchmodule.html", null ],
     [ "rectangulargeometrymodule", "namespacerectangulargeometrymodule.html", null ],
     [ "rivmodule", "namespacerivmodule.html", null ],
+    [ "sfrcrosssectionmanager", "namespacesfrcrosssectionmanager.html", null ],
     [ "sfrmodule", "namespacesfrmodule.html", null ],
     [ "simmodule", "namespacesimmodule.html", null ],
     [ "simulationcreatemodule", "namespacesimulationcreatemodule.html", null ],

@@ -217,6 +217,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:a966ac2af4afada5f889b2c2c65f63ec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a558f32ee5614c80308b1da555773bd62"><td class="memItemLeft" align="right" valign="top">procedure, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#a558f32ee5614c80308b1da555773bd62">sfr_read_packagedata</a></td></tr>
 <tr class="separator:a558f32ee5614c80308b1da555773bd62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a354c0c6721a998b295261cd3c1b148b4"><td class="memItemLeft" align="right" valign="top">procedure, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#a354c0c6721a998b295261cd3c1b148b4">sfr_read_crossection</a></td></tr>
+<tr class="separator:a354c0c6721a998b295261cd3c1b148b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac33540a74e38acc0a698e26104e1d3c7"><td class="memItemLeft" align="right" valign="top">procedure, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#ac33540a74e38acc0a698e26104e1d3c7">sfr_read_connectiondata</a></td></tr>
 <tr class="separator:ac33540a74e38acc0a698e26104e1d3c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c0845c52bd74afe2ed51bbf431f57a9"><td class="memItemLeft" align="right" valign="top">procedure, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#a5c0845c52bd74afe2ed51bbf431f57a9">sfr_read_diversions</a></td></tr>
@@ -414,9 +416,9 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a95bc9305c4d8a77361d76c5f4eb9dac4"><td class="memItemLeft" align="right" valign="top">real(dp), dimension(:), pointer, contiguous&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#a95bc9305c4d8a77361d76c5f4eb9dac4">station</a> =&gt; null()</td></tr>
 <tr class="memdesc:a95bc9305c4d8a77361d76c5f4eb9dac4"><td class="mdescLeft">&#160;</td><td class="mdescRight">cross-section station (x-position) data  <a href="structsfrmodule_1_1sfrtype.html#a95bc9305c4d8a77361d76c5f4eb9dac4">More...</a><br /></td></tr>
 <tr class="separator:a95bc9305c4d8a77361d76c5f4eb9dac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94b1f03691801de3bf4c19130c529f92"><td class="memItemLeft" align="right" valign="top">real(dp), dimension(:), pointer, contiguous&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#a94b1f03691801de3bf4c19130c529f92">elevation</a> =&gt; null()</td></tr>
-<tr class="memdesc:a94b1f03691801de3bf4c19130c529f92"><td class="mdescLeft">&#160;</td><td class="mdescRight">cross-section elevation data  <a href="structsfrmodule_1_1sfrtype.html#a94b1f03691801de3bf4c19130c529f92">More...</a><br /></td></tr>
-<tr class="separator:a94b1f03691801de3bf4c19130c529f92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9c7dfefb7558e5754b270ca49bca6a4"><td class="memItemLeft" align="right" valign="top">real(dp), dimension(:), pointer, contiguous&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#aa9c7dfefb7558e5754b270ca49bca6a4">xsdepths</a> =&gt; null()</td></tr>
+<tr class="memdesc:aa9c7dfefb7558e5754b270ca49bca6a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">cross-section depth data  <a href="structsfrmodule_1_1sfrtype.html#aa9c7dfefb7558e5754b270ca49bca6a4">More...</a><br /></td></tr>
+<tr class="separator:aa9c7dfefb7558e5754b270ca49bca6a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9defc93396091f1c4ec00846b4918b1"><td class="memItemLeft" align="right" valign="top">integer(i4b), dimension(:), pointer, contiguous&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsfrmodule_1_1sfrtype.html#af9defc93396091f1c4ec00846b4918b1">idir</a> =&gt; null()</td></tr>
 <tr class="memdesc:af9defc93396091f1c4ec00846b4918b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">reach connection direction  <a href="structsfrmodule_1_1sfrtype.html#af9defc93396091f1c4ec00846b4918b1">More...</a><br /></td></tr>
 <tr class="separator:af9defc93396091f1c4ec00846b4918b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1037,7 +1039,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00204">204</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00205">205</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1157,7 +1159,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00192">192</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00193">193</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1277,7 +1279,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00191">191</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00192">192</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1301,7 +1303,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00205">205</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00206">206</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1325,7 +1327,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00195">195</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00196">196</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1349,7 +1351,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00196">196</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00197">197</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1373,7 +1375,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00194">194</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00195">195</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1397,7 +1399,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00197">197</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00198">198</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1421,7 +1423,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00200">200</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00201">201</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1436,6 +1438,30 @@ Private Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">procedure, private sfrmodule::sfrtype::sfr_read_connectiondata</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00189">189</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+
+</div>
+</div>
+<a id="a354c0c6721a998b295261cd3c1b148b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a354c0c6721a998b295261cd3c1b148b4">&#9670;&nbsp;</a></span>sfr_read_crossection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">procedure, private sfrmodule::sfrtype::sfr_read_crossection</td>
         </tr>
       </table>
   </td>
@@ -1469,7 +1495,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00189">189</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00190">190</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1541,7 +1567,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00199">199</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00200">200</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -1565,7 +1591,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00202">202</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00203">203</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 
 </div>
 </div>
@@ -2015,31 +2041,6 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00107">107</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
 <div class="fragment"><div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span> :: dsflow =&gt; null()               <span class="comment">!&lt; downstream reach flow</span></div>
-</div><!-- fragment -->
-</div>
-</div>
-<a id="a94b1f03691801de3bf4c19130c529f92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94b1f03691801de3bf4c19130c529f92">&#9670;&nbsp;</a></span>elevation</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">real(dp), dimension(:), pointer, contiguous sfrmodule::sfrtype::elevation =&gt; null()</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00120">120</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
-<div class="fragment"><div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span> :: elevation =&gt; null()            <span class="comment">!&lt; cross-section elevation data</span></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -3469,6 +3470,31 @@ Private Attributes</h2></td></tr>
 </div><!-- fragment -->
 </div>
 </div>
+<a id="aa9c7dfefb7558e5754b270ca49bca6a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9c7dfefb7558e5754b270ca49bca6a4">&#9670;&nbsp;</a></span>xsdepths</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">real(dp), dimension(:), pointer, contiguous sfrmodule::sfrtype::xsdepths =&gt; null()</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="gwf3sfr8_8f90_source.html#l00120">120</a> of file <a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a>.</p>
+<div class="fragment"><div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="keywordtype">    real</span>(DP), <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">pointer</span>, <span class="keywordtype">contiguous</span> :: xsdepths =&gt; null()               <span class="comment">!&lt; cross-section depth data</span></div>
+</div><!-- fragment -->
+</div>
+</div>
 <hr/>The documentation for this type was generated from the following file:<ul>
 <li>/home/runner/work/modflow6/modflow6/src/Model/GroundWaterFlow/<a class="el" href="gwf3sfr8_8f90_source.html">gwf3sfr8.f90</a></li>
 </ul>
@@ -3478,7 +3504,7 @@ Private Attributes</h2></td></tr>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacesfrmodule.html">sfrmodule</a></li><li class="navelem"><a class="el" href="structsfrmodule_1_1sfrtype.html">sfrtype</a></li>
-    <li class="footer">Generated on Tue Sep 28 2021 13:23:02 for MODFLOW 6 by
+    <li class="footer">Generated on Wed Sep 29 2021 22:14:28 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>

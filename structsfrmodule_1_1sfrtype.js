@@ -42,6 +42,7 @@ var structsfrmodule_1_1sfrtype =
     [ "sfr_check_ustrf", "structsfrmodule_1_1sfrtype.html#acc9a04c02a79323e3ce0bc203a5eab94", null ],
     [ "sfr_fill_budobj", "structsfrmodule_1_1sfrtype.html#a3ff4aa32f752d12e579fccf292faa619", null ],
     [ "sfr_read_connectiondata", "structsfrmodule_1_1sfrtype.html#ac33540a74e38acc0a698e26104e1d3c7", null ],
+    [ "sfr_read_crossection", "structsfrmodule_1_1sfrtype.html#a354c0c6721a998b295261cd3c1b148b4", null ],
     [ "sfr_read_diversions", "structsfrmodule_1_1sfrtype.html#a5c0845c52bd74afe2ed51bbf431f57a9", null ],
     [ "sfr_read_packagedata", "structsfrmodule_1_1sfrtype.html#a558f32ee5614c80308b1da555773bd62", null ],
     [ "sfr_set_stressperiod", "structsfrmodule_1_1sfrtype.html#a8b182456b625014be19764a12d5490a3", null ],
@@ -65,7 +66,6 @@ var structsfrmodule_1_1sfrtype =
     [ "divreach", "structsfrmodule_1_1sfrtype.html#a41175b85149955862b0f9acb0c10e0d8", null ],
     [ "dmaxchg", "structsfrmodule_1_1sfrtype.html#a24c9882ae17ecf14b05aa063ca7dea61", null ],
     [ "dsflow", "structsfrmodule_1_1sfrtype.html#a792a4332b3dddf615ec75e409b7c98ac", null ],
-    [ "elevation", "structsfrmodule_1_1sfrtype.html#a94b1f03691801de3bf4c19130c529f92", null ],
     [ "evap", "structsfrmodule_1_1sfrtype.html#a13cdc163d3b97876e2c92b08d32bf3fa", null ],
     [ "ftotnd", "structsfrmodule_1_1sfrtype.html#a90c10ef2496f5b260aacfab7724ff49e", null ],
     [ "gwfiss", "structsfrmodule_1_1sfrtype.html#a8143f244a18839a372520b06dbcb95ed", null ],
@@ -122,5 +122,6 @@ var structsfrmodule_1_1sfrtype =
     [ "usflow", "structsfrmodule_1_1sfrtype.html#a02d67af1313f1fae9918e8b359ccda56", null ],
     [ "usflow0", "structsfrmodule_1_1sfrtype.html#a719532b1a799a6a6d3d7e306b0447e39", null ],
     [ "ustrf", "structsfrmodule_1_1sfrtype.html#acba29adb825273ad86f17e624fd6becd", null ],
-    [ "width", "structsfrmodule_1_1sfrtype.html#a4e4112efdcdc1421fd3ff1eb815b954c", null ]
+    [ "width", "structsfrmodule_1_1sfrtype.html#a4e4112efdcdc1421fd3ff1eb815b954c", null ],
+    [ "xsdepths", "structsfrmodule_1_1sfrtype.html#aa9c7dfefb7558e5754b270ca49bca6a4", null ]
 ];
