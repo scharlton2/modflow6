@@ -1,5 +1,14 @@
 var NAVTREEINDEX25 =
 {
+"structsfrmodule_1_1sfrtype.html#a7163bd951193f7bdb7ee9158ea5e5173":[2,0,93,0,6],
+"structsfrmodule_1_1sfrtype.html#a719532b1a799a6a6d3d7e306b0447e39":[2,0,93,0,120],
+"structsfrmodule_1_1sfrtype.html#a71c4169f3cce83ed4186cb18b5862ebf":[2,0,93,0,61],
+"structsfrmodule_1_1sfrtype.html#a75e91206b684d1aa4a476064d3fa5ea9":[2,0,93,0,29],
+"structsfrmodule_1_1sfrtype.html#a77e629810140138eb82538f880a1eb9c":[2,0,93,0,83],
+"structsfrmodule_1_1sfrtype.html#a781b5203e2086421ab3851e8682949c5":[2,0,93,0,105],
+"structsfrmodule_1_1sfrtype.html#a78751ecac911cc24db2188f826215565":[2,0,93,0,38],
+"structsfrmodule_1_1sfrtype.html#a792a4332b3dddf615ec75e409b7c98ac":[2,0,93,0,65],
+"structsfrmodule_1_1sfrtype.html#a7a968d3f01f7ef7bf9637e698b22d1ee":[2,0,93,0,48],
 "structsfrmodule_1_1sfrtype.html#a7b9854d58310e30de3b8610e588515fb":[2,0,93,0,69],
 "structsfrmodule_1_1sfrtype.html#a7ca4dae71bf8b85eec14fcd488403262":[2,0,93,0,28],
 "structsfrmodule_1_1sfrtype.html#a7d26012ad568cf3b44041589fa614281":[2,0,93,0,8],
@@ -240,14 +249,5 @@ var NAVTREEINDEX25 =
 "structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ab243bf6b62b654a0ef57ae380de789e6":[2,0,106,0,0],
 "structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ac005877a81e5b32dab1f1b6d07bd216e":[2,0,106,0,5],
 "structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ac949c99f6c08d34dffc5ae688a068d1d":[2,0,106,0,15],
-"structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#acdce9672f526a13e003a60c69e868bf3":[2,0,106,0,13],
-"structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ad4a48fbb7caebe7555822a3ed7ff1522":[2,0,106,0,19],
-"structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ae04285ebcbe5ea57fae9ea3da9eb2237":[2,0,106,0,4],
-"structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ae43e4065b38b71f3ad88dfaa46647bef":[2,0,106,0,12],
-"structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#aff4c816376ae19f251797faafddf8730":[2,0,106,0,8],
-"structtimeseriesmodule_1_1timeseriescontainertype.html":[2,0,107,0],
-"structtimeseriesmodule_1_1timeseriescontainertype.html#a7f478e08bdec3e8be94453c4c7541fbd":[2,0,107,0,0],
-"structtimeseriesmodule_1_1timeseriesfiletype.html":[2,0,107,1],
-"structtimeseriesmodule_1_1timeseriesfiletype.html#a27a31a827f51a8560d193a4186ed892c":[2,0,107,1,8],
-"structtimeseriesmodule_1_1timeseriesfiletype.html#a3d7986d5421e685367d10f4b8e3570b3":[2,0,107,1,2]
+"structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#acdce9672f526a13e003a60c69e868bf3":[2,0,106,0,13]
 };
