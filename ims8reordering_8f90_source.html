@@ -1720,14 +1720,14 @@ $(document).ready(function(){initNavTree('ims8reordering_8f90_source.html',''); 
 <div class="line"><a name="l01604"></a><span class="lineno"> 1604</span>&#160;        <span class="keywordtype">integer(I4B)</span> :: j</div>
 <div class="line"><a name="l01605"></a><span class="lineno"> 1605</span>&#160;        <span class="keywordtype">integer(I4B)</span> :: k</div>
 <div class="line"><a name="l01606"></a><span class="lineno"> 1606</span>&#160;        <span class="keywordtype">integer(I4B)</span> :: ii</div>
-<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;        <span class="keywordtype">integer(I4B)</span> :: init</div>
+<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;        <span class="keywordtype">integer(I4B)</span> :: <a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a></div>
 <div class="line"><a name="l01608"></a><span class="lineno"> 1608</span>&#160;        <span class="keywordtype">integer(I4B)</span> :: next</div>
 <div class="line"><a name="l01609"></a><span class="lineno"> 1609</span>&#160;<span class="keywordtype">        real</span>(<a class="code" href="namespacekindmodule.html#ae38bd3a7dfaf151094c26e1529259639">dp</a>) :: tmp, tmp1</div>
 <div class="line"><a name="l01610"></a><span class="lineno"> 1610</span>&#160;        <span class="comment">!</span></div>
-<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160;        init      = 1</div>
-<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;        tmp       = x(init)</div>
-<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160;        ii        = perm(init)</div>
-<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160;        perm(init)= -perm(init)</div>
+<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160;        <a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>      = 1</div>
+<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;        tmp       = x(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)</div>
+<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160;        ii        = perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)</div>
+<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160;        perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)= -perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)</div>
 <div class="line"><a name="l01615"></a><span class="lineno"> 1615</span>&#160;        k         = 0</div>
 <div class="line"><a name="l01616"></a><span class="lineno"> 1616</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;        <span class="comment">! loop</span></div>
@@ -1754,12 +1754,12 @@ $(document).ready(function(){initNavTree('ims8reordering_8f90_source.html',''); 
 <div class="line"><a name="l01638"></a><span class="lineno"> 1638</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l01639"></a><span class="lineno"> 1639</span>&#160;        <span class="comment">! reinitialize cycle --</span></div>
 <div class="line"><a name="l01640"></a><span class="lineno"> 1640</span>&#160;        <span class="comment">!</span></div>
-<div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160;65      init = init + 1</div>
-<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;        <span class="keywordflow">if</span> (init &gt; n) <span class="keywordflow">go to</span> 101</div>
-<div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;        <span class="keywordflow">if</span> (perm(init) &lt; 0) <span class="keywordflow">go to</span> 65</div>
-<div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;        tmp       =  x(init)</div>
-<div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;        ii        =  perm(init)</div>
-<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;        perm(init)= -perm(init)</div>
+<div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160;65      <a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a> = <a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a> + 1</div>
+<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a> &gt; n) <span class="keywordflow">go to</span> 101</div>
+<div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;        <span class="keywordflow">if</span> (perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>) &lt; 0) <span class="keywordflow">go to</span> 65</div>
+<div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;        tmp       =  x(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)</div>
+<div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;        ii        =  perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)</div>
+<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;        perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)= -perm(<a class="code" href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a>)</div>
 <div class="line"><a name="l01647"></a><span class="lineno"> 1647</span>&#160;        <span class="keywordflow">go to</span> 6</div>
 <div class="line"><a name="l01648"></a><span class="lineno"> 1648</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l01649"></a><span class="lineno"> 1649</span>&#160;101     <span class="keywordflow">continue</span></div>
@@ -1791,6 +1791,7 @@ $(document).ready(function(){initNavTree('ims8reordering_8f90_source.html',''); 
 <div class="ttc" id="anamespaceimsreorderingmodule_html_aa425800b8906fcf1d29adf70aead3f54"><div class="ttname"><a href="namespaceimsreorderingmodule.html#aa425800b8906fcf1d29adf70aead3f54">imsreorderingmodule::ims_rperm</a></div><div class="ttdeci">subroutine ims_rperm(nrow, nja, a, ja, ia, ao, jao, iao, perm, job)</div><div class="ttdef"><b>Definition:</b> <a href="ims8reordering_8f90_source.html#l01401">ims8reordering.f90:1401</a></div></div>
 <div class="ttc" id="anamespaceimsreorderingmodule_html_a082dccd76afafd79bf505871b953e0e2"><div class="ttname"><a href="namespaceimsreorderingmodule.html#a082dccd76afafd79bf505871b953e0e2">imsreorderingmodule::ims_mdm</a></div><div class="ttdeci">subroutine ims_mdm(n, mmax, vk, tail, v, l, last, next, mark)</div><div class="ttdef"><b>Definition:</b> <a href="ims8reordering_8f90_source.html#l00993">ims8reordering.f90:993</a></div></div>
 <div class="ttc" id="anamespacekindmodule_html_ae38bd3a7dfaf151094c26e1529259639"><div class="ttname"><a href="namespacekindmodule.html#ae38bd3a7dfaf151094c26e1529259639">kindmodule::dp</a></div><div class="ttdeci">integer, parameter dp</div><div class="ttdoc">Precision of all real variables.</div><div class="ttdef"><b>Definition:</b> <a href="kind_8f90_source.html#l00014">kind.f90:14</a></div></div>
+<div class="ttc" id="a_grid_sorting_8f90_html_a8d6fb88aa9b65a273f65b89226533321"><div class="ttname"><a href="_grid_sorting_8f90.html#a8d6fb88aa9b65a273f65b89226533321">init</a></div><div class="ttdeci">subroutine init()</div><div class="ttdef"><b>Definition:</b> <a href="_grid_sorting_8f90_source.html#l00023">GridSorting.f90:23</a></div></div>
 <div class="ttc" id="anamespaceimsreorderingmodule_html_a458c0ecdc4e4a5c82916c6d722cd52f1"><div class="ttname"><a href="namespaceimsreorderingmodule.html#a458c0ecdc4e4a5c82916c6d722cd52f1">imsreorderingmodule::ims_md</a></div><div class="ttdeci">subroutine ims_md(n, nja, ia, ja, mmax, v, l, head, last, next, mark, flag)</div><div class="ttdef"><b>Definition:</b> <a href="ims8reordering_8f90_source.html#l00726">ims8reordering.f90:726</a></div></div>
 <div class="ttc" id="anamespaceimsreorderingmodule_html_a58786d5d969fe529d126eef6383514f1"><div class="ttname"><a href="namespaceimsreorderingmodule.html#a58786d5d969fe529d126eef6383514f1">imsreorderingmodule::ims_mdi</a></div><div class="ttdeci">subroutine ims_mdi(n, nja, ia, ja, mmax, v, l, head, last, next, mark, tag, flag)</div><div class="ttdef"><b>Definition:</b> <a href="ims8reordering_8f90_source.html#l00888">ims8reordering.f90:888</a></div></div>
 <div class="ttc" id="anamespaceimsreorderingmodule_html_aa8036709ae066a12a9b07c3afae16d9d"><div class="ttname"><a href="namespaceimsreorderingmodule.html#aa8036709ae066a12a9b07c3afae16d9d">imsreorderingmodule::ims_dperm</a></div><div class="ttdeci">subroutine, public ims_dperm(nrow, nja, a, ja, ia, ao, jao, iao, perm, qperm, job)</div><div class="ttdef"><b>Definition:</b> <a href="ims8reordering_8f90_source.html#l01313">ims8reordering.f90:1313</a></div></div>
@@ -1798,7 +1799,7 @@ $(document).ready(function(){initNavTree('ims8reordering_8f90_source.html',''); 
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_45e973df69963bbfe985a1f7e6db2b6f.html">Solution</a></li><li class="navelem"><a class="el" href="dir_05d5634044adf0ab08e7f809dfce3115.html">SparseMatrixSolver</a></li><li class="navelem"><a class="el" href="ims8reordering_8f90.html">ims8reordering.f90</a></li>
-    <li class="footer">Generated on Sat Oct 16 2021 22:14:12 for MODFLOW 6 by
+    <li class="footer">Generated on Mon Oct 18 2021 14:07:36 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>

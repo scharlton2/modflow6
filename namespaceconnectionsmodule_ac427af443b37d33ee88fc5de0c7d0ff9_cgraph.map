@@ -1,8 +1,8 @@
 <map id="connectionsmodule::con_finalize" name="connectionsmodule::con_finalize">
 <area shape="rect" id="node1" title=" " alt="" coords="5,122,163,163"/>
 <area shape="rect" id="node2" href="$namespacesimmodule.html#a4c46e49de78d4498dd4ec106357775e6" title="Return number of errors." alt="" coords="222,5,406,32"/>
-<area shape="rect" id="node3" href="$namespaceconnectionsmodule.html#af8c5d449b3e604c095d4700caab019d3" title=" " alt="" coords="235,57,393,98"/>
-<area shape="rect" id="node4" href="$namespaceconnectionsmodule.html#a84e9340a64579d7b5637f22ea5e7f576" title=" " alt="" coords="235,122,393,163"/>
+<area shape="rect" id="node3" href="$namespaceconnectionsmodule.html#a6768edb4a42154913c1ddd85055a58ca" title=" " alt="" coords="235,57,393,98"/>
+<area shape="rect" id="node4" href="$namespaceconnectionsmodule.html#aa35fffaa949a53c9428ccd237153d219" title=" " alt="" coords="235,122,393,163"/>
 <area shape="rect" id="node5" href="$namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e" title="Store error message." alt="" coords="227,188,401,215"/>
 <area shape="rect" id="node11" href="$namespacesimmodule.html#a83910ed20af1fec9bdf46cad8c276538" title="Store the file unit number." alt="" coords="211,239,417,265"/>
 <area shape="rect" id="node6" href="$namespacesimmodule.html#a0be97214c1d4fcf42bc4ddc27b111b61" title="Stop the simulation." alt="" coords="465,213,604,240"/>

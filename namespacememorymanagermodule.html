@@ -4836,12 +4836,12 @@ Here is the caller graph for this function:</div>
 <div class="line"><a name="l02262"></a><span class="lineno"> 2262</span>&#160;    <span class="keyword">call </span>memtab%add_term(smb)</div>
 <div class="line"><a name="l02263"></a><span class="lineno"> 2263</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l02264"></a><span class="lineno"> 2264</span>&#160;    <span class="comment">! -- logicals</span></div>
-<div class="line"><a name="l02265"></a><span class="lineno"> 2265</span>&#160;    smb = real(nvalues_alogical * lgp, dp) * fact</div>
+<div class="line"><a name="l02265"></a><span class="lineno"> 2265</span>&#160;    smb = real(nvalues_alogical * <a class="code" href="namespacekindmodule.html#aab86cc631d886fd4042b11df419be9ee">lgp</a>, dp) * fact</div>
 <div class="line"><a name="l02266"></a><span class="lineno"> 2266</span>&#160;    <span class="keyword">call </span>memtab%add_term(<span class="stringliteral">&#39;Logical&#39;</span>)</div>
 <div class="line"><a name="l02267"></a><span class="lineno"> 2267</span>&#160;    <span class="keyword">call </span>memtab%add_term(smb)</div>
 <div class="line"><a name="l02268"></a><span class="lineno"> 2268</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l02269"></a><span class="lineno"> 2269</span>&#160;    <span class="comment">! -- integers</span></div>
-<div class="line"><a name="l02270"></a><span class="lineno"> 2270</span>&#160;    smb = real(nvalues_aint * <a class="code" href="namespacekindmodule.html#a2f6861418b5e7d3d602b77228232a470">i4b</a>, dp) * fact</div>
+<div class="line"><a name="l02270"></a><span class="lineno"> 2270</span>&#160;    smb = real(nvalues_aint * i4b, dp) * fact</div>
 <div class="line"><a name="l02271"></a><span class="lineno"> 2271</span>&#160;    <span class="keyword">call </span>memtab%add_term(<span class="stringliteral">&#39;Integer&#39;</span>)</div>
 <div class="line"><a name="l02272"></a><span class="lineno"> 2272</span>&#160;    <span class="keyword">call </span>memtab%add_term(smb)</div>
 <div class="line"><a name="l02273"></a><span class="lineno"> 2273</span>&#160;    <span class="comment">!</span></div>
@@ -5112,8 +5112,8 @@ Here is the caller graph for this function:</div>
 <div class="line"><a name="l02334"></a><span class="lineno"> 2334</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l02335"></a><span class="lineno"> 2335</span>&#160;    <span class="comment">! -- Calculate simulation memory allocation</span></div>
 <div class="line"><a name="l02336"></a><span class="lineno"> 2336</span>&#160;    simbytes = (nvalues_astr +                                                   &amp;</div>
-<div class="line"><a name="l02337"></a><span class="lineno"> 2337</span>&#160;                nvalues_alogical * lgp +                                         &amp;</div>
-<div class="line"><a name="l02338"></a><span class="lineno"> 2338</span>&#160;                nvalues_aint * <a class="code" href="namespacekindmodule.html#a2f6861418b5e7d3d602b77228232a470">i4b</a> +                                             &amp;</div>
+<div class="line"><a name="l02337"></a><span class="lineno"> 2337</span>&#160;                nvalues_alogical * <a class="code" href="namespacekindmodule.html#aab86cc631d886fd4042b11df419be9ee">lgp</a> +                                         &amp;</div>
+<div class="line"><a name="l02338"></a><span class="lineno"> 2338</span>&#160;                nvalues_aint * i4b +                                             &amp;</div>
 <div class="line"><a name="l02339"></a><span class="lineno"> 2339</span>&#160;                nvalues_adbl * dp)</div>
 <div class="line"><a name="l02340"></a><span class="lineno"> 2340</span>&#160;    simbytes = real(simbytes, dp)</div>
 <div class="line"><a name="l02341"></a><span class="lineno"> 2341</span>&#160;    <span class="comment">!</span></div>
@@ -5150,8 +5150,8 @@ Here is the caller graph for this function:</div>
 <div class="line"><a name="l02372"></a><span class="lineno"> 2372</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l02373"></a><span class="lineno"> 2373</span>&#160;        <span class="comment">! -- calculate size of each data type in bytes</span></div>
 <div class="line"><a name="l02374"></a><span class="lineno"> 2374</span>&#160;        rchars = real(nchars, dp) * fact</div>
-<div class="line"><a name="l02375"></a><span class="lineno"> 2375</span>&#160;        rlog = real(nlog * lgp, dp) * fact</div>
-<div class="line"><a name="l02376"></a><span class="lineno"> 2376</span>&#160;        rint = real(nint * <a class="code" href="namespacekindmodule.html#a2f6861418b5e7d3d602b77228232a470">i4b</a>, dp) * fact</div>
+<div class="line"><a name="l02375"></a><span class="lineno"> 2375</span>&#160;        rlog = real(nlog * <a class="code" href="namespacekindmodule.html#aab86cc631d886fd4042b11df419be9ee">lgp</a>, dp) * fact</div>
+<div class="line"><a name="l02376"></a><span class="lineno"> 2376</span>&#160;        rint = real(nint * i4b, dp) * fact</div>
 <div class="line"><a name="l02377"></a><span class="lineno"> 2377</span>&#160;        rreal = real(nreal * dp, dp) * fact</div>
 <div class="line"><a name="l02378"></a><span class="lineno"> 2378</span>&#160;        <span class="comment">!</span></div>
 <div class="line"><a name="l02379"></a><span class="lineno"> 2379</span>&#160;        <span class="comment">! -- calculate total storage in bytes</span></div>
@@ -7211,11 +7211,11 @@ Here is the call graph for this function:</div>
 </div><!-- doc-content -->
 <div class="ttc" id="anamespacesimmodule_html_a21870712a1166225fdcd5b60bffb353e"><div class="ttname"><a href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">simmodule::store_error</a></div><div class="ttdeci">subroutine, public store_error(msg, terminate)</div><div class="ttdoc">Store error message.</div><div class="ttdef"><b>Definition:</b> <a href="_sim_8f90_source.html#l00129">Sim.f90:129</a></div></div>
 <div class="ttc" id="ainterfacearrayhandlersmodule_1_1ifind_html"><div class="ttname"><a href="interfacearrayhandlersmodule_1_1ifind.html">arrayhandlersmodule::ifind</a></div><div class="ttdef"><b>Definition:</b> <a href="_array_handlers_8f90_source.html#l00030">ArrayHandlers.f90:30</a></div></div>
+<div class="ttc" id="anamespacekindmodule_html_aab86cc631d886fd4042b11df419be9ee"><div class="ttname"><a href="namespacekindmodule.html#aab86cc631d886fd4042b11df419be9ee">kindmodule::lgp</a></div><div class="ttdeci">integer, parameter lgp</div><div class="ttdoc">Logical kind.</div><div class="ttdef"><b>Definition:</b> <a href="kind_8f90_source.html#l00015">kind.f90:15</a></div></div>
 <div class="ttc" id="ainterfacearrayhandlersmodule_1_1expandarray_html"><div class="ttname"><a href="interfacearrayhandlersmodule_1_1expandarray.html">arrayhandlersmodule::expandarray</a></div><div class="ttdef"><b>Definition:</b> <a href="_array_handlers_8f90_source.html#l00016">ArrayHandlers.f90:16</a></div></div>
 <div class="ttc" id="anamespaceinputoutputmodule_html_a3418ad9e27e9d9caac6f541863e1c522"><div class="ttname"><a href="namespaceinputoutputmodule.html#a3418ad9e27e9d9caac6f541863e1c522">inputoutputmodule::upcase</a></div><div class="ttdeci">subroutine, public upcase(WORD)</div><div class="ttdef"><b>Definition:</b> <a href="_input_output_8f90_source.html#l00568">InputOutput.f90:568</a></div></div>
 <div class="ttc" id="anamespacearrayhandlersmodule_html"><div class="ttname"><a href="namespacearrayhandlersmodule.html">arrayhandlersmodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_array_handlers_8f90_source.html#l00001">ArrayHandlers.f90:1</a></div></div>
 <div class="ttc" id="anamespaceinputoutputmodule_html"><div class="ttname"><a href="namespaceinputoutputmodule.html">inputoutputmodule</a></div><div class="ttdef"><b>Definition:</b> <a href="_input_output_8f90_source.html#l00003">InputOutput.f90:3</a></div></div>
-<div class="ttc" id="anamespacekindmodule_html_a2f6861418b5e7d3d602b77228232a470"><div class="ttname"><a href="namespacekindmodule.html#a2f6861418b5e7d3d602b77228232a470">kindmodule::i4b</a></div><div class="ttdeci">integer, parameter i4b</div><div class="ttdoc">Integer kind.</div><div class="ttdef"><b>Definition:</b> <a href="kind_8f90_source.html#l00016">kind.f90:16</a></div></div>
 <div class="ttc" id="anamespaceversionmodule_html_ab82d1ea64df56737f03bbbe06c1499bd"><div class="ttname"><a href="namespaceversionmodule.html#ab82d1ea64df56737f03bbbe06c1499bd">versionmodule::idevelopmode</a></div><div class="ttdeci">integer(i4b), parameter idevelopmode</div><div class="ttdef"><b>Definition:</b> <a href="version_8f90_source.html#l00006">version.f90:6</a></div></div>
 <div class="ttc" id="anamespaceversionmodule_html"><div class="ttname"><a href="namespaceversionmodule.html">versionmodule</a></div><div class="ttdef"><b>Definition:</b> <a href="version_8f90_source.html#l00001">version.f90:1</a></div></div>
 <div class="ttc" id="anamespacetablemodule_html_a7632d784ec9e94277a76705ef56725f2"><div class="ttname"><a href="namespacetablemodule.html#a7632d784ec9e94277a76705ef56725f2">tablemodule::table_cr</a></div><div class="ttdeci">subroutine, public table_cr(this, name, title)</div><div class="ttdef"><b>Definition:</b> <a href="_table_8f90_source.html#l00084">Table.f90:84</a></div></div>
@@ -7223,7 +7223,7 @@ Here is the call graph for this function:</div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacememorymanagermodule.html">memorymanagermodule</a></li>
-    <li class="footer">Generated on Sat Oct 16 2021 22:14:20 for MODFLOW 6 by
+    <li class="footer">Generated on Mon Oct 18 2021 14:07:45 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>

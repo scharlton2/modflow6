@@ -1,8 +1,8 @@
 <map id="connectionsmodule::read_connectivity_from_block" name="connectionsmodule::read_connectivity_from_block">
 <area shape="rect" id="node1" title=" " alt="" coords="5,122,224,163"/>
 <area shape="rect" id="node2" href="$namespacesimmodule.html#a4c46e49de78d4498dd4ec106357775e6" title="Return number of errors." alt="" coords="272,5,456,32"/>
-<area shape="rect" id="node3" href="$namespaceconnectionsmodule.html#af8c5d449b3e604c095d4700caab019d3" title=" " alt="" coords="285,57,443,98"/>
-<area shape="rect" id="node4" href="$namespaceconnectionsmodule.html#a84e9340a64579d7b5637f22ea5e7f576" title=" " alt="" coords="285,122,443,163"/>
+<area shape="rect" id="node3" href="$namespaceconnectionsmodule.html#a6768edb4a42154913c1ddd85055a58ca" title=" " alt="" coords="285,57,443,98"/>
+<area shape="rect" id="node4" href="$namespaceconnectionsmodule.html#aa35fffaa949a53c9428ccd237153d219" title=" " alt="" coords="285,122,443,163"/>
 <area shape="rect" id="node5" href="$namespacegenericutilitiesmodule.html#a34492cca79f70174fd015808be8b7ebf" title=" " alt="" coords="920,181,1088,222"/>
 <area shape="rect" id="node6" href="$namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e" title="Store error message." alt="" coords="277,243,451,269"/>
 <area shape="rect" id="node7" href="$namespacesimmodule.html#a0be97214c1d4fcf42bc4ddc27b111b61" title="Stop the simulation." alt="" coords="504,247,643,273"/>

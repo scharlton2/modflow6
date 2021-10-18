@@ -204,11 +204,11 @@ Functions/Subroutines</h2></td></tr>
 <div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;    <span class="comment">! -- check that ientry is within bounds</span></div>
 <div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;    <span class="keywordflow">if</span> (this%ientry &gt; this%ntableterm) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;      <span class="keyword">write</span>(errmsg,<span class="stringliteral">&#39;(a,1x,i0,5(1x,a),1x,i0,1x,a)&#39;</span>)                               &amp;</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;      <span class="keyword">write</span>(<a class="code" href="namespacesimvariablesmodule.html#a08c1a8900029e311ac640e2319c6a234">errmsg</a>,<span class="stringliteral">&#39;(a,1x,i0,5(1x,a),1x,i0,1x,a)&#39;</span>)                               &amp;</div>
 <div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;        <span class="stringliteral">&#39;Trying to add data to column &#39;</span>, this%ientry, <span class="stringliteral">&#39;in the&#39;</span>,                  &amp;</div>
 <div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        trim(adjustl(this%name)), <span class="stringliteral">&#39;table (&#39;</span>, trim(adjustl(this%title)),          &amp;</div>
 <div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;        <span class="stringliteral">&#39;) that only has&#39;</span>, this%ntableterm, <span class="stringliteral">&#39;columns.&#39;</span></div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(<a class="code" href="namespacesimvariablesmodule.html#a08c1a8900029e311ac640e2319c6a234">errmsg</a>, terminate=.true.)</div>
 <div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;<span class="keywordflow">    end if</span></div>
 <div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;    <span class="comment">! -- Return</span></div>
@@ -935,12 +935,12 @@ Here is the caller graph for this function:</div>
 <div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <span class="comment">! -- check that ientry is in bounds</span></div>
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="keywordflow">if</span> (this%ientry &gt; this%ntableterm) <span class="keywordflow">then</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;      <span class="keyword">write</span>(errmsg,<span class="stringliteral">&#39;(a,a,a,i0,a,1x,a,1x,a,a,a,1x,i0,1x,a)&#39;</span>)                      &amp;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;      <span class="keyword">write</span>(<a class="code" href="namespacesimvariablesmodule.html#a08c1a8900029e311ac640e2319c6a234">errmsg</a>,<span class="stringliteral">&#39;(a,a,a,i0,a,1x,a,1x,a,a,a,1x,i0,1x,a)&#39;</span>)                      &amp;</div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="stringliteral">&#39;Trying to add column &quot;&#39;</span>, trim(adjustl(text)), <span class="stringliteral">&#39;&quot; (&#39;</span>,                    &amp;</div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        this%ientry, <span class="stringliteral">&#39;) in the&#39;</span>, trim(adjustl(this%name)), <span class="stringliteral">&#39;table (&quot;&#39;</span>,           &amp;</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        trim(adjustl(this%title)), <span class="stringliteral">&#39;&quot;) that only has&#39;</span>, this%ntableterm,          &amp;</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        <span class="stringliteral">&#39;columns.&#39;</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(errmsg, terminate=.true.)</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;      <span class="keyword">call </span><a class="code" href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">store_error</a>(<a class="code" href="namespacesimvariablesmodule.html#a08c1a8900029e311ac640e2319c6a234">errmsg</a>, terminate=.true.)</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="keywordflow">    end if</span></div>
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    <span class="comment">! -- initialize table term</span></div>
@@ -1396,7 +1396,7 @@ Here is the call graph for this function:</div>
 <div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;<span class="comment">! ------------------------------------------------------------------------------</span></div>
 <div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160;    <span class="comment">! -- set iout</span></div>
-<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;    this%iout = <a class="code" href="namespacesimvariablesmodule.html#a70ea2f76b35a03119367efdd0dd88ccc">iout</a></div>
+<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;    this%iout = iout</div>
 <div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l01003"></a><span class="lineno"> 1003</span>&#160;    <span class="comment">! -- return</span></div>
 <div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;    <span class="keywordflow">return</span></div>
@@ -1881,7 +1881,7 @@ Here is the caller graph for this function:</div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="comment">!</span></div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="comment">! -- initialize variables</span></div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    this%first_entry = .true.</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    this%iout = <a class="code" href="namespacesimvariablesmodule.html#a70ea2f76b35a03119367efdd0dd88ccc">iout</a></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    this%iout = iout</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    this%maxbound = maxbound</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    this%ntableterm = ntableterm</div>
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    this%ientry = 0</div>
@@ -2003,15 +2003,15 @@ Here is the caller graph for this function:</div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="anamespacesimvariablesmodule_html_a08c1a8900029e311ac640e2319c6a234"><div class="ttname"><a href="namespacesimvariablesmodule.html#a08c1a8900029e311ac640e2319c6a234">simvariablesmodule::errmsg</a></div><div class="ttdeci">character(len=maxcharlen) errmsg</div><div class="ttdoc">error message string</div><div class="ttdef"><b>Definition:</b> <a href="_sim_variables_8f90_source.html#l00017">SimVariables.f90:17</a></div></div>
 <div class="ttc" id="anamespacesimmodule_html_a21870712a1166225fdcd5b60bffb353e"><div class="ttname"><a href="namespacesimmodule.html#a21870712a1166225fdcd5b60bffb353e">simmodule::store_error</a></div><div class="ttdeci">subroutine, public store_error(msg, terminate)</div><div class="ttdoc">Store error message.</div><div class="ttdef"><b>Definition:</b> <a href="_sim_8f90_source.html#l00129">Sim.f90:129</a></div></div>
-<div class="ttc" id="anamespacesimvariablesmodule_html_a70ea2f76b35a03119367efdd0dd88ccc"><div class="ttname"><a href="namespacesimvariablesmodule.html#a70ea2f76b35a03119367efdd0dd88ccc">simvariablesmodule::iout</a></div><div class="ttdeci">integer(i4b) iout</div><div class="ttdoc">file unit number for simulation output</div><div class="ttdef"><b>Definition:</b> <a href="_sim_variables_8f90_source.html#l00022">SimVariables.f90:22</a></div></div>
 <div class="ttc" id="anamespacetdismodule_html_ad3443c7d7da2a67a75174c39c6d40c84"><div class="ttname"><a href="namespacetdismodule.html#ad3443c7d7da2a67a75174c39c6d40c84">tdismodule::kstp</a></div><div class="ttdeci">integer(i4b), pointer, public kstp</div><div class="ttdoc">current time step number</div><div class="ttdef"><b>Definition:</b> <a href="tdis_8f90_source.html#l00025">tdis.f90:25</a></div></div>
 <div class="ttc" id="anamespacetdismodule_html_ae84d6ee69d7bba12d20a6255a398935b"><div class="ttname"><a href="namespacetdismodule.html#ae84d6ee69d7bba12d20a6255a398935b">tdismodule::kper</a></div><div class="ttdeci">integer(i4b), pointer, public kper</div><div class="ttdoc">current stress period number</div><div class="ttdef"><b>Definition:</b> <a href="tdis_8f90_source.html#l00024">tdis.f90:24</a></div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespacetablemodule.html">tablemodule</a></li>
-    <li class="footer">Generated on Sat Oct 16 2021 22:14:24 for MODFLOW 6 by
+    <li class="footer">Generated on Mon Oct 18 2021 14:07:49 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>
