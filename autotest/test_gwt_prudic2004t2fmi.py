@@ -65,7 +65,7 @@ def run_flow_model():
     gwf = flopy.mf6.ModflowGwf(sim, modelname=gwfname, save_flows=True)
 
     # ims
-    hclose = 0.01
+    hclose = 0.0001
     rclose = 0.1
     nouter = 1000
     ninner = 100
@@ -400,6 +400,15 @@ def run_flow_model():
     hobj = flopy.utils.HeadFile(fname, precision="double")
     head = hobj.get_data()
     hobj.file.close()
+
+    # check node2 values for lake, they should be the lake number (1 or 2)
+    # and not the connection number
+    budgwflak = gwf.output.budget().get_data(text="LAK")
+    budgwflak = budgwflak[0]
+    node2sim = budgwflak["node2"]
+    node2expected = 67 * [1] + 32 * [2]
+    errmsg = f"node2 sim not equal node2 expected\n{node2sim}\n{node2expected}"
+    assert np.array_equal(node2sim, node2expected), errmsg
 
     if lake_on:
         fname = gwfname + ".lak.bin"
@@ -787,7 +796,7 @@ def run_transport_model():
     failed_list = []
     for name1, i in zip(csvra.dtype.names, imap):
         name2 = lstra.dtype.names[i]
-        success = np.allclose(csvra[name1], lstra[name2], rtol=0.001)
+        success = np.allclose(csvra[name1], lstra[name2], rtol=0.01)
         if not success:
             success_all = False
             failed_list.append(name1)
