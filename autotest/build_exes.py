@@ -17,12 +17,6 @@ if running_on_CI():
     print("running on CI environment")
     os.environ["PYMAKE_DOUBLE"] = "1"
 
-# paths to executables for previous versions of MODFLOW
-ebindir = os.path.abspath(
-    os.path.join(os.path.expanduser("~"), ".local", "bin")
-)
-if not os.path.exists(ebindir):
-    os.makedirs(ebindir)
 
 # make sure exe extension is used on windows
 eext = ""
@@ -30,6 +24,8 @@ soext = ".so"
 if sys.platform.lower() == "win32":
     eext = ".exe"
     soext = ".dll"
+elif sys.platform.lower() == "darwin":
+    soext = ".dylib"
 
 mfexe_pth = "temp/mfexes"
 

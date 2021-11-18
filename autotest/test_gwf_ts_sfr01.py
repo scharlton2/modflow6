@@ -63,7 +63,9 @@ def get_model(ws, name, timeseries=False):
         sim_ws=ws,
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
+    tdis = flopy.mf6.ModflowTdis(
+        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
+    )
     # set ims csv files
     csv0 = "{}.outer.ims.csv".format(name)
     csv1 = "{}.inner.ims.csv".format(name)
@@ -118,7 +120,9 @@ def get_model(ws, name, timeseries=False):
         [(0, 0, 0), 1.0],
         [(0, nrow - 1, ncol - 1), 0.0],
     ]
-    chd = flopy.mf6.modflow.ModflowGwfchd(gwf, stress_period_data=spd, pname="chd-1")
+    chd = flopy.mf6.modflow.ModflowGwfchd(
+        gwf, stress_period_data=spd, pname="chd-1"
+    )
 
     # drn file
     drn6 = [
@@ -611,18 +615,18 @@ def eval_model(sim):
 
 
 @pytest.mark.parametrize(
-    "idx, dir",
+    "idx, exdir",
     list(enumerate(exdirs)),
 )
-def test_mf6model(idx, dir):
+def test_mf6model(idx, exdir):
     # initialize testing framework
     test = testing_framework()
 
     # build the model
-    test.build_mf6_models(build_model, idx, dir)
+    test.build_mf6_models(build_model, idx, exdir)
 
     # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
+    test.run_mf6(Simulation(exdir, exfunc=eval_model, idxsim=idx))
 
 
 def main():
@@ -631,9 +635,9 @@ def main():
 
     # build the models
     # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
+    for idx, exdir in enumerate(exdirs):
+        test.build_mf6_models(build_model, idx, exdir)
+        sim = Simulation(exdir, exfunc=eval_model, idxsim=idx)
         test.run_mf6(sim)
     return
 

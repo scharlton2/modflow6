@@ -99,7 +99,9 @@ def get_mf6_models():
 
     # build list of directories with valid example files
     if example_basedir is not None:
-        example_dirs = get_example_dirs(example_basedir, exclude, prefix="test")
+        example_dirs = get_example_dirs(
+            example_basedir, exclude, prefix="test"
+        )
     else:
         example_dirs = []
 
@@ -187,6 +189,9 @@ def set_make_comparison(test):
         "test051_uzfp2": ("6.2.1",),
         "test051_uzfp3_lakmvr_v2": ("6.2.1",),
         "test051_uzfp3_wellakmvr_v2": ("6.2.1",),
+        "test045_lake4ss": ("6.2.2",),
+        "test056_mt3dms_usgs_gwtex_dev": ("6.2.2",),
+        "test056_mt3dms_usgs_gwtex_IR_dev": ("6.2.2",),
     }
     make_comparison = True
     if test in compare_tests.keys():
@@ -203,17 +208,17 @@ mf6_models = get_mf6_models()
 
 
 @pytest.mark.parametrize(
-    "dir",
+    "exdir",
     mf6_models,
 )
-def test_mf6model(dir):
+def test_mf6model(exdir):
     # run the test model
     run_mf6(
         Simulation(
-            dir,
+            exdir,
             mf6_regression=set_mf6_regression(),
             cmp_verbose=False,
-            make_comparison=set_make_comparison(dir),
+            make_comparison=set_make_comparison(exdir),
         )
     )
 

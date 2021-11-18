@@ -72,6 +72,7 @@ module ObserveModule
     procedure, public  :: WriteTo
     procedure, public  :: AddObsIndex
     procedure, public  :: ResetObsIndex
+    procedure, public  :: da
   end type ObserveType
 
   type :: ObsDataType
@@ -215,6 +216,23 @@ contains
     return
   end subroutine AddObsIndex
 
+  subroutine da(this)
+! **************************************************************************
+! da -- destroy observation
+! **************************************************************************
+!
+!    SPECIFICATIONS:
+! --------------------------------------------------------------------------
+    ! -- dummy
+    class(ObserveType), intent(inout) :: this
+    if (allocated(this%indxbnds)) then
+      deallocate(this%indxbnds)
+    end if
+    !
+    ! -- return
+    return
+  end subroutine da
+
   ! Non-type-bound procedures
 
   subroutine ConstructObservation(newObservation, defLine, numunit, &
@@ -236,7 +254,7 @@ contains
     integer(I4B),      intent(in) :: inunit
     ! -- local
     real(DP) :: r
-    integer(I4B) :: i, icol, iout, istart, istop, ltrim, n
+    integer(I4B) :: i, icol, iout, istart, istop, n
     ! --------------------------------------------------------------------------
     !
     ! -- initialize
@@ -271,17 +289,13 @@ contains
       endif
     enddo
     !
-    ! -- Remaining text is ID [and ID2]; store it
-    ltrim = len_trim(defLine)
-    call urword(defLine,icol,istart,istop,1,n,r,iout,inunit)
-    !
-    ! -- Test for quote at end of substring
-    if (istop < ltrim) then
-      if (defLine(istop+1:istop+1) == '''') then
-        ltrim = istop
-      end if
+    ! -- Remaining text is ID [and ID2]; store the remainder of the string
+    istart = istop + 1
+    istop = len_trim(defLine)
+    if (istart > istop) then
+      istart = istop
     end if
-    newObservation%IDstring = (defLine(istart:ltrim))
+    newObservation%IDstring = defLine(istart:istop)
     !
     ! Store UnitNumber, FormattedOutput, and IndxObsOutput
     newObservation%UnitNumber = numunit

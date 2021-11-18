@@ -6,6 +6,8 @@
 
 
 import os
+import shutil
+
 import pytest
 import sys
 import numpy as np
@@ -70,13 +72,17 @@ def build_model():
     name = ex
 
     # build MODFLOW 6 files
-    ws = exdir
     sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name=mf6_exe, sim_ws=ws
+        sim_name=name,
+        version="mf6",
+        exe_name=mf6_exe,
+        sim_ws=exdir,
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
+    tdis = flopy.mf6.ModflowTdis(
+        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
+    )
 
     # create gwf model
     gwfname = name
@@ -238,7 +244,9 @@ def test_mf6model():
             expected_msg = True
             error_count += 1
 
-    assert error_count == 1, "error count = " + str(error_count) + "but should equal 1"
+    assert error_count == 1, (
+        "error count = " + str(error_count) + "but should equal 1"
+    )
 
     # fix the error and attempt to rerun model
     orig_fl = os.path.join(exdir, ex + ".lak.obs")
@@ -263,6 +271,8 @@ def test_mf6model():
 
     # rerun the model, should be no errors
     sim.run_simulation()
+
+    shutil.rmtree(exdir, ignore_errors=True)
 
     return
 
@@ -317,6 +327,9 @@ def main():
 
     # rerun the model, should be no errors
     sim.run_simulation()
+
+    # clean the working directory
+    shutil.rmtree(exdir, ignore_errors=True)
 
     return
 
