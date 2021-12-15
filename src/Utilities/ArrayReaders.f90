@@ -569,9 +569,19 @@ contains
     integer(I4B) :: icol, icol1, istart, istop, n
     real(DP) :: r
     character(len=MAXCHARLEN) :: fname, line
+    character(len=MAXCHARLEN) :: h5path
     !
     ! -- Read CONSTANT, INTERNAL, or OPEN/CLOSE from array control record.
+    fname = ''
     call read_control_1(iu, iout, aname, locat, iclose, line, icol, fname)
+    if (locat == 0 .AND. trim(fname) /= '') then
+      ! CONSTANT/HDF5 was found -- read cnstnt and return
+      call urword(line,icol,istart,istop,0,n,r,iout,iu)
+      h5path = line(istart:istop)
+      call read_control_h5_int(iu, fname, h5path, iconst)
+      iprn = -1
+      return
+    endif
     if (locat == 0) then
       ! CONSTANT was found -- read value and return
       call urword(line,icol,istart,istop,2,iconst,r,iout,iu)
@@ -656,6 +666,39 @@ contains
     return
   end subroutine read_control_dbl
 
+  subroutine read_control_h5_int(iu, fname, h5path, iconst)
+    ! -- Read CONSTANT/HDF5
+    ! -- modules
+    use hdf5
+
+    ! -- dummy
+    integer(I4B), intent(in)       :: iu
+    character(len=*), intent(in)   :: fname
+    character(len=*), intent(in)   :: h5path
+    integer(I4B), intent(out)      :: iconst
+
+    ! -- local
+    character(len=LENBIGLINE)      :: ermsg
+    integer(HID_T)                 :: file_id
+    integer(HID_T)                 :: dset_id
+    integer(HSIZE_T), dimension(2) :: dims
+    integer                        :: native
+    integer                        :: ierr
+
+    call h5fopen_f(fname, H5F_ACC_RDONLY_F, file_id, ierr)
+    if (ierr /= 0) then
+      write(ermsg, *) "ERROR OPENING HDF5 FILE '" // trim(fname) // "'"
+      call store_error(ermsg)
+      call store_error_unit(iu)
+    endif
+    call h5dopen_f(file_id, h5path, dset_id, ierr)
+    call h5dread_f(dset_id, H5T_NATIVE_INTEGER, native, dims, ierr)
+    iconst = int(native, kind=I4B)
+    call h5dclose_f(dset_id, ierr)
+    call h5fclose_f(file_id, ierr)
+
+  end subroutine read_control_h5_int
+
   subroutine read_control_h5_dbl(iu, fname, h5path, cnstnt)
     ! -- Read CONSTANT/HDF5
     ! -- modules
@@ -693,7 +736,7 @@ contains
     integer(I4B), intent(in)        :: iu
     integer(I4B), intent(in)        :: iout
     character(len=*), intent(in)    :: aname
-    integer(I4B), intent(out)       :: locat
+    integer(I4B), intent(out)       :: locat        ! 0 -- CONSTANT, iu -- INTERNAL, -1 -- OPEN/CLOSE
     integer(I4B), intent(out)       :: iclose
     character(len=*), intent(inout) :: line
     integer(I4B), intent(inout)     :: icol

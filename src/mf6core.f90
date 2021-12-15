@@ -119,6 +119,7 @@ module Mf6CoreModule
     !<
     subroutine Mf6Finalize()
       ! -- modules
+      use hdf5, only: h5close_f
       use, intrinsic :: iso_fortran_env, only: output_unit
       use ListsModule,            only: lists_da
       use MemoryManagerModule,    only: mem_write_usage, mem_da
@@ -132,6 +133,7 @@ module Mf6CoreModule
       integer(I4B) :: ic
       integer(I4B) :: is
       integer(I4B) :: isg
+      integer :: ierr
       class(SolutionGroupType), pointer :: sgp => null()
       class(BaseSolutionType), pointer :: sp => null()
       class(BaseModelType), pointer :: mp => null()
@@ -197,6 +199,9 @@ module Mf6CoreModule
       enddo
       call simulation_da()
       call lists_da()
+      !
+      ! -- Close hdf5
+      call h5close_f(ierr)
       !
       ! -- Write memory usage, elapsed time and terminate
       call mem_write_usage(iout)
