@@ -32,7 +32,7 @@
   <td id="projectlogo"><img alt="Logo" src="mf6-triangular-grid.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">MODFLOW 6
-   &#160;<span id="projectnumber">version 6.3.0</span>
+   &#160;<span id="projectnumber">version 6.4.0</span>
    </div>
    <div id="projectbrief">MODFLOW 6 Code Documentation</div>
   </td>
@@ -170,6 +170,7 @@ $(document).ready(function(){initNavTree('functions_vars_g.html',''); initResiza
 </li>
 <li>gridconnection
 : <a class="el" href="structgwfinterfacemodelmodule_1_1gwfinterfacemodeltype.html#a5b272215fd5bf967af08d3f652ff449d">gwfinterfacemodelmodule::gwfinterfacemodeltype</a>
+, <a class="el" href="structgwtinterfacemodelmodule_1_1gwtinterfacemodeltype.html#a9641af99642554a344505285c0516f46">gwtinterfacemodelmodule::gwtinterfacemodeltype</a>
 , <a class="el" href="structspatialmodelconnectionmodule_1_1spatialmodelconnectiontype.html#a3b2d80530fb2ecffe110c75b1d8c1c2b">spatialmodelconnectionmodule::spatialmodelconnectiontype</a>
 </li>
 <li>gwd
@@ -194,20 +195,28 @@ $(document).ready(function(){initNavTree('functions_vars_g.html',''); initResiza
 <li>gwfbot
 : <a class="el" href="structuzfmodule_1_1uzftype.html#a7eab9f1a9de4a4481313f0cadfc1a409">uzfmodule::uzftype</a>
 </li>
+<li>gwfexchange
+: <a class="el" href="structgwfgwfconnectionmodule_1_1gwfgwfconnectiontype.html#acc38bdc6d7b06bd4955226a68717c40c">gwfgwfconnectionmodule::gwfgwfconnectiontype</a>
+</li>
 <li>gwfflowja
 : <a class="el" href="structgwtfmimodule_1_1gwtfmitype.html#aea2a2b69562ccd90712a8af94fb25b1f">gwtfmimodule::gwtfmitype</a>
+, <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#a01bee805a614665c95fbdb1765b252ea">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
 </li>
 <li>gwfhcond
 : <a class="el" href="structuzfmodule_1_1uzftype.html#a849517469f5489bb78f1856fac7ecc02">uzfmodule::uzftype</a>
 </li>
 <li>gwfhead
 : <a class="el" href="structgwtfmimodule_1_1gwtfmitype.html#a4c92e3cc566a85029ae80b615b0232da">gwtfmimodule::gwtfmitype</a>
+, <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#ac969cfaa01f2119465a2d0aa551df63c">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
 </li>
 <li>gwfik22
 : <a class="el" href="structmawmodule_1_1mawtype.html#a76296232d8f87406fd62d947f58d38e6">mawmodule::mawtype</a>
 </li>
 <li>gwfik33
 : <a class="el" href="structlakmodule_1_1laktype.html#a19cd93b3c45ca71479a34acd4306299a">lakmodule::laktype</a>
+</li>
+<li>gwfinterfacemodel
+: <a class="el" href="structgwfgwfconnectionmodule_1_1gwfgwfconnectiontype.html#acab9164b54eddf76f9ba206dde278a34">gwfgwfconnectionmodule::gwfgwfconnectiontype</a>
 </li>
 <li>gwfiss
 : <a class="el" href="structgwfcsubmodule_1_1gwfcsubtype.html#a4f071b353b11259bcb9d06f8de67b517">gwfcsubmodule::gwfcsubtype</a>
@@ -241,6 +250,17 @@ $(document).ready(function(){initNavTree('functions_vars_g.html',''); initResiza
 <li>gwfmodel2
 : <a class="el" href="structgwfgwfexchangemodule_1_1gwfexchangetype.html#afe038835d2991c5beb6cc2e026d05415">gwfgwfexchangemodule::gwfexchangetype</a>
 </li>
+<li>gwfmodelname1
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a1b7bb8d2d387724b014c8fdc0e72e38e">gwtgwtexchangemodule::gwtexchangetype</a>
+, <a class="el" href="structgwtmvtmodule_1_1gwtmvttype.html#ac18dd057c00d9ce48371bfa58e250bec">gwtmvtmodule::gwtmvttype</a>
+</li>
+<li>gwfmodelname2
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a9f5794035c3f9982716fad5f45b89300">gwtgwtexchangemodule::gwtexchangetype</a>
+, <a class="el" href="structgwtmvtmodule_1_1gwtmvttype.html#aa99b2b0dbbe3fed6f20ff579278b58a6">gwtmvtmodule::gwtmvttype</a>
+</li>
+<li>gwfmvrperioddata
+: <a class="el" href="structgwfmvrmodule_1_1gwfmvrtype.html#a211cd808291f18cadbc681e0193fb8cb">gwfmvrmodule::gwfmvrtype</a>
+</li>
 <li>gwfnodes
 : <a class="el" href="structmawmodule_1_1mawtype.html#a0d66dffb03c7a004caf60bbeb443ae1b">mawmodule::mawtype</a>
 </li>
@@ -249,11 +269,13 @@ $(document).ready(function(){initNavTree('functions_vars_g.html',''); initResiza
 </li>
 <li>gwfsat
 : <a class="el" href="structgwtfmimodule_1_1gwtfmitype.html#ab97d4b693af4a5b7647f95ce7b234d63">gwtfmimodule::gwtfmitype</a>
+, <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#a57a754841563cdd251ad67b0020d068c">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
 , <a class="el" href="structlakmodule_1_1laktype.html#a5928b3c3af706a042b56de2bbf46930f">lakmodule::laktype</a>
 , <a class="el" href="structmawmodule_1_1mawtype.html#acc0b3dc552a0153666dccc5f809194aa">mawmodule::mawtype</a>
 </li>
 <li>gwfspdis
 : <a class="el" href="structgwtfmimodule_1_1gwtfmitype.html#a282b72cf95724df5a7e4e45f775ba70d">gwtfmimodule::gwtfmitype</a>
+, <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#a12711cb80190d558cb30f88914faad58">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
 </li>
 <li>gwfstrgss
 : <a class="el" href="structgwtfmimodule_1_1gwtfmitype.html#ab1afc747c615f1222633543e53e4a3df">gwtfmimodule::gwtfmitype</a>
@@ -267,13 +289,28 @@ $(document).ready(function(){initNavTree('functions_vars_g.html',''); initResiza
 <li>gwpet
 : <a class="el" href="structuzfcellgroupmodule_1_1uzfcellgrouptype.html#a4ca2258b65226ec8507dc541ec4c2e17">uzfcellgroupmodule::uzfcellgrouptype</a>
 </li>
+<li>gwtexchange
+: <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#a2df7cba5a788434d75a64bf3fb6f5b89">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
+</li>
+<li>gwtinterfacemodel
+: <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#a73fbf27fce1d332e4f82c41cbad061b6">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
+</li>
+<li>gwtmodel
+: <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#aecb1cc7fd9581202f91f37bd56748129">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
+</li>
+<li>gwtmodel1
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a87e27586fd115090a0267be484acb0e0">gwtgwtexchangemodule::gwtexchangetype</a>
+</li>
+<li>gwtmodel2
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a319dd4ae554b32d449c75c516711087c">gwtgwtexchangemodule::gwtexchangetype</a>
+</li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu Nov 18 2021 18:07:09 for MODFLOW 6 by
+    <li class="footer">Generated on Wed Jun 29 2022 19:23:16 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>

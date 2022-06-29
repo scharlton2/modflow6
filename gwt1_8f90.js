@@ -2,11 +2,13 @@ var gwt1_8f90 =
 [
     [ "gwtmodeltype", "structgwtmodule_1_1gwtmodeltype.html", "structgwtmodule_1_1gwtmodeltype" ],
     [ "allocate_scalars", "gwt1_8f90.html#a5a8cbd98cab2c981d225285c2f899a54", null ],
+    [ "castasgwtmodel", "gwt1_8f90.html#a69c21c98d464d85dd10f6126bba5b07f", null ],
     [ "ftype_check", "gwt1_8f90.html#a2a8193d60b50c2a566851c726ef56756", null ],
     [ "gwt_ac", "gwt1_8f90.html#a908b0418ae0922f5ddef22f0cb03deeb", null ],
     [ "gwt_ad", "gwt1_8f90.html#abdb2ce002dcc57697f7fed3a45c62640", null ],
     [ "gwt_ar", "gwt1_8f90.html#a02903f047eec2a8b3421f29a56b7d4a1", null ],
     [ "gwt_bd", "gwt1_8f90.html#a563f603c2c05b455463740f2c10f32e3", null ],
+    [ "gwt_bdentry", "gwt1_8f90.html#ae9ab82c61684b4bfcaf39c872c5a6feb", null ],
     [ "gwt_cc", "gwt1_8f90.html#a10a7c777f2b712c6c90ef87f8dc97e49", null ],
     [ "gwt_cf", "gwt1_8f90.html#ac1a81e0927a08f13fdda82d1b58d8fb5", null ],
     [ "gwt_cq", "gwt1_8f90.html#a4698db21bd75128d104e34be9480c2cd", null ],

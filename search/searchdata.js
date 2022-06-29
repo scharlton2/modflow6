@@ -6,8 +6,8 @@ var indexSectionsWithContent =
   3: "abcdghiklmnopqrstuvx",
   4: "abcdefghiklmnopqrstuvwx",
   5: "abcdefghijklmnopqrstuvwxyz",
-  6: "lmostuv",
-  7: "t"
+  6: "clmostuv",
+  7: "mt"
 };
 
 var indexSectionNames =

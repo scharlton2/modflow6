@@ -32,7 +32,7 @@
   <td id="projectlogo"><img alt="Logo" src="mf6-triangular-grid.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">MODFLOW 6
-   &#160;<span id="projectnumber">version 6.3.0</span>
+   &#160;<span id="projectnumber">version 6.4.0</span>
    </div>
    <div id="projectbrief">MODFLOW 6 Code Documentation</div>
   </td>
@@ -149,6 +149,12 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 &#160;
 
 <h3><a id="index_g"></a>- g -</h3><ul>
+<li>generate_dependency_matrix()
+: <a class="el" href="structdag__module_1_1dag.html#a8add8e35b6f0e74734f1d8ca455b35c9">dag_module::dag</a>
+</li>
+<li>generate_digraph()
+: <a class="el" href="structdag__module_1_1dag.html#a8154bf662ab7c10403af28372b123054">dag_module::dag</a>
+</li>
 <li>get()
 : <a class="el" href="structmemorylistmodule_1_1memorylisttype.html#a4dbc26b61992e67e2d5b29f24bce7b17">memorylistmodule::memorylisttype</a>
 , <a class="el" href="structobsoutputlistmodule_1_1obsoutputlisttype.html#a1261a640815722092aa2969604b807b4">obsoutputlistmodule::obsoutputlisttype</a>
@@ -187,6 +193,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>get_current_time()
 : <a class="el" href="structbmif_1_1bmi.html#aa08718c0ab6511153a15a95ee08e9212">bmif::bmi</a>
 </li>
+<li>get_dependencies()
+: <a class="el" href="structdag__module_1_1dag.html#ae6a4f78f150f8e18a3f8f39c4d52bef0">dag_module::dag</a>
+</li>
 <li>get_dis_type()
 : <a class="el" href="structbasedismodule_1_1disbasetype.html#ac152f1c6437a2ef9c65462a3ee60c27c">basedismodule::disbasetype</a>
 , <a class="el" href="structgwfdismodule_1_1gwfdistype.html#a46d95c8a3f6e0b4f10d4c3693c6c70a6">gwfdismodule::gwfdistype</a>
@@ -198,6 +207,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 </li>
 <li>get_drain_factor()
 : <a class="el" href="structdrnmodule_1_1drntype.html#a616f00a10885326fe84136b0c7108bf6">drnmodule::drntype</a>
+</li>
+<li>get_edges()
+: <a class="el" href="structdag__module_1_1dag.html#afb5ce27d6b55f42e688427c79f7d4a1d">dag_module::dag</a>
 </li>
 <li>get_elem()
 : <a class="el" href="structhashtablemodule_1_1hashtabletype.html#a48b631fc967c31fba53cbcc746566cb0">hashtablemodule::hashtabletype</a>
@@ -489,11 +501,11 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>getcurrenttimeseriesrecord()
 : <a class="el" href="structtimeseriesmodule_1_1timeseriestype.html#a3d72195b7e0998f9634097b77c1eb0bc">timeseriesmodule::timeseriestype</a>
 </li>
+<li>getdiscretization()
+: <a class="el" href="structgridconnectionmodule_1_1gridconnectiontype.html#a9d59a9d85c20b78667a4b968b30446f6">gridconnectionmodule::gridconnectiontype</a>
+</li>
 <li>getdouble()
 : <a class="el" href="structblockparsermodule_1_1blockparsertype.html#a6ad15fb8323252bec67ae64d7cc26271">blockparsermodule::blockparsertype</a>
-</li>
-<li>getexchangedata()
-: <a class="el" href="structgridconnectionmodule_1_1gridconnectiontype.html#acbd51dc06352688126ea335df0713c5c">gridconnectionmodule::gridconnectiontype</a>
 </li>
 <li>getinteger()
 : <a class="el" href="structblockparsermodule_1_1blockparsertype.html#a8b1c32637f832e69926d89c1541f387c">blockparsermodule::blockparsertype</a>
@@ -523,9 +535,6 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>getlink()
 : <a class="el" href="structtimearrayseriesmanagermodule_1_1timearrayseriesmanagertype.html#a9e2a4f78b1d9133aed06e0e1cb873faa">timearrayseriesmanagermodule::timearrayseriesmanagertype</a>
 , <a class="el" href="structtimeseriesmanagermodule_1_1timeseriesmanagertype.html#ac005877a81e5b32dab1f1b6d07bd216e">timeseriesmanagermodule::timeseriesmanagertype</a>
-</li>
-<li>getmodelwithnbrs()
-: <a class="el" href="structgridconnectionmodule_1_1gridconnectiontype.html#ae211b167c8f552627a0ab5d297e8f8ea">gridconnectionmodule::gridconnectiontype</a>
 </li>
 <li>getnextitem()
 : <a class="el" href="structlistmodule_1_1listtype.html#a0c4ebb40956b0fd5e3db8b075399ac13">listmodule::listtype</a>
@@ -607,6 +616,9 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 , <a class="el" href="structgwfdisumodule_1_1gwfdisutype.html#aeef000bd6410385aac6e0f74ea6c5af1">gwfdisumodule::gwfdisutype</a>
 , <a class="el" href="structgwfdisvmodule_1_1gwfdisvtype.html#ad8d116d8b614096fb1cd9b4813409213">gwfdisvmodule::gwfdisvtype</a>
 </li>
+<li>gwf_gwf_add_to_flowja()
+: <a class="el" href="structgwfgwfexchangemodule_1_1gwfexchangetype.html#a0f42cf5f8a111835316b0f9a813114e4">gwfgwfexchangemodule::gwfexchangetype</a>
+</li>
 <li>gwf_gwf_bdsav()
 : <a class="el" href="structgwfgwfexchangemodule_1_1gwfexchangetype.html#aff6ca973df75464118aaa000e3da0987">gwfgwfexchangemodule::gwfexchangetype</a>
 </li>
@@ -643,14 +655,32 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>gwfbnd2gwtfmi()
 : <a class="el" href="structgwfgwtexchangemodule_1_1gwfgwtexchangetype.html#ac0cb9d4f190bcc5f0bb3eb90ea9b4bb5">gwfgwtexchangemodule::gwfgwtexchangetype</a>
 </li>
+<li>gwfconn2gwtconn()
+: <a class="el" href="structgwfgwtexchangemodule_1_1gwfgwtexchangetype.html#acf7ff5a31161b5b79e3584df2ba6008d">gwfgwtexchangemodule::gwfgwtexchangetype</a>
+</li>
 <li>gwfgwfconnection_ctor()
 : <a class="el" href="structgwfgwfconnectionmodule_1_1gwfgwfconnectiontype.html#a9559232d1f1e87f1ee1b9178856e59f1">gwfgwfconnectionmodule::gwfgwfconnectiontype</a>
+</li>
+<li>gwfifm_cr()
+: <a class="el" href="structgwfinterfacemodelmodule_1_1gwfinterfacemodeltype.html#a5997c24d344a1c4bf82315ddf29829a0">gwfinterfacemodelmodule::gwfinterfacemodeltype</a>
 </li>
 <li>gwfsatold()
 : <a class="el" href="structgwtfmimodule_1_1gwtfmitype.html#aa06ff61a6abcac803a3364123ae4b2f9">gwtfmimodule::gwtfmitype</a>
 </li>
 <li>gwseep()
 : <a class="el" href="structuzfcellgroupmodule_1_1uzfcellgrouptype.html#aa1742cdb5e129c5d2ea16e6364fe8472">uzfcellgroupmodule::uzfcellgrouptype</a>
+</li>
+<li>gwt_gwt_bdsav()
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a029076462b633c44e34f229c7f26ef43">gwtgwtexchangemodule::gwtexchangetype</a>
+</li>
+<li>gwt_gwt_df_obs()
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a2aacd20a5d03e30af364b43fdd061c65">gwtgwtexchangemodule::gwtexchangetype</a>
+</li>
+<li>gwt_gwt_rp_obs()
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a53fa261ce98b8040776f861690edfac9">gwtgwtexchangemodule::gwtexchangetype</a>
+</li>
+<li>gwt_gwt_save_simvals()
+: <a class="el" href="structgwtgwtexchangemodule_1_1gwtexchangetype.html#a81145ffc8d79ddca2e86b9af04dc06ef">gwtgwtexchangemodule::gwtexchangetype</a>
 </li>
 <li>gwt_obs_ar()
 : <a class="el" href="structgwtobsmodule_1_1gwtobstype.html#a67f20dd25a2ea222f438019a1257d15a">gwtobsmodule::gwtobstype</a>
@@ -670,13 +700,19 @@ $(document).ready(function(){initNavTree('functions_func_g.html',''); initResiza
 <li>gwt_ot_obs()
 : <a class="el" href="structgwtmodule_1_1gwtmodeltype.html#a938b8f3049a1218a838746277a9141bb">gwtmodule::gwtmodeltype</a>
 </li>
+<li>gwtgwtconnection_ctor()
+: <a class="el" href="structgwtgwtconnectionmodule_1_1gwtgwtconnectiontype.html#af891c843f22b4d7c12c6966108ec5d9d">gwtgwtconnectionmodule::gwtgwtconnectiontype</a>
+</li>
+<li>gwtifmod_cr()
+: <a class="el" href="structgwtinterfacemodelmodule_1_1gwtinterfacemodeltype.html#abf9b71eed6e7ce8d80b20b526ac0fb44">gwtinterfacemodelmodule::gwtinterfacemodeltype</a>
+</li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu Nov 18 2021 18:07:09 for MODFLOW 6 by
+    <li class="footer">Generated on Wed Jun 29 2022 19:23:16 for MODFLOW 6 by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
   </ul>
