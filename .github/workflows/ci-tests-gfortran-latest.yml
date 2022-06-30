@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-2019, macos-latest ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     defaults:
       run:
         shell: bash
@@ -45,6 +45,12 @@ jobs:
           sudo ln -fs /usr/local/bin/gfortran-10 /usr/local/bin/gfortran
           sudo ln -fs /usr/local/bin/gcc-10 /usr/local/bin/gcc
           sudo ln -fs /usr/local/bin/g++-10 /usr/local/bin/g++
+
+      - name: Setup path on Windows
+        if: runner.os == 'Windows'
+        run: |
+          # see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path
+          echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $GITHUB_PATH
 
       - name: Print GNU compiler versions
         run: |
