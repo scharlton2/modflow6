@@ -185,14 +185,14 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Setup Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
           environment-file: environment.yml
           cache-downloads: true
           cache-environment: true
           create-args: >-
-            python=<3.13
+            python<3.13
 
       - name: Update version
         working-directory: distribution
