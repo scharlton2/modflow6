@@ -386,9 +386,12 @@ jobs:
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
           environment-file: modflow6/environment.yml
           cache-downloads: true
           cache-environment: true
+          create-args: >-
+            python=3.12          
 
       - name: Setup ${{ inputs.compiler_toolchain }} ${{ inputs.compiler_version }}
         uses: fortran-lang/setup-fortran@v1
