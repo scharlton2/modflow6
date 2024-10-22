@@ -120,12 +120,16 @@ jobs:
       - name: Setup Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-version: '1.5.10-0' # any version from https://github.com/mamba-org/micromamba-releases
           environment-file: modflow6/environment.yml
           cache-downloads: true
           cache-environment: true
           init-shell: >-
             bash
             powershell
+          create-args: >-
+            python=3.12
+  
 
       - name: Setup ${{ matrix.compiler }} ${{ matrix.version }}
         if: (!(runner.os == 'Windows' && matrix.parallel))
