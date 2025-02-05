@@ -1,0 +1,274 @@
+name: MODFLOW 6 documentation
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/release.yml'
+      - '.github/workflows/ci.yml'
+      - '.hpc/**'
+  pull_request:
+    branches:
+      - master
+      - develop
+    paths-ignore:
+      - '.github/workflows/release.yml'
+      - '.hpc/**'
+env:
+  PIXI_BETA_WARNING_OFF: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lint:
+    name: Check format
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout modflow6
+        uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.40.1
+
+      - name: Check spelling
+        run: pixi run check-spelling
+  
+  rtd_build:
+    name: Build ReadTheDocs
+    needs:
+      - lint
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      FC: gfortran
+      FC_V: 12
+    steps:
+      - name: Checkout modflow6
+        uses: actions/checkout@v4
+        with:
+          path: modflow6
+
+      - name: Checkout modflow6-examples
+        uses: actions/checkout@v4
+        with:
+          repository: MODFLOW-USGS/modflow6-examples
+          path: modflow6-examples
+
+      - name: Checkout usgslatex
+        uses: actions/checkout@v4
+        with:
+          repository: MODFLOW-USGS/usgslatex
+          path: usgslatex
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.40.1
+          manifest-path: "modflow6/pixi.toml"
+
+      - name: Custom pixi install
+        working-directory: modflow6
+        run: pixi run install
+  
+      - name: Print python package versions
+        working-directory: modflow6
+        run: pixi run pip list
+
+      - name: Install TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt install texlive-science \
+            texlive-latex-extra \
+            texlive-font-utils \
+            texlive-fonts-recommended \
+            texlive-fonts-extra
+
+      - name: Install USGS LaTeX style files and Univers font
+        working-directory: usgslatex/usgsLaTeX
+        run: sudo ./install.sh --all-users
+
+      - name: Build MF6IO files from DFNs
+        working-directory: modflow6
+        run: pixi run run-mf6ivar
+
+      - name: Setup ${{ env.FC }} ${{ env.FC_V }}
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: gcc
+          version: ${{ env.FC_V }}
+
+      - name: Cache modflow6 examples
+        id: cache-examples
+        uses: actions/cache@v4
+        with:
+          path: modflow6-examples/examples
+          key: modflow6-examples-${{ hashFiles('modflow6-examples/scripts/**') }}
+
+      - name: Install extra Python packages
+        if: steps.cache-examples.outputs.cache-hit != 'true'
+        working-directory: modflow6
+        run: |
+          pixi run pip install -r ../modflow6-examples/etc/requirements.pip.txt
+          pixi run pip install -r ../modflow6-examples/etc/requirements.usgs.txt
+
+      - name: Update FloPy
+        if: steps.cache-examples.outputs.cache-hit != 'true'
+        working-directory: modflow6/autotest
+        run: pixi run update-flopy
+
+      # the example models also need mf2005, triangle and gridgen
+      - name: Install extra executables
+        if: steps.cache-examples.outputs.cache-hit != 'true'
+        uses: modflowpy/install-modflow-action@v1
+        with:
+          subset: mf2005,triangle,gridgen
+
+      - name: Build example models
+        if: steps.cache-examples.outputs.cache-hit != 'true'
+        working-directory: modflow6
+        shell: pixi run bash -e {0}
+        run: |
+          cd ../modflow6-examples/autotest
+          pytest -v -n auto test_scripts.py --init
+          ls -lh ../examples/
+
+      - name: Run benchmarks
+        working-directory: modflow6
+        run: pixi run benchmark
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      
+      - name: Show benchmarks
+        working-directory: modflow6/distribution
+        run: cat run-time-comparison.md
+    
+      - name: Upload benchmarks
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-time-comparison
+          path: modflow6/distribution/run-time-comparison.md
+
+      - name: Collect deprecations
+        working-directory: modflow6
+        run: pixi run deprecations
+
+      - name: Show deprecations
+        working-directory: modflow6/doc/mf6io/mf6ivar/md
+        run: cat deprecations.md
+
+      - name: Upload deprecations
+        uses: actions/upload-artifact@v4
+        with:
+          name: deprecations
+          path: modflow6/doc/mf6io/mf6ivar/md/deprecations.md
+
+      - name: Run sphinx
+        working-directory: modflow6
+        run: pixi run sphinx
+      
+      - name: Upload RTD files
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtd-files-for-${{ github.sha }}
+          path: |
+            modflow6/.build_rtd_docs/dev.rst
+            modflow6/.build_rtd_docs/index.rst
+            modflow6/.build_rtd_docs/mf6io.rst
+            modflow6/.build_rtd_docs/_dev/
+            modflow6/.build_rtd_docs/_mf6io/
+            modflow6/.build_rtd_docs/_mf6run/
+            modflow6/.build_rtd_docs/_static/
+
+      - name: Build PDF documents
+        working-directory: modflow6
+        run: pixi run build-docs
+
+      - name: Upload PDF documents
+        uses: actions/upload-artifact@v4
+        with:
+          name: mf6io.pdf
+          path: |
+            modflow6/mf6io.pdf
+            modflow6/ReleaseNotes.pdf
+            modflow6/zonebudget.pdf
+            modflow6/converter_mf5to6.pdf
+            modflow6/mf6suptechinfo.pdf
+            modflow6/mf6examples.pdf
+
+  rtd_trigger:
+    name: rtd-trigger
+    needs: rtd_build
+    runs-on: ubuntu-22.04
+    if: github.repository_owner == 'MODFLOW-USGS' && github.event_name == 'push'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Trigger RTDs build on push to repo branches
+        uses: dfm/rtds-action@v1
+        with:
+          webhook_url: ${{ secrets.MF6_RTDS_WEBHOOK_URL }}
+          webhook_token: ${{ secrets.MF6_RTDS_WEBHOOK_TOKEN }}
+          commit_ref: ${{ github.ref }}
+
+  doxygen_build:
+    runs-on: ubuntu-22.04
+    env:
+      working-directory: .build_rtd_docs
+      common-directory: .github/common
+      branch-name: ${GITHUB_REF##*/}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Print branch name
+        run: echo ${{env.branch-name}}
+
+      - name: Install doxygen and graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install doxygen graphviz
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.40.1
+
+      - name: Custom pixi install
+        run: pixi run install
+
+      - name: Print python package versions
+        run: pixi run pip list
+
+      - name: update MODFLOW 6 version
+        run: pixi run update-version
+
+      - name: run doxygen
+        run: doxygen
+        working-directory: ${{env.working-directory}}
+      
+      - name: upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{env.working-directory}}/html
+
+  pages_deploy:
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    needs: doxygen_build
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

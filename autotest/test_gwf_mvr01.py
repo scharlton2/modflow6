@@ -1,29 +1,20 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
+import pytest
+from framework import TestFramework
 
 name = "gwf_mvr01"
-ws = os.path.join("temp", name)
-exdirs = [ws]
+cases = [name]
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     # static model data
     # temporal discretization
     nper = 1
     tdis_rc = []
-    for idx in range(nper):
+    for _ in range(nper):
         tdis_rc.append((1.0, 1, 1.0))
 
     # spatial discretization data
@@ -44,12 +35,10 @@ def build_model(idx, dir):
 
     # build MODFLOW 6 files
     sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
+        sim_name=name, version="mf6", exe_name="mf6", sim_ws=test.workspace
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -61,8 +50,8 @@ def build_model(idx, dir):
     )
 
     # create iterative model solution and register the gwf model with it
-    csv0 = "{}.outer.ims.csv".format(name)
-    csv1 = "{}.inner.ims.csv".format(name)
+    csv0 = f"{name}.outer.ims.csv"
+    csv1 = f"{name}.inner.ims.csv"
     ims = flopy.mf6.ModflowIms(
         sim,
         csv_outer_output_filerecord=csv0,
@@ -104,9 +93,7 @@ def build_model(idx, dir):
         [(0, 0, 0), 1.0],
         [(0, nrow - 1, ncol - 1), 0.0],
     ]
-    chd = flopy.mf6.modflow.ModflowGwfchd(
-        gwf, stress_period_data=spd, pname="chd-1"
-    )
+    chd = flopy.mf6.modflow.ModflowGwfchd(gwf, stress_period_data=spd, pname="chd-1")
 
     # drn file
     drn6 = [
@@ -204,7 +191,7 @@ def build_model(idx, dir):
         [3, "status", "active"],
         [4, "status", "active"],
     ]
-    cnvgpth = "{}.sfr.cnvg.csv".format(name)
+    cnvgpth = f"{name}.sfr.cnvg.csv"
     sfr = flopy.mf6.ModflowGwfsfr(
         gwf,
         mover=True,
@@ -285,7 +272,7 @@ def build_model(idx, dir):
         (2, "rate", 0.0),
     ]
     perioddata = lakeperioddata + outletperioddata
-    cnvgpth = "{}.lak.cnvg.csv".format(name)
+    cnvgpth = f"{name}.lak.cnvg.csv"
     lak = flopy.mf6.ModflowGwflak(
         gwf,
         mover=True,
@@ -323,7 +310,7 @@ def build_model(idx, dir):
         [7, 1.0e-8, 0, 0, 0, 0, 0, 0],
         [8, 1.0e-8, 0, 0, 0, 0, 0, 0],
     ]
-    cnvgpth = "{}.uzf.cnvg.csv".format(name)
+    cnvgpth = f"{name}.uzf.cnvg.csv"
     uzf = flopy.mf6.ModflowGwfuzf(
         gwf,
         mover=True,
@@ -360,7 +347,7 @@ def build_model(idx, dir):
     mvr = flopy.mf6.ModflowGwfmvr(
         gwf,
         maxmvr=len(perioddata),
-        budget_filerecord="{}.mvr.bud".format(name),
+        budget_filerecord=f"{name}.mvr.bud",
         maxpackages=len(packages),
         print_flows=True,
         packages=packages,
@@ -370,8 +357,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -380,11 +367,9 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model...")
-
+def check_output(idx, test):
     # mvr budget terms
-    fpth = os.path.join(sim.simpath, "gwf_mvr01.mvr.bud")
+    fpth = os.path.join(test.workspace, "gwf_mvr01.mvr.bud")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     times = bobj.get_times()
     records = bobj.get_data(totim=times[-1])
@@ -452,39 +437,15 @@ def eval_model(sim):
     )
 
     assert records[24].shape == (0,)
-    return
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

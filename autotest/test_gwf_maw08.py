@@ -1,25 +1,16 @@
-# test to evaluate Newton-Raphson solution for a single column steady-state
-# dry multi-aquifer well problem. Developed to address issue #546
+"""
+Test Newton-Raphson solution for a single column steady-state
+dry multi-aquifer well problem. Developed to address issue #546
+"""
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ("maw_08a", "maw_08b")
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ("maw_08a", "maw_08b")
 dis_option = ("dis", "disv")
 
 nlay = 3
@@ -52,13 +43,13 @@ Kv = 1.0
 radius = 0.05
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     dvclose, rclose, relax = 1e-9, 1e-9, 1.0
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
@@ -75,7 +66,7 @@ def build_model(idx, dir):
         complexity="complex",
         outer_dvclose=dvclose,
         inner_dvclose=dvclose,
-        rcloserecord="{} strict".format(rclose),
+        rcloserecord=f"{rclose} strict",
         relaxation_factor=relax,
     )
 
@@ -131,7 +122,7 @@ def build_model(idx, dir):
         k33=Kv,
     )
 
-    # <wellno> <radius> <bottom> <strt> <condeqn> <ngwfnodes>
+    # <ifno> <radius> <bottom> <strt> <condeqn> <ngwfnodes>
     mawpackagedata = flopy.mf6.ModflowGwfmaw.packagedata.empty(gwf, maxbound=1)
     mawpackagedata["radius"] = radius
     mawpackagedata["bottom"] = maw_bot
@@ -139,10 +130,8 @@ def build_model(idx, dir):
     mawpackagedata["condeqn"] = "thiem"
     mawpackagedata["ngwfnodes"] = 2
 
-    # <wellno> <icon> <cellid(ncelldim)> <scrn_top> <scrn_bot> <hk_skin> <radius_skin>
-    mawconnectiondata = flopy.mf6.ModflowGwfmaw.connectiondata.empty(
-        gwf, maxbound=2
-    )
+    # <ifno> <icon> <cellid(ncelldim)> <scrn_top> <scrn_bot> <hk_skin> <radius_skin>
+    mawconnectiondata = flopy.mf6.ModflowGwfmaw.connectiondata.empty(gwf, maxbound=2)
     mawconnectiondata["icon"] = [0, 1]
     mawconnectiondata["cellid"] = cellids
     mawconnectiondata["scrn_top"] = 100.0
@@ -150,8 +139,8 @@ def build_model(idx, dir):
     mawconnectiondata["hk_skin"] = -999
     mawconnectiondata["radius_skin"] = -999
 
-    mbin = "{}.maw.bin".format(gwfname)
-    mbud = "{}.maw.bud".format(gwfname)
+    mbin = f"{gwfname}.maw.bin"
+    mbud = f"{gwfname}.maw.bud"
     maw = flopy.mf6.ModflowGwfmaw(
         gwf,
         print_input=True,
@@ -163,78 +152,62 @@ def build_model(idx, dir):
         packagedata=mawpackagedata,
         connectiondata=mawconnectiondata,
     )
-    opth = "{}.maw.obs".format(gwfname)
+    opth = f"{gwfname}.maw.obs"
     obsdata = {
-        "{}.maw.obs.csv".format(gwfname): [
+        f"{gwfname}.maw.obs.csv": [
             ("whead", "head", (0,)),
         ]
     }
-    maw.obs.initialize(
-        filename=opth, digits=20, print_input=True, continuous=obsdata
-    )
+    maw.obs.initialize(filename=opth, digits=20, print_input=True, continuous=obsdata)
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[
-            (
-                "HEAD",
-                "ALL",
-            ),
-            (
-                "BUDGET",
-                "ALL",
-            ),
+            ("HEAD", "ALL"),
+            ("BUDGET", "ALL"),
         ],
         printrecord=[
-            (
-                "HEAD",
-                "ALL",
-            ),
-            (
-                "BUDGET",
-                "ALL",
-            ),
+            ("HEAD", "ALL"),
+            ("BUDGET", "ALL"),
         ],
     )
 
     return sim, None
 
 
-def eval_results(sim):
-    print("evaluating results...")
-
+def eval_results(idx, test):
     # calculate volume of water and make sure it is conserved
-    name = ex[sim.idxsim]
+    name = cases[idx]
     gwfname = "gwf_" + name
     fname = gwfname + ".maw.bin"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     bobj = flopy.utils.HeadFile(fname, text="HEAD")
 
     well_head = bobj.get_data().flatten()
-    assert np.allclose(
-        well_head, 10.0
-    ), "simulated maw head ({}) does not equal 10.".format(well_head[0])
+    assert np.allclose(well_head, 10.0), (
+        f"simulated maw head ({well_head[0]}) does not equal 10."
+    )
 
     fname = gwfname + ".hds"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     hobj = flopy.utils.HeadFile(fname)
     head = hobj.get_alldata()[1:]
 
     # compare the maw-gwf flows with the gwf-maw flows
     fname = gwfname + ".maw.bud"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     mbud = flopy.utils.CellBudgetFile(fname, precision="double")
     maw_gwf = mbud.get_data(text="GWF")
 
     fname = gwfname + ".cbc"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     gbud = flopy.utils.CellBudgetFile(fname, precision="double")
     gwf_maw = gbud.get_data(text="MAW")
@@ -245,45 +218,18 @@ def eval_results(sim):
         for i in range(ra_maw.shape[0]):
             qmaw = ra_maw[i]["q"]
             qgwf = ra_gwf[i]["q"]
-            msg = "step {} record {} comparing qmaw with qgwf: {} {}".format(
-                istp, i, qmaw, qgwf
-            )
+            msg = f"step {istp} record {i} comparing qmaw with qgwf: {qmaw} {qgwf}"
             print(msg)
             assert np.allclose(qmaw, -qgwf), msg
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_results, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_results, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: eval_results(idx, t),
+        targets=targets,
+    )
+    test.run()

@@ -1,29 +1,19 @@
-# Simple one-layer model with a lak.  Purpose is to test outlets that
-# move solute from one lake to another.
+"""
+Simple one-layer model with a lak.  Purpose is to test outlets that
+move solute from one lake to another.
+"""
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import DNODATA, TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["lkt_02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["lkt_02"]
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     lx = 7.0
     lz = 1.0
     nlay = 1
@@ -54,17 +44,15 @@ def build_model(idx, dir):
     nouter, ninner = 700, 300
     hclose, rclose, relax = 1e-8, 1e-6, 0.97
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -73,7 +61,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwf6",
         modelname=gwfname,
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
 
     imsgwf = flopy.mf6.ModflowIms(
@@ -89,7 +77,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
 
     idomain = np.full((nlay, nrow, ncol), 1)
@@ -132,10 +120,10 @@ def build_model(idx, dir):
         save_flows=False,
         pname="CHD-1",
         auxiliary="CONCENTRATION",
-        filename="{}.chd".format(gwfname),
+        filename=f"{gwfname}.chd",
     )
 
-    # pak_data = [lakeno, strt, nlakeconn, CONC, dense, boundname]
+    # pak_data = [ifno, strt, nlakeconn, CONC, dense, boundname]
     pak_data = [
         (0, -0.4, 2, 0.0, 1025.0),
         (1, -0.4, 1, 0.0, 1025.0),
@@ -144,24 +132,18 @@ def build_model(idx, dir):
 
     connlen = connwidth = delr / 2.0
     con_data = []
-    # con_data=(lakeno,iconn,(cellid),claktype,bedleak,belev,telev,connlen,connwidth )
+    # con_data=(ifno,iconn,(cellid),claktype,bedleak,belev,telev,connlen,connwidth )
     # lake 1
     con_data.append(
-        (0, 0, (0, 0, 1), "HORIZONTAL", "None", 10, 10, connlen, connwidth)
+        (0, 0, (0, 0, 1), "HORIZONTAL", DNODATA, 10, 10, connlen, connwidth)
     )
-    con_data.append(
-        (0, 1, (0, 0, 2), "VERTICAL", "None", 10, 10, connlen, connwidth)
-    )
+    con_data.append((0, 1, (0, 0, 2), "VERTICAL", DNODATA, 10, 10, connlen, connwidth))
     # lake 2
-    con_data.append(
-        (1, 0, (0, 0, 3), "VERTICAL", "None", 10, 10, connlen, connwidth)
-    )
+    con_data.append((1, 0, (0, 0, 3), "VERTICAL", DNODATA, 10, 10, connlen, connwidth))
     # lake 3
+    con_data.append((2, 0, (0, 0, 4), "VERTICAL", DNODATA, 10, 10, connlen, connwidth))
     con_data.append(
-        (2, 0, (0, 0, 4), "VERTICAL", "None", 10, 10, connlen, connwidth)
-    )
-    con_data.append(
-        (2, 1, (0, 0, 5), "HORIZONTAL", "None", 10, 10, connlen, connwidth)
+        (2, 1, (0, 0, 5), "HORIZONTAL", DNODATA, 10, 10, connlen, connwidth)
     )
 
     p_data = [
@@ -213,8 +195,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -226,7 +208,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwt6",
         modelname=gwtname,
-        model_nam_file="{}.nam".format(gwtname),
+        model_nam_file=f"{gwtname}.nam",
     )
 
     if not single_matrix:
@@ -243,7 +225,7 @@ def build_model(idx, dir):
             scaling_method="NONE",
             reordering_method="NONE",
             relaxation_factor=relax,
-            filename="{}.ims".format(gwtname),
+            filename=f"{gwtname}.ims",
         )
         sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -263,26 +245,22 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwtic(
         gwt,
         strt=[100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        filename="{}.ic".format(gwtname),
+        filename=f"{gwtname}.ic",
     )
 
     # advection
-    adv = flopy.mf6.ModflowGwtadv(
-        gwt, scheme="UPSTREAM", filename="{}.adv".format(gwtname)
-    )
+    adv = flopy.mf6.ModflowGwtadv(gwt, scheme="UPSTREAM", filename=f"{gwtname}.adv")
 
     # storage
     porosity = 0.30
-    sto = flopy.mf6.ModflowGwtmst(
-        gwt, porosity=porosity, filename="{}.sto".format(gwtname)
-    )
+    sto = flopy.mf6.ModflowGwtmst(gwt, porosity=porosity, filename=f"{gwtname}.sto")
     # sources
     sourcerecarray = [
         ("CHD-1", "AUX", "CONCENTRATION"),
         # ('WEL-1', 'AUX', 'CONCENTRATION'),
     ]
     ssm = flopy.mf6.ModflowGwtssm(
-        gwt, sources=sourcerecarray, filename="{}.ssm".format(gwtname)
+        gwt, sources=sourcerecarray, filename=f"{gwtname}.ssm"
     )
 
     lktpackagedata = [
@@ -342,11 +320,9 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
-        concentrationprintrecord=[
-            ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
+        concentrationprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("CONCENTRATION", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("CONCENTRATION", "ALL"), ("BUDGET", "ALL")],
     )
@@ -357,182 +333,149 @@ def build_model(idx, dir):
         exgtype="GWF6-GWT6",
         exgmnamea=gwfname,
         exgmnameb=gwtname,
-        filename="{}.gwfgwt".format(name),
+        filename=f"{name}.gwfgwt",
     )
 
     return sim, None
 
 
-def eval_results(sim):
-    print("evaluating results...")
-
+def check_output(idx, test):
     # ensure lake concentrations were saved
-    name = ex[sim.idxsim]
+    name = test.name
     gwtname = "gwt_" + name
     fname = gwtname + ".lkt.bin"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
 
     # load the lake concentrations and make sure all values are correct
     cobj = flopy.utils.HeadFile(fname, text="CONCENTRATION")
     clak = cobj.get_data()
-    answer = np.array([2.20913605e-01, 2.06598617e-03, 1.64112298e-05])
-    assert np.allclose(clak, answer), "{} {}".format(clak, answer)
+    answer = np.array([2.20917292e-01, 2.06602236e-03, 1.64115202e-05])
+    assert np.allclose(clak, answer), f"{clak} {answer}"
 
     # load the aquifer concentrations and make sure all values are correct
     fname = gwtname + ".ucn"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     cobj = flopy.utils.HeadFile(fname, text="CONCENTRATION")
     caq = cobj.get_data()
     answer = np.array(
         [
             1.00000000e02,
-            8.50686091e00,
-            5.71594204e-01,
-            1.30062708e-02,
-            2.38399700e-04,
-            3.30711200e-06,
-            7.33445279e-08,
+            8.50692758e00,
+            5.71603342e-01,
+            1.30064549e-02,
+            2.38402430e-04,
+            3.30714374e-06,
+            7.33450747e-08,
         ]
     )
-    assert np.allclose(caq, answer), "{} {}".format(caq.flatten(), answer)
+    assert np.allclose(caq, answer), f"{caq.flatten()} {answer}"
 
     # lkt observation results
-    fpth = os.path.join(sim.simpath, gwtname + ".lkt.obs.csv")
+    fpth = os.path.join(test.workspace, gwtname + ".lkt.obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
     res = tc["LKT1CONC"]
     answer = [
-        0.00418347,
-        0.01249363,
-        0.02487425,
-        0.04126975,
-        0.06162508,
-        0.0858858,
-        0.113998,
-        0.1459085,
-        0.1815644,
-        0.2209136,
+        0.00418356,
+        0.01249386,
+        0.02487472,
+        0.04127051,
+        0.06162619,
+        0.08588733,
+        0.114,
+        0.145911,
+        0.1815675,
+        0.2209173,
     ]
     answer = np.array(answer)
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT1STOR"]
     answer = [
-        -0.1988482,
-        -0.3949968,
-        -0.588474,
-        -0.779308,
-        -0.9675264,
-        -1.153157,
-        -1.336226,
-        -1.516762,
-        -1.694791,
-        -1.87034,
+        -0.198852,
+        -0.3950041,
+        -0.5884846,
+        -0.7793216,
+        -0.9675429,
+        -1.153176,
+        -1.336248,
+        -1.516786,
+        -1.694817,
+        -1.870368,
     ]
     answer = np.array(answer)
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT1MYLAKE1"]
     answer = [
-        0.1992666,
-        0.3962462,
-        0.5909615,
-        0.7834349,
-        0.9736889,
-        1.161745,
-        1.347626,
-        1.531353,
-        1.712948,
-        1.892431,
+        0.1992704,
+        0.3962535,
+        0.5909721,
+        0.7834487,
+        0.9737055,
+        1.161765,
+        1.347648,
+        1.531377,
+        1.712974,
+        1.89246,
     ]
     answer = np.array(answer)
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT1FJF"]
     answer = -tc["LKT2FJF"]
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT3FJF"]
     answer = -tc["LKT4FJF"]
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT5FJF"]
     answer = tc["LKT1FJF"]
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT6FJF"]
     answer = tc["LKT2FJF"] + tc["LKT3FJF"]
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
     res = tc["LKT7FJF"]
     answer = tc["LKT4FJF"]
-    assert np.allclose(res, answer), "{} {}".format(res, answer)
+    assert np.allclose(res, answer), f"{res} {answer}"
 
     # load the lake budget file
     fname = gwtname + ".lkt.bud"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     bobj = flopy.utils.CellBudgetFile(fname, precision="double", verbose=False)
     # check the flow-ja-face terms
     res = bobj.get_data(text="flow-ja-face")[-1]
     answer = [
-        (1, 2, -0.02209136),
-        (2, 1, 0.02209136),
+        (1, 2, -0.02209173),
+        (2, 1, 0.02209173),
         (2, 3, -0.0002066),
         (3, 2, 0.0002066),
     ]
     dt = [("node", "<i4"), ("node2", "<i4"), ("q", "<f8")]
     answer = np.array(answer, dtype=dt)
     for dtname, dttype in dt:
-        assert np.allclose(res[dtname], answer[dtname]), "{} {}".format(
-            res, answer
-        )
-    # check the storage terms, which include the total mass in the lake as an aux variable
+        assert np.allclose(res[dtname], answer[dtname]), f"{res} {answer}"
+    # check the storage terms, which include the total mass in the lake
+    # as an aux variable
     res = bobj.get_data(text="storage")[-1]
     answer = [
-        (1, 1, -1.87033970e00, 1.05004295e-01),
-        (2, 2, -2.18847617e-02, 8.85953709e-04),
-        (3, 3, -2.10987695e-04, 6.88867607e-06),
+        (1, 1, -1.87036784e00, 1.05006009e-01),
+        (2, 2, -2.18851269e-02, 8.85969084e-04),
+        (3, 3, -2.10991316e-04, 6.88879732e-06),
     ]
     dt = [("node", "<i4"), ("node2", "<i4"), ("q", "<f8"), ("MASS", "<f8")]
     answer = np.array(answer, dtype=dt)
     for dtname, dttype in dt:
-        assert np.allclose(res[dtname], answer[dtname]), "{} {}".format(
-            res, answer
-        )
-
-    # uncomment when testing
-    # assert False
-
-    return
+        assert np.allclose(res[dtname], answer[dtname]), f"{res} {answer}"
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_results, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_results, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

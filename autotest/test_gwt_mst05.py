@@ -1,39 +1,25 @@
 """
-MODFLOW 6 Autotest
 Test isotherms.
-
 """
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from flopy.utils.binaryfile import write_budget, write_head
+from flopy.utils.gridutil import uniform_flow_field
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-from binary_file_writer import write_head, write_budget, uniform_flow_field
-
-ex = ["mst05a", "mst05b"]
+cases = ["mst05a", "mst05b"]
 isotherm = ["freundlich", "langmuir"]
 distcoef = [0.3, 100.0]
 sp2 = [0.7, 0.003]
 xmax_plot = [1500, 500]
 ymax_plot = [0.5, 1.0]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     nlay, nrow, ncol = 1, 1, 101
     perlen = [160.0, 1340.0]
     nper = len(perlen)
@@ -59,10 +45,10 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
@@ -77,7 +63,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwt6",
         modelname=gwtname,
-        model_nam_file="{}.nam".format(gwtname),
+        model_nam_file=f"{gwtname}.nam",
     )
     gwt.name_file.save_flows = True
 
@@ -95,7 +81,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwtname),
+        filename=f"{gwtname}.ims",
     )
     sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -158,9 +144,7 @@ def build_model(idx, dir):
         ]
     )
     wel = [
-        np.array(
-            [(0 + 1, 0 + 1, inflow_rate, source_concentration)], dtype=dt
-        ),
+        np.array([(0 + 1, 0 + 1, inflow_rate, source_concentration)], dtype=dt),
         np.array([(0 + 1, 0 + 1, inflow_rate, 0.0)], dtype=dt),
     ]
     chd = np.array([(ncol - 1 + 1, ncol - 1 + 1, -inflow_rate, 0.0)], dtype=dt)
@@ -173,9 +157,7 @@ def build_model(idx, dir):
             ("SATURATION", np.float64),
         ]
     )
-    sat = np.array(
-        [(i, i, 0.0, 1.0) for i in range(nlay * nrow * ncol)], dtype=dt
-    )
+    sat = np.array([(i, i, 0.0, 1.0) for i in range(nlay * nrow * ncol)], dtype=dt)
 
     fname = os.path.join(ws, "mybudget.bud")
     with open(fname, "wb") as fbin:
@@ -251,11 +233,9 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
-        concentrationprintrecord=[
-            ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
+        concentrationprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("CONCENTRATION", "LAST"), ("BUDGET", "LAST")],
         printrecord=[("CONCENTRATION", "LAST"), ("BUDGET", "LAST")],
     )
@@ -269,7 +249,7 @@ def build_model(idx, dir):
     obs_package = flopy.mf6.ModflowUtlobs(
         gwt,
         pname="conc_obs",
-        filename="{}.obs".format(gwtname),
+        filename=f"{gwtname}.obs",
         digits=10,
         print_input=True,
         continuous=obs_data,
@@ -278,31 +258,27 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_transport(sim):
-    print("evaluating transport...")
-
-    name = ex[sim.idxsim]
+def check_output(idx, test):
+    name = cases[idx]
     gwtname = "gwt_" + name
 
-    fpth = os.path.join(sim.simpath, "{}.ucn".format(gwtname))
+    fpth = os.path.join(test.workspace, f"{gwtname}.ucn")
     try:
-        cobj = flopy.utils.HeadFile(
-            fpth, precision="double", text="CONCENTRATION"
-        )
+        cobj = flopy.utils.HeadFile(fpth, precision="double", text="CONCENTRATION")
         conc = cobj.get_data()
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
-    fpth = os.path.join(sim.simpath, "conc_obs.csv")
+    fpth = os.path.join(test.workspace, "conc_obs.csv")
     try:
         obs = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     cnorm = obs["X008"] / 0.05
     cnorm_max = [0.32842034, 0.875391418]
-    msg = "{} /= {}".format(cnorm_max[sim.idxsim], cnorm.max())
-    assert np.allclose(cnorm_max[sim.idxsim], cnorm.max(), atol=0.001), msg
+    msg = f"{cnorm_max[idx]} /= {cnorm.max()}"
+    assert np.allclose(cnorm_max[idx], cnorm.max(), atol=0.001), msg
 
     savefig = False
     if savefig:
@@ -310,50 +286,22 @@ def eval_transport(sim):
 
         fig = plt.figure()
         plt.plot(obs["time"], obs["X008"] / 0.05, "bo-")
-        plt.xlim(0, xmax_plot[sim.idxsim])
-        plt.ylim(0, ymax_plot[sim.idxsim])
+        plt.xlim(0, xmax_plot[idx])
+        plt.ylim(0, ymax_plot[idx])
         plt.xlabel("Time, in seconds")
         plt.ylabel("Normalized Concentration")
-        plt.title(isotherm[sim.idxsim])
-        fname = os.path.join(sim.simpath, "results.png")
+        plt.title(isotherm[idx])
+        fname = os.path.join(test.workspace, "results.png")
         plt.savefig(fname)
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_transport, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_transport, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

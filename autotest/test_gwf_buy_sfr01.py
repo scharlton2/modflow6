@@ -1,29 +1,19 @@
-# Simple one-layer model with sfr on top.  Purpose is to test buy package in a
-# one-d sfr network.
+"""
+Simple one-layer model with sfr on top.  Purpose is to test buy package in a
+one-d sfr network.
+"""
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["buy_sfr_01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["buy_sfr_01"]
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     lx = 7.0
     lz = 1.0
     nlay = 1
@@ -54,17 +44,15 @@ def build_model(idx, dir):
     nouter, ninner = 700, 300
     hclose, rclose, relax = 1e-8, 1e-6, 0.97
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -74,7 +62,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwf6",
         modelname=gwfname,
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
 
     imsgwf = flopy.mf6.ModflowIms(
@@ -90,7 +78,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
 
     idomain = np.full((nlay, nrow, ncol), 1)
@@ -137,7 +125,7 @@ def build_model(idx, dir):
         save_flows=False,
         pname="CHD-1",
         auxiliary="CONCENTRATION",
-        filename="{}.chd".format(gwfname),
+        filename=f"{gwfname}.chd",
     )
 
     # wel files
@@ -152,10 +140,11 @@ def build_model(idx, dir):
         save_flows=False,
         pname="WEL-1",
         auxiliary="CONCENTRATION",
-        filename="{}.wel".format(gwfname),
+        filename=f"{gwfname}.wel",
     )
 
-    # pak_data = [<rno> <cellid(ncelldim)> <rlen> <rwid> <rgrd> <rtp> <rbth> <rhk> <man> <ncon> <ustrf> <ndv> [<aux(naux)>] [<boundname>]]
+    # pak_data = [<rno> <cellid(ncelldim)> <rlen> <rwid> <rgrd> <rtp> <rbth> <rhk> ...
+    #             <man> <ncon> <ustrf> <ndv> [<aux(naux)>] [<boundname>]]
     rlen = delr
     rwid = delc
     rgrd = 1.0
@@ -230,8 +219,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -242,7 +231,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwt6",
         modelname=gwtname,
-        model_nam_file="{}.nam".format(gwtname),
+        model_nam_file=f"{gwtname}.nam",
     )
 
     if not single_matrix:
@@ -259,7 +248,7 @@ def build_model(idx, dir):
             scaling_method="NONE",
             reordering_method="NONE",
             relaxation_factor=relax,
-            filename="{}.ims".format(gwtname),
+            filename=f"{gwtname}.ims",
         )
         sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -279,26 +268,22 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwtic(
         gwt,
         strt=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        filename="{}.ic".format(gwtname),
+        filename=f"{gwtname}.ic",
     )
 
     # advection
-    adv = flopy.mf6.ModflowGwtadv(
-        gwt, scheme="UPSTREAM", filename="{}.adv".format(gwtname)
-    )
+    adv = flopy.mf6.ModflowGwtadv(gwt, scheme="UPSTREAM", filename=f"{gwtname}.adv")
 
     # storage
     porosity = 1.0
-    sto = flopy.mf6.ModflowGwtmst(
-        gwt, porosity=porosity, filename="{}.sto".format(gwtname)
-    )
+    sto = flopy.mf6.ModflowGwtmst(gwt, porosity=porosity, filename=f"{gwtname}.sto")
     # sources
     sourcerecarray = [
         ("CHD-1", "AUX", "CONCENTRATION"),
         ("WEL-1", "AUX", "CONCENTRATION"),
     ]
     ssm = flopy.mf6.ModflowGwtssm(
-        gwt, sources=sourcerecarray, filename="{}.ssm".format(gwtname)
+        gwt, sources=sourcerecarray, filename=f"{gwtname}.ssm"
     )
 
     # cnc files
@@ -315,15 +300,14 @@ def build_model(idx, dir):
 
     sftpackagedata = []
     for irno in range(ncol):
-        t = (irno, 0.0, 99.0, 999.0, "myreach{}".format(irno + 1))
+        t = (irno, 0.0, 99.0, 999.0, f"myreach{irno + 1}")
         sftpackagedata.append(t)
 
     sftperioddata = [(0, "STATUS", "CONSTANT"), (0, "CONCENTRATION", 100.0)]
 
     sft_obs = {
         (gwtname + ".sft.obs.csv",): [
-            ("sft-{}-conc".format(i + 1), "CONCENTRATION", i + 1)
-            for i in range(7)
+            (f"sft-{i + 1}-conc", "CONCENTRATION", i + 1) for i in range(7)
         ]
         + [
             ("sft-1-extinflow", "EXT-INFLOW", 1),
@@ -362,11 +346,9 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
-        concentrationprintrecord=[
-            ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
+        concentrationprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("CONCENTRATION", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("CONCENTRATION", "ALL"), ("BUDGET", "ALL")],
     )
@@ -377,47 +359,42 @@ def build_model(idx, dir):
         exgtype="GWF6-GWT6",
         exgmnamea=gwfname,
         exgmnameb=gwtname,
-        filename="{}.gwfgwt".format(name),
+        filename=f"{name}.gwfgwt",
     )
 
     return sim, None
 
 
-def eval_results(sim):
-    print("evaluating results...")
-
+def check_output(idx, test):
     # assign names
-    name = ex[sim.idxsim]
-    gwtname = "gwt_" + name
-    gwfname = "gwf_" + name
+    gwtname = "gwt_" + test.name
+    gwfname = "gwf_" + test.name
 
     # load the sft concentrations and make sure all values are correct
     fname = gwtname + ".sft.bin"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     cobj = flopy.utils.HeadFile(fname, text="CONCENTRATION")
     csftall = cobj.get_alldata()
-    csft = csftall[
-        -2
-    ].flatten()  # because it's lagged, get two time steps back
+    csft = csftall[-2].flatten()  # because it's lagged, get two time steps back
 
     # load the aquifer concentrations
     fname = gwtname + ".ucn"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     cobj = flopy.utils.HeadFile(fname, text="CONCENTRATION")
     cgwfall = cobj.get_alldata()
     cgwf = cgwfall[-2].flatten()
 
     # load the aquifer heads
     fname = gwfname + ".hds"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     hobj = flopy.utils.HeadFile(fname, text="HEAD")
     headall = hobj.get_alldata()
     head = headall[-1].flatten()
 
     # load the sfr budget file and get sfr/gwf flows
     fname = gwfname + ".sfr.bud"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     bobj = flopy.utils.CellBudgetFile(fname, precision="double", verbose=False)
     qsfrgwfsimall = bobj.get_data(text="GWF")
@@ -427,19 +404,19 @@ def eval_results(sim):
     # load the sfr budget and check to make sure that concentrations are set
     # correctly from sft concentrations
     fname = gwfname + ".sfr.bud"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     bobj = flopy.utils.CellBudgetFile(fname, precision="double", verbose=False)
     b = bobj.get_data(text="AUXILIARY")
     b = b[-1]
     b = b["CONCENTRATION"]
-    errmsg = "SFR aux conc not equal to SFT sim conc\n{}\n{}".format(b, csft)
+    errmsg = f"SFR aux conc not equal to SFT sim conc\n{b}\n{csft}"
     assert np.allclose(b, csft), errmsg
 
     # load the sfr stage file
     # load the aquifer concentrations and make sure all values are correct
     fname = gwfname + ".sfr.stg"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     stgobj = flopy.utils.HeadFile(fname, text="STAGE")
     stageall = stgobj.get_alldata()
     stage = stageall[-1]
@@ -464,46 +441,16 @@ def eval_results(sim):
         # print(n, hsfr, hgwf, rhosfr, rhogwf, qcalc, qsim)
         # if not np.allclose(qcalc, qsim):
         #    print('reach {} flow {} not equal {}'.format(n, qcalc, qsim))
-        assert np.allclose(
-            qcalc, qsim
-        ), "reach {} flow {} not equal {}".format(n, qcalc, qsim)
-
-    # uncomment when testing
-    # assert False
-
-    return
+        assert np.allclose(qcalc, qsim), f"reach {n} flow {qcalc} not equal {qsim}"
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_results, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_results, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

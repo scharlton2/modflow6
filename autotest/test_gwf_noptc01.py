@@ -1,35 +1,12 @@
 import os
+
+import flopy
 import pytest
-import numpy as np
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = ["gwf_noptc01", "gwf_noptc02", "gwf_noptc03"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-
+cases = ["gwf_noptc01", "gwf_noptc02", "gwf_noptc03"]
 no_ptcrecords = ["FIRST", "ALL", None]
-
-ddir = "data"
-
-## run all examples on Travis
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-# replace_exe = {'mf2005': 'mf2005devdbl'}
-replace_exe = None
-
-htol = [None for idx in range(len(exdirs))]
+htol = [None for _ in range(len(cases))]
 
 # static model data
 # temporal discretization
@@ -71,7 +48,7 @@ rech = {0: 0.001}
 
 
 def get_model(idx, dir, no_ptcrecord):
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
     ws = dir
@@ -79,9 +56,7 @@ def get_model(idx, dir, no_ptcrecord):
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -134,8 +109,8 @@ def get_model(idx, dir, no_ptcrecord):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -145,59 +120,22 @@ def get_model(idx, dir, no_ptcrecord):
 
 
 # water table recharge problem
-def build_model(idx, dir):
-    sim = get_model(idx, dir, no_ptcrecords[idx])
+def build_models(idx, test):
+    sim = get_model(idx, test.workspace, no_ptcrecords[idx])
 
     # build MODFLOW-6 without no_ptc option
-    pth = os.path.join(dir, "mf6")
+    pth = os.path.join(test.workspace, "mf6")
     mc = get_model(idx, pth, None)
 
     return sim, mc
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-    r_exe = None
-    if not is_CI:
-        if replace_exe is not None:
-            r_exe = replace_exe
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(Simulation(dir, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-# use python testmf6_csub_sub03.py --mf2005 mf2005devdbl
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+    )
+    test.run()

@@ -1,32 +1,35 @@
 {\small
 \begin{lstlisting}[style=modeloutput]
-mf6.exe - MODFLOW 6.2.2 07/30/2021 (compiled Jul 30 2021 14:34:58)
-usage: mf6.exe               run MODFLOW 6 using "mfsim.nam"
-   or: mf6.exe [options]     retrieve program information
+mf6 - MODFLOW 6.5.0.dev2 (preliminary) 02/13/2024 (compiled May 17 2024 07:54:54)
+usage: mf6               run MODFLOW 6 using "mfsim.nam"
+   or: mf6 [options]     retrieve program information
 
-Options   GNU long option   Meaning
+Options   GNU long option   Meaning 
  -h, -?    --help           Show this message
  -v        --version        Display program version information.
  -dev      --develop        Display program develop option mode.
+ -d        --disclaimer     Display program disclaimer.
+ -p        --parallel       Run program in parallel mode.
+ -lic      --license        Display program license information.
  -c        --compiler       Display compiler information.
+ -co       --compiler-opt   Display compiler options.
  -s        --silent         All STDOUT to mfsim.stdout.
  -l <str>  --level <str>    STDOUT output to screen based on <str>.
                             <str>=summary Limited output to STDOUT.
                             <str>=debug   Enhanced output to STDOUT.
  -m <str>  --mode <str>     MODFLOW 6 simulation mode based on <str>.
                             <str>=validate Check model input for
-                                           errors but do assemble or
-                                           solve matrix equations or
-                                           write solution output.
-
-Bug reporting and contributions are welcome from the community.
+                                           errors but do not 
+                                           assemble or solve matrix 
+                                           equations or write 
+                                           solution output.
+                                                                    
+Bug reporting and contributions are welcome from the community. 
 Questions can be asked on the issues page[1]. Before creating a new
 issue, please take a moment to search and make sure a similar issue
 does not already exist. If one does exist, you can comment (most
 simply even with just :+1:) to show your support for that issue.
-
+                                                                    
 [1] https://github.com/MODFLOW-USGS/modflow6/issues
-
-
 \end{lstlisting}
 }

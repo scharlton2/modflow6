@@ -1,5 +1,4 @@
 """
-MODFLOW 6 Autotest
 Test to make sure that recharge is passed to the highest active layer and
 verify that recharge is in the highest active layer by looking at the
 individual budget terms.  For this test, there are two layers and five
@@ -9,38 +8,17 @@ IRCH is specified as 1, and in test c IRCH is specified as [2, 2, 1, 2, 2]
 """
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["rch01a", "rch01b", "rch01c"]
+cases = ["rch01a", "rch01b", "rch01c"]
 irch = [None, 0, [1, 1, 0, 1, 1]]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     nlay, nrow, ncol = 2, 1, 5
     chdheads = [25.0]
     nper = len(chdheads)
@@ -62,18 +40,16 @@ def build_model(idx, dir):
     name = "rch"
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # set ims csv files
-    csv0 = "{}.outer.ims.csv".format(name)
-    csv1 = "{}.inner.ims.csv".format(name)
+    csv0 = f"{name}.outer.ims.csv"
+    csv1 = f"{name}.inner.ims.csv"
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -129,21 +105,19 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model...")
-
-    fpth = os.path.join(sim.simpath, "rch.cbc")
+def check_output(idx, test):
+    fpth = os.path.join(test.workspace, "rch.cbc")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     records = bobj.get_data(text="rch")[0]
 
@@ -155,43 +129,18 @@ def eval_model(sim):
     assert np.allclose(records["node2"], answer["node2"])
     assert np.allclose(records["q"], answer["q"])
 
-    fpth = os.path.join(sim.simpath, "rch.hds")
+    fpth = os.path.join(test.workspace, "rch.hds")
     hobj = flopy.utils.HeadFile(fpth, precision="double")
     heads = hobj.get_alldata()
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

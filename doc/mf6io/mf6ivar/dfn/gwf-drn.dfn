@@ -1,4 +1,6 @@
 # --------------------- gwf drn options ---------------------
+# flopy multi-package
+# package-type stress-package
 
 block options
 name auxiliary
@@ -25,7 +27,7 @@ shape
 reader urword
 optional true
 longname name of auxiliary variable for drainage depth
-description name of a variable listed in AUXILIARY that defines the depth at which drainage discharge will be scaled. If a positive value is specified for the AUXDEPTHNAME AUXILIARY variable, then ELEV is the elevation at which the drain starts to discharge and ELEV + DDRN (assuming DDRN is the AUXDEPTHNAME variable) is the elevation when the drain conductance (COND) scaling factor is 1. If a negative drainage depth value is specified for DDRN, then ELEV + DDRN is the elevation at which the drain starts to discharge and ELEV is the elevation when the conductance (COND) scaling factor is 1. A linear- or cubic-scaling is used to scale the drain conductance (COND) when the Standard or Newton-Raphson Formulation is used, respectively.
+description name of a variable listed in AUXILIARY that defines the depth at which drainage discharge will be scaled. If a positive value is specified for the AUXDEPTHNAME AUXILIARY variable, then ELEV is the elevation at which the drain starts to discharge and ELEV + DDRN (assuming DDRN is the AUXDEPTHNAME variable) is the elevation when the drain conductance (COND) scaling factor is 1. If a negative drainage depth value is specified for DDRN, then ELEV + DDRN is the elevation at which the drain starts to discharge and ELEV is the elevation when the conductance (COND) scaling factor is 1. A linear- or cubic-scaling is used to scale the drain conductance (COND) when the Standard or Newton-Raphson Formulation is used, respectively.  This discharge scaling option is described in more detail in Chapter 3 of the Supplemental Technical Information.
 
 block options
 name boundnames
@@ -43,6 +45,7 @@ reader urword
 optional true
 longname print input to listing file
 description REPLACE print_input {'{#1}': 'drain'}
+mf6internal iprpak
 
 block options
 name print_flows
@@ -51,6 +54,7 @@ reader urword
 optional true
 longname print calculated flows to listing file
 description REPLACE print_flows {'{#1}': 'drain'}
+mf6internal iprflow
 
 block options
 name save_flows
@@ -59,6 +63,7 @@ reader urword
 optional true
 longname save CHD flows to budget file
 description REPLACE save_flows {'{#1}': 'drain'}
+mf6internal ipakcb
 
 block options
 name ts_filerecord
@@ -144,6 +149,16 @@ optional true
 longname
 description REPLACE mover {'{#1}': 'Drain'}
 
+# dev options
+block options
+name dev_cubic_scaling
+type keyword
+reader urword
+optional true
+longname cubic-scaling
+description cubic-scaling is used to scale the drain conductance
+mf6internal icubicsfac
+
 # --------------------- gwf drn dimensions ---------------------
 
 block dimensions
@@ -177,6 +192,7 @@ shape (maxbound)
 reader urword
 longname
 description
+mf6internal spd
 
 block period
 name cellid
@@ -221,6 +237,7 @@ optional true
 time_series true
 longname auxiliary variables
 description REPLACE aux {'{#1}': 'drain'}
+mf6internal auxvar
 
 block period
 name boundname

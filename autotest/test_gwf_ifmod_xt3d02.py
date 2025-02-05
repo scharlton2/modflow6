@@ -1,60 +1,48 @@
+"""
+Test the interface model approach.
+It compares the result of a single, strongly anisotropic model
+with XT3D enabled to the equivalent case where the domain is
+decomposed and joined by a GWF-GWF exchange with XT3D applied.
+
+       'refmodel'              'leftmodel'     'rightmodel'
+
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1    VS    1 1 1 1 1   +   1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+   1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
+
+The head values should always be identical. All models are
+part of the same solution for convenience.
+In addition, a check on the x,y,z components of specific discharge
+is present. The values of the left submodel are compared to
+the left part of the full model, and similar for right: they
+should be identical. Finally, the budget error is checked.
+"""
+
 import os
+
+import flopy
 import numpy as np
 import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from flopy.utils.lgrutil import Lgr
-from framework import testing_framework
-from simulation import Simulation
-
-# Test for the interface model approach.
-# It compares the result of a single, strongly anisotropic model
-# with XT3D enabled to the equivalent case where the domain is
-# decomposed and joined by a GWF-GWF exchange with XT3D applied.
-#
-#        'refmodel'              'leftmodel'     'rightmodel'
-#
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1    VS    1 1 1 1 1   +   1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#    1 1 1 1 1 1 1 1 1 1          1 1 1 1 1       1 1 1 1 1
-#
-# The head values should always be indentical. All models are
-# part of the same solution for convenience.
-# In addition, a check on the x,y,z components of specific discharge
-# is present. The values of the left submodel are compared to
-# the left part of the full model, and similar for right: they
-# should be identical. Finally, the budget error is checked.
-
-ex = ["ifmod_xt3d02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-
-# global convenience...
+cases = ["ifmod_xt3d02"]
 mname_ref = "refmodel"
 mname_left = "leftmodel"
 mname_right = "rightmodel"
 hclose_check = 1e-9
-
+max_inner_it = 300
 useXT3D = True
 
 
 def get_model(idx, dir):
-    name = ex[idx]
+    name = cases[idx]
 
     # parameters and spd
     # tdis
@@ -64,7 +52,7 @@ def get_model(idx, dir):
         tdis_rc.append((1.0, 1, 1))
 
     # solver data
-    nouter, ninner = 100, 300
+    nouter, ninner = 100, max_inner_it
     hclose, rclose, relax = hclose_check, 1e-3, 0.97
 
     # model spatial discretization
@@ -113,18 +101,16 @@ def get_model(idx, dir):
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=dir
     )
 
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     ims = flopy.mf6.ModflowIms(
         sim,
         print_option="SUMMARY",
-        outer_hclose=hclose,
+        outer_dvclose=hclose,
         outer_maximum=nouter,
         under_relaxation="DBD",
         inner_maximum=ninner,
-        inner_hclose=hclose,
+        inner_dvclose=hclose,
         rcloserecord=rclose,
         linear_acceleration="BICGSTAB",
         relaxation_factor=relax,
@@ -176,8 +162,8 @@ def get_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(mname_ref),
-        budget_filerecord="{}.cbc".format(mname_ref),
+        head_filerecord=f"{mname_ref}.hds",
+        budget_filerecord=f"{mname_ref}.cbc",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
     )
@@ -214,8 +200,8 @@ def get_model(idx, dir):
     chd = flopy.mf6.ModflowGwfchd(gwf, stress_period_data=chd_spd_left)
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(mname_left),
-        budget_filerecord="{}.cbc".format(mname_left),
+        head_filerecord=f"{mname_left}.hds",
+        budget_filerecord=f"{mname_left}.cbc",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
     )
@@ -259,8 +245,8 @@ def get_model(idx, dir):
     chd = flopy.mf6.ModflowGwfchd(gwf, stress_period_data=chd_spd_right)
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(mname_right),
-        budget_filerecord="{}.cbc".format(mname_right),
+        head_filerecord=f"{mname_right}.hds",
+        budget_filerecord=f"{mname_right}.cbc",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
     )
@@ -295,8 +281,8 @@ def get_model(idx, dir):
     return sim
 
 
-def build_model(idx, exdir):
-    sim = get_model(idx, exdir)
+def build_models(idx, test):
+    sim = get_model(idx, test.workspace)
     return sim, None
 
 
@@ -320,27 +306,27 @@ def qxqyqz(fname, nlay, nrow, ncol):
     return qx, qy, qz
 
 
-def compare_to_ref(sim):
+def check_output(idx, test):
     print("comparing heads and spec. discharge to single model reference...")
 
-    fpth = os.path.join(sim.simpath, "{}.hds".format(mname_ref))
+    fpth = os.path.join(test.workspace, f"{mname_ref}.hds")
     hds = flopy.utils.HeadFile(fpth)
     heads = hds.get_data()
-    fpth = os.path.join(sim.simpath, "{}.cbc".format(mname_ref))
+    fpth = os.path.join(test.workspace, f"{mname_ref}.cbc")
     nlay, nrow, ncol = heads.shape
     qxb, qyb, qzb = qxqyqz(fpth, nlay, nrow, ncol)
 
-    fpth = os.path.join(sim.simpath, "{}.hds".format(mname_left))
+    fpth = os.path.join(test.workspace, f"{mname_left}.hds")
     hds = flopy.utils.HeadFile(fpth)
     heads_left = hds.get_data()
-    fpth = os.path.join(sim.simpath, "{}.cbc".format(mname_left))
+    fpth = os.path.join(test.workspace, f"{mname_left}.cbc")
     nlay, nrow, ncol = heads_left.shape
     qxb_left, qyb_left, qzb_left = qxqyqz(fpth, nlay, nrow, ncol)
 
-    fpth = os.path.join(sim.simpath, "{}.hds".format(mname_right))
+    fpth = os.path.join(test.workspace, f"{mname_right}.hds")
     hds = flopy.utils.HeadFile(fpth)
     heads_right = hds.get_data()
-    fpth = os.path.join(sim.simpath, "{}.cbc".format(mname_right))
+    fpth = os.path.join(test.workspace, f"{mname_right}.cbc")
     nlay, nrow, ncol = heads_right.shape
     qxb_right, qyb_right, qzb_right = qxqyqz(fpth, nlay, nrow, ncol)
 
@@ -348,114 +334,72 @@ def compare_to_ref(sim):
 
     # compare heads
     maxdiff = np.amax(abs(heads - heads_2models))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. head diff. {} should \
-                     be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. head diff. {maxdiff} should \
+                     be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # compare spdis_x left
     maxdiff = np.amax(abs(qxb[:, :, 0:5] - qxb_left))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. diff. in spec. discharge (x) {} \
-                     should be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. diff. in spec. discharge (x) {maxdiff} \
+                     should be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # compare spdis_y left
     maxdiff = np.amax(abs(qyb[:, :, 0:5] - qyb_left))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. diff. in spec. discharge (y) {} \
-                     should be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. diff. in spec. discharge (y) {maxdiff} \
+                     should be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # compare spdis_z left
     maxdiff = np.amax(abs(qzb[:, :, 0:5] - qzb_left))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. diff. in spec. discharge (z) {} \
-                     should be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. diff. in spec. discharge (z) {maxdiff} \
+                     should be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # compare spdis_x right
     maxdiff = np.amax(abs(qxb[:, :, 5:] - qxb_right))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. diff. in spec. discharge (x) {} \
-                     should be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. diff. in spec. discharge (x) {maxdiff} \
+                     should be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # compare spdis_y right
     maxdiff = np.amax(abs(qyb[:, :, 5:] - qyb_right))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. diff. in spec. discharge (y) {} \
-                     should be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. diff. in spec. discharge (y) {maxdiff} \
+                     should be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # compare spdis_z right
     maxdiff = np.amax(abs(qzb[:, :, 5:] - qzb_right))
-    assert (
-        maxdiff < 10 * hclose_check
-    ), "Max. diff. in spec. discharge (z) {} \
-                     should be within solver tolerance (x10): {}".format(
-        maxdiff, 10 * hclose_check
+    assert maxdiff < 10 * hclose_check, (
+        f"Max. diff. in spec. discharge (z) {maxdiff} \
+                     should be within solver tolerance (x10): {10 * hclose_check}"
     )
 
     # check budget error from .lst file
     for mname in [mname_ref, mname_left, mname_right]:
-        fpth = os.path.join(sim.simpath, "{}.lst".format(mname))
+        fpth = os.path.join(test.workspace, f"{mname}.lst")
         for line in open(fpth):
             if line.lstrip().startswith("PERCENT"):
                 cumul_balance_error = float(line.split()[3])
-                assert (
-                    abs(cumul_balance_error) < 0.00001
-                ), "Cumulative balance error = {} for {}, should equal 0.0".format(
-                    cumul_balance_error, mname
+                assert abs(cumul_balance_error) < 0.00001, (
+                    f"Cumulative balance error = {cumul_balance_error} for {mname}, "
+                    "should equal 0.0"
                 )
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, exdir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, exdir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, exdir)
-
-    # run the test model
-    test.run_mf6(Simulation(exdir, exfunc=compare_to_ref, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test models
-    for idx, exdir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, exdir)
-
-        sim = Simulation(exdir, exfunc=compare_to_ref, idxsim=idx)
-        test.run_mf6(sim)
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

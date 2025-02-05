@@ -1,41 +1,39 @@
-# Test the buoyancy package and the variable density flows between the lake
-# and the gwf model.  This model has 4 layers and a lake incised within it.
-# The model is transient and has heads in the aquifer higher than the initial
-# stage in the lake.  As the model runs, the lake and aquifer equalize and
-# should end up at the same level.  The test ensures that the initial and
-# final water volumes in the entire system are the same.  This test is different
-# from the previous test in that transport is active.  There are four
-# different cases:
-#  1.  lak and aquifer have concentration of 0.
-#  2.  lak and aquifer have concentration of 35.
-#  3.  lak has concentration of 0., aquifer is 35.
-#  4.  lak has concentration of 35., aquifer is 0.
+"""
+Test the buoyancy package and the variable density flows between the lake
+and the gwf model.  This model has 4 layers and a lake incised within it.
+The model is transient and has heads in the aquifer higher than the initial
+stage in the lake.  As the model runs, the lake and aquifer equalize and
+should end up at the same level.  The test ensures that the initial and
+final water volumes in the entire system are the same.  This test is different
+from the previous test in that transport is active.  There are four
+different cases:
+    1.  lak and aquifer have concentration of 0.
+    2.  lak and aquifer have concentration of 35.
+    3.  lak has concentration of 0., aquifer is 35.
+    4.  lak has concentration of 35., aquifer is 0.
+"""
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["buy_lak_02a", "buy_lak_02b", "buy_lak_02c", "buy_lak_02d"]
-gwt_conc_list = [0.0, 35.0, 35.0, 0.0]
-lak_conc_list = [0.0, 35.0, 0.0, 35.0]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+simname = "gwfbuylak02"
+cases = [
+    f"{simname}a",
+    f"{simname}b",
+    f"{simname}c",
+    f"{simname}d",
+]
+gwt_conc = [0, 35, 35, 0]
+lak_conc = [0, 35, 0, 35]
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
+    name = cases[idx]
+
     lx = 7.0
     lz = 4.0
     nlay = 4
@@ -62,17 +60,15 @@ def build_model(idx, dir):
     nouter, ninner = 700, 300
     hclose, rclose, relax = 1e-8, 1e-6, 0.97
 
-    name = ex[idx]
-
     # build MODFLOW 6 files
-    ws = dir
     sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
+        sim_name=name,
+        version="mf6",
+        exe_name="mf6",
+        sim_ws=test.workspace,
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -88,12 +84,12 @@ def build_model(idx, dir):
         under_relaxation="NONE",
         inner_maximum=ninner,
         inner_dvclose=hclose,
-        rcloserecord="{} strict".format(rclose),
+        rcloserecord=f"{rclose} strict",
         linear_acceleration="BICGSTAB",
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
 
     idomain = np.full((nlay, nrow, ncol), 1)
@@ -140,14 +136,14 @@ def build_model(idx, dir):
         buy = flopy.mf6.ModflowGwfbuy(gwf, denseref=1000.0, packagedata=pd)
 
     nlakeconn = 11  # note: number of connections for this lake
-    # pak_data = [lakeno, strt, nlakeconn, testauxvar, concentration, boundname]
+    # pak_data = [ifno, strt, nlakeconn, testauxvar, concentration, boundname]
     pak_data = [(0, 2.25, nlakeconn, 0.0, 0.0)]
 
     connlen = delr / 2.0
     connwidth = delc
     bedleak = "None"
     con_data = [
-        # con_data=(lakeno,iconn,(cellid),claktype,bedleak,belev,telev,connlen,connwidth )
+        # con_data=(ifno,iconn,(cellid),claktype,bedleak,belev,telev,connlen,connwidth )
         (0, 0, (0, 0, 0), "HORIZONTAL", bedleak, 10, 10, connlen, connwidth),
         (0, 1, (1, 0, 1), "VERTICAL", bedleak, 10, 10, connlen, connwidth),
         (0, 2, (1, 0, 1), "HORIZONTAL", bedleak, 10, 10, connlen, connwidth),
@@ -167,7 +163,7 @@ def build_model(idx, dir):
     ]
 
     # note: for specifying lake number, use fortran indexing!
-    fname = "{}.lak.obs.csv".format(gwfname)
+    fname = f"{gwfname}.lak.obs.csv"
     lak_obs = {
         fname: [
             ("lakestage", "stage", 1),
@@ -193,8 +189,8 @@ def build_model(idx, dir):
         print_input=True,
         print_flows=True,
         print_stage=True,
-        stage_filerecord="{}.lak.bin".format(gwfname),
-        budget_filerecord="{}.lak.bud".format(gwfname),
+        stage_filerecord=f"{gwfname}.lak.bin",
+        budget_filerecord=f"{gwfname}.lak.bud",
         nlakes=len(pak_data),
         ntables=0,
         packagedata=pak_data,
@@ -208,8 +204,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -218,7 +214,6 @@ def build_model(idx, dir):
     # create gwt model
     transport = True
     if transport:
-
         gwt = flopy.mf6.ModflowGwt(sim, modelname=gwtname)
 
         imsgwt = flopy.mf6.ModflowIms(
@@ -229,12 +224,12 @@ def build_model(idx, dir):
             under_relaxation="NONE",
             inner_maximum=ninner,
             inner_dvclose=hclose,
-            rcloserecord="{} strict".format(rclose),
+            rcloserecord=f"{rclose} strict",
             linear_acceleration="BICGSTAB",
             scaling_method="NONE",
             reordering_method="NONE",
             relaxation_factor=relax,
-            filename="{}.ims".format(gwtname),
+            filename=f"{gwtname}.ims",
         )
         sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -251,8 +246,7 @@ def build_model(idx, dir):
         )
 
         # initial conditions
-        strt = gwt_conc_list[idx]
-        ic = flopy.mf6.ModflowGwtic(gwt, strt=strt)
+        ic = flopy.mf6.ModflowGwtic(gwt, strt=gwt_conc[idx])
 
         # advection
         adv = flopy.mf6.ModflowGwtadv(gwt, scheme="UPSTREAM")
@@ -267,9 +261,8 @@ def build_model(idx, dir):
         ]
         ssm = flopy.mf6.ModflowGwtssm(gwt, sources=sourcerecarray)
 
-        lak_conc = lak_conc_list[idx]
         lktpackagedata = [
-            (0, lak_conc, 99.0, 999.0, "mylake"),
+            (0, lak_conc[idx], 99.0, 999.0, "mylake"),
         ]
         lkt = flopy.mf6.modflow.ModflowGwtlkt(
             gwt,
@@ -289,8 +282,8 @@ def build_model(idx, dir):
         # output control
         oc = flopy.mf6.ModflowGwtoc(
             gwt,
-            budget_filerecord="{}.cbc".format(gwtname),
-            concentration_filerecord="{}.ucn".format(gwtname),
+            budget_filerecord=f"{gwtname}.cbc",
+            concentration_filerecord=f"{gwtname}.ucn",
             concentrationprintrecord=[
                 ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
             ],
@@ -306,41 +299,38 @@ def build_model(idx, dir):
             exgtype="GWF6-GWT6",
             exgmnamea=gwfname,
             exgmnameb=gwtname,
-            filename="{}.gwfgwt".format(name),
+            filename=f"{name}.gwfgwt",
         )
 
-    return sim, None
+    return sim
 
 
-def eval_results(sim):
-    print("evaluating results...")
-
+def check_output(idx, test):
     # calculate volume of water and make sure it is conserved
-    name = ex[sim.idxsim]
-    gwfname = "gwf_" + name
-    gwtname = "gwt_" + name
+    gwfname = "gwf_" + test.name
+    gwtname = "gwt_" + test.name
     fname = gwfname + ".lak.bin"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     bobj = flopy.utils.HeadFile(fname, text="STAGE")
     stage = bobj.get_alldata().flatten()
     # print(stage)
 
     fname = gwfname + ".hds"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     hobj = flopy.utils.HeadFile(fname)
     head = hobj.get_data()
     # print(head)
 
     fname = gwtname + ".ucn"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     cobj = flopy.utils.HeadFile(fname, text="CONCENTRATION")
     conc = cobj.get_data()
 
     fname = gwtname + ".lkt.bin"
-    fname = os.path.join(sim.simpath, fname)
+    fname = os.path.join(test.workspace, fname)
     assert os.path.isfile(fname)
     cobj = flopy.utils.HeadFile(fname, text="CONCENTRATION")
     clak = cobj.get_data().flatten()
@@ -352,12 +342,12 @@ def eval_results(sim):
     v0 += 1.0 * 1  # middle column
     v0 = v0 * 0.3  # specific yield
 
-    m0 = v0 * gwt_conc_list[sim.idxsim]
+    m0 = v0 * gwt_conc[idx]
     vl0 = (2.25 - 2.0) * 2 + (2.25 - 1.0)
-    m0 += vl0 * lak_conc_list[sim.idxsim]
+    m0 += vl0 * lak_conc[idx]
     v0 += vl0
-    print("initial volume of water in model = {}".format(v0))
-    print("initial mass of solute in model = {}".format(m0))
+    print(f"initial volume of water in model = {v0}")
+    print(f"initial mass of solute in model = {m0}")
 
     # calculate ending water volume in model
     head = np.where(head > 1e10, -1e10, head)
@@ -379,53 +369,27 @@ def eval_results(sim):
     vl = (s - 2.0) * 2 + (s - 1.0)
     v = v + vl
     m += vl * clak[0]
-    print("final volume of water in model = {}".format(v))
-    print("final mass of solute in model = {}".format(m))
+    print(f"final volume of water in model = {v}")
+    print(f"final mass of solute in model = {m}")
 
     # check to make sure starting water volume same as equalized final volume
-    errmsg = "initial and final water volume not equal: {} {}".format(v0, v)
+    errmsg = f"initial and final water volume not equal: {v0} {v}"
     assert np.allclose(v0, v), errmsg
 
     # check to make sure starting starting solute mass same as equalized solute mass
-    errmsg = "initial and final solute mass not equal: {} {}".format(m0, m)
+    errmsg = f"initial and final solute mass not equal: {m0} {m}"
     assert np.allclose(m0, m), errmsg
 
     # todo: add a better check of the lake concentrations
-    # assert False
-
-    return
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_results, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_results, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, targets, function_tmpdir):
+    framework = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    framework.run()

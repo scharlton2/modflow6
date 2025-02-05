@@ -1,30 +1,18 @@
-# This is the Henry, Newton-Raphson problem described by Langevin et al (2020)
-# with a 20 by 40 grid instead of the 40 by 80 grid described in the paper.
-# There is freshwater inflow on the left and a sloping sea boundary on the
-# right with moves up and down according to a simple sine function.  GHBs
-# and DRNs alternate and move up and down along the boundary to represent
-# the effects of tides on the aquifer.
+"""
+The Henry, Newton-Raphson problem described by Langevin et al (2020)
+with a 20x40 grid instead of the 40x80 grid described in the paper.
+There is freshwater inflow on the left. A sloping sea boundary on the
+right moves up and down according to a simple sine function. GHBs and
+DRNs alternate and move up and down along the boundary to represent
+the effects of tides on the aquifer.
+"""
 
-import os
-import pytest
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-from targets import get_mf6_version
-
-ex = ["gwf_henrynr01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["gwf_henrynr01"]
 
 # global model variables
 nlay = 20
@@ -77,10 +65,9 @@ def sinfunc(a, b, c, d, x):
     return a * np.sin(b * (x - c)) + d
 
 
-def build_model(idx, dir):
-
-    ws = dir
-    name = ex[idx]
+def build_models(idx, test):
+    ws = test.workspace
+    name = cases[idx]
 
     nrow = 1
     delr = lx / ncol
@@ -107,9 +94,7 @@ def build_model(idx, dir):
     sim.name_file.continue_ = False
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     imsgwf = flopy.mf6.ModflowIms(
         sim,
@@ -228,14 +213,14 @@ def build_model(idx, dir):
         save_flows=False,
         pname="WEL-1",
         auxiliary="CONCENTRATION",
-        filename="{}.wel".format(name),
+        filename=f"{name}.wel",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -244,64 +229,16 @@ def build_model(idx, dir):
     return sim, None
 
 
-def set_make_comparison():
-    version = get_mf6_version()
-    print("MODFLOW version='{}'".format(version))
-    version = get_mf6_version(version="mf6-regression")
-    print("MODFLOW regression version='{}'".format(version))
-    if version in ("6.2.1",):
-        make_comparison = False
-    else:
-        make_comparison = True
-    return make_comparison
-
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(
-        Simulation(
-            dir,
-            idxsim=idx,
-            mf6_regression=True,
-            cmp_verbose=False,
-            make_comparison=set_make_comparison(),
-        )
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    name = "gwf-henry-nr"
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        compare="mf6_regression",
+        verbose=False,
     )
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, on_dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(
-            on_dir,
-            idxsim=idx,
-            mf6_regression=True,
-            cmp_verbose=True,
-            make_comparison=set_make_comparison(),
-        )
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

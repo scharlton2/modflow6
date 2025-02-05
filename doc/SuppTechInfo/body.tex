@@ -1,0 +1,81 @@
+%Introduction
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Introduction}
+\customlabel{ch:intro}{\thechapno}
+\input{introduction.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Specific Discharge}
+\customlabel{ch:spdis}{\thechapno}
+\input{specific-discharge.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Drain Package Discharge Scaling}
+\customlabel{ch:drn}{\thechapno}
+\input{drain-discharge-scaling.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Multi-Aquifer Well Package Connection Flow Correction}
+\customlabel{ch:maw-qcorr}{\thechapno}
+\input{maw-connection-flow-correction.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Storage Package Modifications}
+\customlabel{ch:sto-mod}{\thechapno}
+\input{storage-modifications.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Time-Varying Hydraulic Conductivity and Storage}
+\customlabel{ch:tvk-tvs}{\thechapno}
+\input{tvk-tvs.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Generalized Coupling of Numerical Models}
+\customlabel{ch:gencouple}{\thechapno}
+\input{gen-coupling.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Accounting for Fluid Viscosity}
+\customlabel{ch:vscpackage}{\thechapno}
+\input{viscosity.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Revised Parameterization of Transport for Combined Mobile and Immobile Domain Simulations}
+\customlabel{ch:sorption}{\thechapno}
+\input{sorption.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Groundwater Energy Model}
+\customlabel{ch:gwemodel}{\thechapno}
+\input{groundwater-energy-model.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Particle Tracking Model}
+\customlabel{ch:prtmodel}{\thechapno}
+\input{particle-tracking-model.tex}
+
+\newpage
+\incchap
+\SECTION{Chapter \thechapno. Nonlinear Sorption for the Immobile Domain}
+\customlabel{ch:istsorption}{\thechapno}
+\input{ist-sorption.tex}
+
+\newpage
+\ifx\usgsdirector\undefined
+\addcontentsline{toc}{section}{\hspace{1.5em}\bibname}
+\else
+\inreferences
+\REFSECTION
+\fi
+\input{bibliography.tex}

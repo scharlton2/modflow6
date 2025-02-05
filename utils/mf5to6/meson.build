@@ -62,7 +62,6 @@ mf5to6_sources = files(
     'src' / 'NWT' / 'NWT1_solver.f',
     'src' / 'NWT' / 'NWT1_xmd.f',
     'src' / 'NWT' / 'NWT1_xmdlib.f',
-    'src' / 'Preproc' / 'ArrayHandlers.f90',
     'src' / 'Preproc' / 'ConstantsPHMF.f90',
     'src' / 'Preproc' / 'Discretization3D.f90',
     'src' / 'Preproc' / 'DiscretizationBasePHMF.f90',
@@ -136,9 +135,12 @@ mf5to6_sources = files(
     'src' / 'WelPackageWriter.f90',
 )
 
-executable('mf5to6',
+mf6convname = 'mf5to6'
+message('MODFLOW 5 to 6 converter name:', mf6convname)
+
+executable(mf6convname,
             mf5to6_sources,
-            link_with: mf6_internal_lib,
+            link_with: mf6core,
             install: true,
             override_options: ['fortran_std=none'],
             fortran_args: util_args)

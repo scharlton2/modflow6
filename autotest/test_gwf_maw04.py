@@ -1,51 +1,9 @@
 import os
-import pytest
-import sys
+from types import SimpleNamespace
+
+import flopy
 import numpy as np
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = [
-    "maw_iss305a",
-    "maw_iss305b",
-    "maw_iss305c",
-    "maw_iss305d",
-    "maw_iss305e",
-    "maw_iss305f",
-]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-cmppth = "mf2005"
-
-paktest = "maw"
-
-require_failure = [True for i in range(len(exdirs))]
-require_failure[0] = False
-
-# set travis to True when version 1.13.0 is released
-continuous_integration = [True for n in ex]
-
-# set replace_exe to None to use default executable
-replace_exe = None
+import pytest
 
 # temporal discretization
 nper = 2
@@ -62,13 +20,14 @@ size3d = nlay * nrow * ncol
 xlen = 1000.0
 common_ratio = 1.01
 nhalf = int(0.5 * ncol) + 1
-first_term = 0.5 * xlen / ((1 - common_ratio ** nhalf) / (1 - common_ratio))
+first_term = 0.5 * xlen / ((1 - common_ratio**nhalf) / (1 - common_ratio))
+
 delr = np.zeros((ncol), dtype=float)
 for n in range(nhalf):
     if n == 0:
         v = first_term
     else:
-        v = first_term * common_ratio ** n
+        v = first_term * common_ratio**n
     delr[nhalf + n - 1] = v
 delr[: nhalf - 1] = delr[-1 : nhalf - 1 : -1]
 
@@ -104,33 +63,78 @@ radius0 = np.sqrt(delr[nhalf] * delr[nhalf] / (8.0 * np.pi))
 radius = 0.25
 sradius0 = radius + 0.1
 wellq = -100.0
-skin_mult = [0.1, 10.0, 1.0, 0.0, -1.0, 100.0]
-condeqn = ["CUMULATIVE", "SKIN", "SKIN", "SKIN", "SPECIFIED", "CUMULATIVE"]
-sradius = [sradius0, sradius0, sradius0, sradius0, sradius0, radius0 * 1.5]
-
-tdis_rc = []
-for idx in range(nper):
-    tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
-
+skin_mult = {"a": 0.1, "b": 10.0, "c": 1.0, "d": 0.0, "e": -1.0, "f": 100.0}
+condeqn = {
+    "a": "CUMULATIVE",
+    "b": "SKIN",
+    "c": "SKIN",
+    "d": "SKIN",
+    "e": "SPECIFIED",
+    "f": "CUMULATIVE",
+}
+sradius = {
+    "a": sradius0,
+    "b": sradius0,
+    "c": sradius0,
+    "d": sradius0,
+    "e": sradius0,
+    "f": radius0 * 1.5,
+}
 hclose, rclose = 1e-9, 1e-6
 
 
-def build_model(idx, dir):
-    name = ex[idx]
-    ws = dir
+def well4(label):
+    hks = hk * skin_mult[label]
+    packagedata = [[0, radius, botm[-1], strt, condeqn[label], 2]]
+    connectiondata = [
+        [0, 0, (0, nhalf, nhalf), top, botm[0], hks, sradius[label]],
+        [0, 1, (1, nhalf, nhalf), botm[0], botm[1], hks, sradius[label]],
+    ]
+    perioddata = {1: [[0, "RATE", wellq]]}
+    return SimpleNamespace(
+        print_input=True,
+        no_well_storage=True,
+        packagedata=packagedata,
+        connectiondata=connectiondata,
+        perioddata=perioddata,
+    )
 
+
+# npf data
+strt = 0
+hk = 10
+
+# solver
+nouter = 100
+ninner = 100
+hclose = 1e-9
+rclose = 1e-6
+relax = 1
+
+# subproblems
+subprobs = ["a", "b", "c", "d", "e", "f"]
+ex = [f"maw_iss305{sp}" for sp in subprobs]
+wells = [well4(sp) for sp in subprobs]
+xfail = [False, True, True, True, True, True]
+
+
+def build_model(idx, ws, mf6):
+    name = ex[idx]
+    well = wells[idx]
     # build MODFLOW 6 files
-    sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
-    )
+    sim = flopy.mf6.MFSimulation(sim_name=name, version="mf6", exe_name=mf6, sim_ws=ws)
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis_rc = []
+    for kper in range(nper):
+        tdis_rc.append((perlen[kper], nstp[kper], tsmult[kper]))
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution
     ims = flopy.mf6.ModflowIms(
-        sim, inner_dvclose=hclose, rcloserecord=rclose, outer_dvclose=hclose
+        sim,
+        inner_dvclose=hclose,
+        rcloserecord=rclose,
+        outer_dvclose=hclose,
     )
 
     # create gwf model
@@ -151,9 +155,7 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=confined, k=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=confined, k=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -164,37 +166,29 @@ def build_model(idx, dir):
         transient={1: True},
     )
     # constant head
-    chd = flopy.mf6.ModflowGwfchd(
-        gwf, stress_period_data=chd_spd, save_flows=False
-    )
+    chd = flopy.mf6.ModflowGwfchd(gwf, stress_period_data=chd_spd, save_flows=False)
     # multi-aquifer well
-    hks = hk * skin_mult[idx]
-    mpd = [[0, radius, botm[-1], strt, condeqn[idx], 2]]
-    mcd = [
-        [0, 0, (0, nhalf, nhalf), top, botm[0], hks, sradius[idx]],
-        [0, 1, (1, nhalf, nhalf), botm[0], botm[1], hks, sradius[idx]],
-    ]
-    perioddata = {1: [[0, "RATE", wellq]]}
     maw = flopy.mf6.ModflowGwfmaw(
         gwf,
-        print_input=True,
-        no_well_storage=True,
-        packagedata=mpd,
-        connectiondata=mcd,
-        perioddata=perioddata,
+        print_input=well.print_input,
+        no_well_storage=well.no_well_storage,
+        packagedata=well.packagedata,
+        connectiondata=well.connectiondata,
+        perioddata=well.perioddata,
     )
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
     )
     # build MODFLOW-2005 files
-    if require_failure[idx]:
+    if xfail[idx]:
         mc = None
     else:
-        ws = os.path.join(dir, cmppth)
+        cmppth = "mf2005"
+        ws = os.path.join(ws, cmppth)
         mc = flopy.modflow.Modflow(name, model_ws=ws, version=cmppth)
         dis = flopy.modflow.ModflowDis(
             mc,
@@ -213,7 +207,12 @@ def build_model(idx, dir):
         )
         bas = flopy.modflow.ModflowBas(mc, strt=strt)
         lpf = flopy.modflow.ModflowLpf(
-            mc, laytyp=confined, hk=hk, vka=hk, ss=ss, sy=0
+            mc,
+            laytyp=confined,
+            hk=hk,
+            vka=hk,
+            ss=ss,
+            sy=0,
         )
         chd = flopy.modflow.ModflowChd(mc, stress_period_data=chd5_spd)
         # mnw2
@@ -227,9 +226,10 @@ def build_model(idx, dir):
         node_data["wellid"] = np.array(["well1", "well1"])
         node_data["losstype"] = np.array(["skin", "skin"])
         node_data["rw"] = np.array([radius, radius])
-        node_data["rskin"] = np.array([sradius[idx], sradius[idx]])
+        node_data["rskin"] = np.array([sradius[name[-1]], sradius[name[-1]]])
+        hks = hk * skin_mult[name[-1]]
         node_data["kskin"] = np.array([hks, hks])
-        dtype = [("wellid", np.unicode_, 20), ("qdes", "<f8")]
+        dtype = [("wellid", np.str_, 20), ("qdes", "<f8")]
         spd0 = np.zeros(1, dtype=dtype)
         spd0["wellid"] = "well1"
         spd1 = np.zeros(1, dtype=dtype)
@@ -255,44 +255,9 @@ def build_model(idx, dir):
     return sim, mc
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models_legacy(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(Simulation(dir, require_failure=require_failure[idx]))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models_legacy(build_model, idx, dir)
-        sim = Simulation(dir, require_failure=require_failure[idx])
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", list(enumerate(ex)))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    ws = str(function_tmpdir)
+    sim, _ = build_model(idx, ws, targets["mf6"])
+    sim.write_simulation()
+    sim.run_simulation()

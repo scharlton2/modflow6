@@ -5,8 +5,9 @@ module DnmDis3dModule
   use ConstantsPHMFModule,       only: PI
   use DnmDisBaseModule,          only: DisBaseType
   use GlobalVariablesPHMFModule, only: verbose
-  use InputOutputModule,         only: get_ijk, get_node, URWORD
-  use SimModule,                 only: count_errors, store_error, &
+  use GeomUtilModule,            only: get_ijk, get_node
+  use InputOutputModule,         only: URWORD
+  use SimPHMFModule,                 only: count_errors, store_error, &
                                        store_error_unit, ustop
   implicit none
   private
@@ -284,7 +285,7 @@ module DnmDis3dModule
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
     ! -- modules
-    use SimModule, only: ustop, count_errors, store_error
+    use SimPHMFModule, only: ustop, count_errors, store_error
     use ConstantsModule,   only: LINELENGTH, DZERO
     ! -- dummy
     class(Dis3dType) :: this
@@ -545,7 +546,6 @@ module DnmDis3dModule
 !
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
-    use InputOutputModule, only: get_ijk
     implicit none
     class(Dis3dType) :: this
     integer, intent(in) :: nodeu
@@ -617,7 +617,6 @@ module DnmDis3dModule
 !    SPECIFICATIONS:
 ! ------------------------------------------------------------------------------
     use ConstantsModule, only: LINELENGTH
-    use InputOutputModule, only: get_node
     implicit none
     ! dummy
     class(Dis3dType), intent(in) :: this

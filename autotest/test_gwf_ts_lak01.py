@@ -1,40 +1,14 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
+import pytest
+from flopy.utils.compare import eval_bud_diff
+from framework import TestFramework
 
 paktest = "lak"
 budtol = 1e-2
-
-ex = ["ts_lak01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
-# run all examples on Travis
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-replace_exe = None
+cases = ["ts_lak01"]
 
 # static model data
 # spatial discretization
@@ -160,13 +134,7 @@ connectiondata = [
     (0, 56, (0, 10, 11), "HORIZONTAL", 0.1, 0, 0, 500, 500),
 ]
 
-stage, evap, runoff, withdrawal, rate = (
-    110.0,
-    0.0103,
-    1000.0,
-    10000.0,
-    -225000.0,
-)
+stage, evap, runoff, withdrawal, rate = (110.0, 0.0103, 1000.0, 10000.0, -225000.0)
 lakeperioddata0 = [
     (0, "status", "active"),
     (0, "stage", stage),
@@ -255,7 +223,7 @@ lak_obs = {"lak_obs.csv": [("lake1", "STAGE", (0,))]}
 
 
 def get_model(ws, name, timeseries=False):
-    hdsfile = "{}.hds".format(name)
+    hdsfile = f"{name}.hds"
 
     # build the model
     sim = flopy.mf6.MFSimulation(sim_name=name, exe_name="mf6", sim_ws=ws)
@@ -312,13 +280,13 @@ def get_model(ws, name, timeseries=False):
         pname="lak-1",
     )
     lak.obs.initialize(
-        filename="{}.lak.obs".format(name),
+        filename=f"{name}.lak.obs",
         digits=20,
         print_input=True,
         continuous=lak_obs,
     )
     if timeseries:
-        fname = "{}.lak.ts".format(name)
+        fname = f"{name}.lak.ts"
         lak.ts.initialize(
             filename=fname,
             timeseries=ts_data,
@@ -329,8 +297,8 @@ def get_model(ws, name, timeseries=False):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(name),
-        budget_filerecord="{}.cbc".format(name),
+        head_filerecord=f"{name}.hds",
+        budget_filerecord=f"{name}.cbc",
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("BUDGET", "LAST")],
     )
@@ -338,83 +306,51 @@ def get_model(ws, name, timeseries=False):
     return sim
 
 
-def build_model(idx, dir):
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = get_model(ws, name)
 
     # build MODFLOW 6 files with UZF package
-    ws = os.path.join(dir, "mf6")
+    ws = os.path.join(test.workspace, "mf6")
     mc = get_model(ws, name, timeseries=True)
 
     return sim, mc
 
 
-def eval_budget(sim):
-    print("evaluating budgets...")
-    from budget_file_compare import eval_bud_diff
-
+def check_output(idx, test):
     # get ia/ja from binary grid file
-    fname = "{}.dis.grb".format(os.path.basename(sim.name))
-    fpth = os.path.join(sim.simpath, fname)
+    fname = f"{os.path.basename(test.name)}.dis.grb"
+    fpth = os.path.join(test.workspace, fname)
     grbobj = flopy.mf6.utils.MfGrdFile(fpth)
     ia = grbobj._datadict["IA"] - 1
 
-    fname = "{}.cbc".format(os.path.basename(sim.name))
+    fname = f"{os.path.basename(test.name)}.cbc"
 
     # open first cbc file
-    fpth = os.path.join(sim.simpath, fname)
+    fpth = os.path.join(test.workspace, fname)
     cobj0 = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # open second cbc file
-    fpth = os.path.join(sim.simpath, "mf6", fname)
+    fpth = os.path.join(test.workspace, "mf6", fname)
     cobj1 = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # define file path and evaluate difference
-    fname = "{}.cbc.cmp.out".format(os.path.basename(sim.name))
-    fpth = os.path.join(sim.simpath, fname)
+    fname = f"{os.path.basename(test.name)}.cbc.cmp.out"
+    fpth = os.path.join(test.workspace, fname)
     eval_bud_diff(fpth, cobj0, cobj1, ia, dtol=0.1)
 
-    return
 
-
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_budget, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_budget, idxsim=idx)
-        test.run_mf6(sim)
-    return
-
-
-# use python testmf6_drn_ddrn01.py
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

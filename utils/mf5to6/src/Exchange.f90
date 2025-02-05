@@ -5,11 +5,11 @@ module ExchangeModule
   use FileWriterModule, only: FileWriterType
   use GLOBAL, only: NLAY, NROW, NCOL, IBOUND, BOTM, DELC, DELR, LBOTM, NBOTM
   use GlobalVariablesModule, only: LgrBilinear
-  use InputOutputModule, only: get_ijk, get_node
+  use GeomUtilModule, only: get_ijk, get_node
   use LGRMODULE, only: IBFLG, NPLBEG, NPRBEG, NPCBEG, NPLEND, &
                        NPREND, NPCEND, NCPP, NCPPL
   use ModelModule, only: ModelType
-  use SimModule, only: store_note, store_warning
+  use SimPHMFModule, only: store_note, store_warning
   
   type :: ExchangeType
     character(len=9)  :: ExgType = 'GWF6-GWF6'

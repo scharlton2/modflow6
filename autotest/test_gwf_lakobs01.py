@@ -1,36 +1,17 @@
-# Test for checking lak observation input.  The following observation types:
-# 'lak', 'wetted-area', and 'conductance,' require that ID2 be provided when
-# ID is an integer corresponding to a lake number and not BOUNDNAME.
-# See table in LAK Package section of mf6io.pdf for an explanation of ID,
-# ID2, and Observation Type.
-
+"""
+Test for checking lak observation input.  The following observation types:
+'lak', 'wetted-area', and 'conductance,' require that ID2 be provided when
+ID is an integer corresponding to a lake number and not BOUNDNAME.
+See table in LAK Package section of mf6io.pdf for an explanation of ID,
+ID2, and Observation Type.
+"""
 
 import os
-import shutil
 
-import pytest
-import sys
+import flopy
 import numpy as np
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-import targets
-
-mf6_exe = os.path.abspath(targets.target_dict["mf6"])
-
-ex = "gwf_lakobs_01a"
-exdir = os.path.join("temp", ex)
-
-
-# store global gwf for subsequent plotting
+cases = "gwf_lakobs_01a"
 gwf = None
 
 
@@ -42,7 +23,7 @@ def get_idomain(nlay, nrow, ncol, lakend):
     return idomain
 
 
-def build_model():
+def build_model(dir, exe):
     lx = 300.0
     lz = 45.0
     nlay = 45
@@ -69,20 +50,18 @@ def build_model():
     nouter, ninner = 700, 300
     hclose, rclose, relax = 1e-8, 1e-6, 0.97
 
-    name = ex
+    name = cases
 
     # build MODFLOW 6 files
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
-        exe_name=mf6_exe,
-        sim_ws=exdir,
+        exe_name=exe,
+        sim_ws=dir,
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = name
@@ -102,7 +81,7 @@ def build_model():
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
 
     # number of columns to be a lake for layer 1, 2, , ... len(lakend)
@@ -153,7 +132,7 @@ def build_model():
             irch[i, j] = k + 1
     nlakeconn = len(lake_vconnect)
 
-    # pak_data = [lakeno, strt, nlakeconn]
+    # pak_data = [ifno, strt, nlakeconn]
     initial_stage = 0.1
     pak_data = [(0, initial_stage, nlakeconn)]
 
@@ -170,7 +149,7 @@ def build_model():
     ]
 
     # note: for specifying lake number, use fortran indexing!
-    fname = "{}.lak.obs.csv".format(gwfname)
+    fname = f"{gwfname}.lak.obs.csv"
     lak_obs = {
         fname: [
             ("lakestage", "stage", 1),
@@ -187,8 +166,8 @@ def build_model():
         print_input=True,
         print_flows=True,
         print_stage=True,
-        stage_filerecord="{}.lak.bin".format(gwfname),
-        budget_filerecord="{}.lak.bud".format(gwfname),
+        stage_filerecord=f"{gwfname}.lak.bin",
+        budget_filerecord=f"{gwfname}.lak.bud",
         nlakes=len(pak_data),
         ntables=0,
         packagedata=pak_data,
@@ -210,8 +189,8 @@ def build_model():
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -220,13 +199,9 @@ def build_model():
     return sim
 
 
-# - No need to change any code below
-def test_mf6model():
-    # initialize testing framework
-    test = testing_framework()
-
+def test_mf6model(function_tmpdir, targets):
     # build the models
-    sim = build_model()
+    sim = build_model(str(function_tmpdir), targets["mf6"])
 
     # write model input
     sim.write_simulation()
@@ -235,7 +210,7 @@ def test_mf6model():
     sim.run_simulation()
 
     # ensure that the error msg is contained in the mfsim.lst file
-    f = open(os.path.join(exdir, "mfsim.lst"), "r")
+    f = open(str(function_tmpdir / "mfsim.lst"), "r")
     lines = f.readlines()
     error_count = 0
     expected_msg = False
@@ -244,13 +219,11 @@ def test_mf6model():
             expected_msg = True
             error_count += 1
 
-    assert error_count == 1, (
-        "error count = " + str(error_count) + "but should equal 1"
-    )
+    assert error_count == 1, "error count = " + str(error_count) + "but should equal 1"
 
     # fix the error and attempt to rerun model
-    orig_fl = os.path.join(exdir, ex + ".lak.obs")
-    new_fl = os.path.join(exdir, ex + ".lak.obs.new")
+    orig_fl = str(function_tmpdir / (cases + ".lak.obs"))
+    new_fl = str(function_tmpdir / (cases + ".lak.obs.new"))
     sr = open(orig_fl, "r")
     sw = open(new_fl, "w")
 
@@ -271,72 +244,3 @@ def test_mf6model():
 
     # rerun the model, should be no errors
     sim.run_simulation()
-
-    shutil.rmtree(exdir, ignore_errors=True)
-
-    return
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    sim = build_model()
-
-    # write model input
-    sim.write_simulation()
-
-    # attempt to run model, should fail
-    sim.run_simulation()
-
-    # ensure that the error msg is contained in the mfsim.lst file
-    f = open(os.path.join(exdir, "mfsim.lst"), "r")
-    lines = f.readlines()
-    error_count = 0
-    expected_msg = False
-    for line in lines:
-        if "ID2 (iconn) is missing" in line:
-            expected_msg = True
-            error_count += 1
-
-    assert error_count == 1, (
-        "error count = " + str(error_count) + ", but should equal 1"
-    )
-
-    # fix the error and attempt to rerun model
-    orig_fl = os.path.join(exdir, ex + ".lak.obs")
-    new_fl = os.path.join(exdir, ex + ".lak.obs.new")
-    sr = open(orig_fl, "r")
-    sw = open(new_fl, "w")
-
-    lines = sr.readlines()
-    error_free_line = "  lak1  lak  1  1\n"
-    for line in lines:
-        if " lak " in line:
-            sw.write(error_free_line)
-        else:
-            sw.write(line)
-
-    sr.close()
-    sw.close()
-
-    # delete original and replace with corrected lab obs input
-    os.remove(orig_fl)
-    os.rename(new_fl, orig_fl)
-
-    # rerun the model, should be no errors
-    sim.run_simulation()
-
-    # clean the working directory
-    shutil.rmtree(exdir, ignore_errors=True)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()

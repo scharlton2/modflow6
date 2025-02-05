@@ -1,49 +1,18 @@
-import os
-import pytest
-import numpy as np
 import datetime
+import os
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
+import flopy
+import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = ["csub_sk03a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-constantcv = [True for idx in range(len(exdirs))]
-
-cmppths = ["mf6-regression" for idx in range(len(exdirs))]
-newtons = [True for idx in range(len(exdirs))]
-
+cases = ["csub_sk03a"]
+constantcv = [True for _ in range(len(cases))]
+cmppths = ["mf6_regression" for _ in range(len(cases))]
+newtons = [True for _ in range(len(cases))]
 icrcc = [0, 1, 0, 1]
-
-ddir = "data"
-
-## run all examples on Travis
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-replace_exe = None
-
-htol = [None for idx in range(len(exdirs))]
+htol = [None for _ in range(len(cases))]
 dtol = 1e-3
-
 bud_lst = [
     "CSUB-CGELASTIC_IN",
     "CSUB-CGELASTIC_OUT",
@@ -61,14 +30,14 @@ perlen = np.array([1.0, nsec])
 totim = perlen.sum() - perlen[0]
 nstp = [1, nsec * 2]
 tsmult = [1.0, 1.00]
-steady = [True] + [False for i in range(nper - 1)]
+steady = [True] + [False for _ in range(nper - 1)]
 
 # spatial discretization
 ft2m = 1.0 / 3.28081
 nlay, nrow, ncol = 3, 21, 20
 delr = np.ones(ncol, dtype=float) * 0.5
-for idx in range(1, ncol):
-    delr[idx] = min(delr[idx - 1] * 1.2, 15.0)
+for i in range(1, ncol):
+    delr[i] = min(delr[i - 1] * 1.2, 15.0)
 delc = 50.0
 top = 0.0
 botm = np.array([-40, -70.0, -100.0], dtype=float) * ft2m
@@ -91,8 +60,8 @@ nouter, ninner = 500, 300
 hclose, rclose, relax = 1e-9, 1e-6, 1.0
 
 tdis_rc = []
-for idx in range(nper):
-    tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
+for i in range(nper):
+    tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
 # all cells are active
 ib = 1
@@ -132,16 +101,14 @@ sig0[0, 0, jj] = 1.86
 tsnames = []
 sig0 = []
 for i in range(nrow):
-    tsname = "TLR{:02d}".format(i + 1)
+    tsname = f"TLR{i + 1:02d}"
     tsnames.append(tsname)
     sig0.append([(0, i, 0), tsname])
 tsname = "FR"
 tsnames.append(tsname)
 sig0.append([(0, 9, 0), tsname])
 
-datestart = datetime.datetime.strptime(
-    "03/21/1938 00:00:00", "%m/%d/%Y %H:%M:%S"
-)
+datestart = datetime.datetime.strptime("03/21/1938 00:00:00", "%m/%d/%Y %H:%M:%S")
 train1 = 2.9635  # 3.9009
 train2 = 2.8274
 fcar1 = 0.8165
@@ -198,34 +165,7 @@ tsv = np.array(v)
 # sig0 = [[(0, 0, 0), tsname]]
 
 # subwt output data
-ds16 = [
-    0,
-    0,
-    0,
-    2052,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-]
+ds16 = [0, 0, 0, 2052, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ds17 = [
     0,
     10000,
@@ -261,7 +201,7 @@ ds17 = [
 
 
 def get_model(idx, ws):
-    name = ex[idx]
+    name = cases[idx]
     newton = newtons[idx]
     newtonoptions = None
     imsla = "CG"
@@ -298,9 +238,7 @@ def get_model(idx, ws):
     sc = sske
     compression_indices = None
 
-    gwf = flopy.mf6.ModflowGwf(
-        sim, modelname=name, newtonoptions=newtonoptions
-    )
+    gwf = flopy.mf6.ModflowGwf(sim, modelname=name, newtonoptions=newtonoptions)
 
     dis = flopy.mf6.ModflowGwfdis(
         gwf,
@@ -314,7 +252,7 @@ def get_model(idx, ws):
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{name}.ic")
 
     # node property flow
     npf = flopy.mf6.ModflowGwfnpf(
@@ -361,7 +299,7 @@ def get_model(idx, ws):
     )
 
     # create chd time series
-    chnam = "{}.ch.ts".format(name)
+    chnam = f"{name}.ch.ts"
     chd_ts = [(0.0, strt), (1.0, strt), (perlen.sum(), finish)]
 
     # chd files
@@ -378,100 +316,100 @@ def get_model(idx, ws):
 
     # create load time series file with load
     csub_ts = []
-    csubnam = "{}.load.ts".format(name)
+    csubnam = f"{name}.load.ts"
 
     fopth = os.path.join(ws, "ts.csv")
     fo = open(fopth, "w")
 
     line2 = "TIME"
     for tsname in tsnames:
-        line2 += ",{}".format(tsname)
-    fo.write("{}\n".format(line2))
+        line2 += f",{tsname}"
+    fo.write(f"{line2}\n")
 
     d = [0.0]
-    line = " {:12.6e}".format(0.0)
+    line = f" {0.0:12.6e}"
     dateon = datestart + datetime.timedelta(seconds=0)
     datestr = dateon.strftime("%m/%d/%Y %H:%M:%S")
-    line2 = "{}".format(datestr)
+    line2 = f"{datestr}"
     for tsname in tsnames:
         d.append(0.0)
         line2 += ",0.0000"
     csub_ts.append(tuple(d))
-    fo.write("{}\n".format(line2))
+    fo.write(f"{line2}\n")
 
     ton = 1.0
     d = [ton]
     dateon = datestart + datetime.timedelta(seconds=ton)
     datestr = dateon.strftime("%m/%d/%Y %H:%M:%S")
-    line2 = "{}".format(datestr)
+    line2 = f"{datestr}"
     for tsname in tsnames:
         d.append(0.0)
         line2 += ",0.0000"
     csub_ts.append(tuple(d))
-    fo.write("{}\n".format(line2))
+    fo.write(f"{line2}\n")
 
     for i in range(tsv.shape[0]):
         ton = tstime[i]
         d = [ton]
         dateon = datestart + datetime.timedelta(seconds=ton)
         datestr = dateon.strftime("%m/%d/%Y %H:%M:%S")
-        line2 = "{}".format(datestr)
+        line2 = f"{datestr}"
         for j in range(tsv.shape[1]):
             d.append(tsv[i, j])
-            line2 += ",{:6.4f}".format(tsv[i, j])
+            line2 += f",{tsv[i, j]:6.4f}"
         csub_ts.append(tuple(d))
-        fo.write("{}\n".format(line2))
+        fo.write(f"{line2}\n")
 
     ton += 1
     d = [ton]
     dateon = datestart + datetime.timedelta(seconds=ton)
     datestr = dateon.strftime("%m/%d/%Y %H:%M:%S")
-    line2 = "{}".format(datestr)
+    line2 = f"{datestr}"
     for tsname in tsnames:
         if tsname == "FR":
             d.append(fcar1)
-            line2 += ",{:6.4f}".format(fcar1)
+            line2 += f",{fcar1:6.4f}"
         else:
             d.append(0.0)
             line2 += ",0.0000"
     csub_ts.append(tuple(d))
-    fo.write("{}\n".format(line2))
+    fo.write(f"{line2}\n")
 
     ton += (i + 1.0) * 86400.0
     d = [ton]
     dateon = datestart + datetime.timedelta(minutes=29)
     datestr = dateon.strftime("%m/%d/%Y %H:%M:%S")
-    line2 = "{}".format(datestr)
+    line2 = f"{datestr}"
     for tsname in tsnames:
         if tsname == "FR":
             d.append(fcar1)
-            line2 += ",{:6.4f}".format(fcar1)
+            line2 += f",{fcar1:6.4f}"
         else:
             d.append(0.0)
             line2 += ",0.0000"
     csub_ts.append(tuple(d))
-    fo.write("{}\n".format(line2))
+    fo.write(f"{line2}\n")
 
     ton = 100.0 * sec2day
     d = [ton]
     dateon = datestart + datetime.timedelta(minutes=30)
     datestr = dateon.strftime("%m/%d/%Y %H:%M:%S")
-    line2 = "{}".format(datestr)
+    line2 = f"{datestr}"
     for tsname in tsnames:
         if tsname == "FR":
             d.append(fcar1)
-            line2 += ",{:6.4f}".format(fcar1)
+            line2 += f",{fcar1:6.4f}"
         else:
             d.append(fcar1)
             line2 += ",0.0000"
     csub_ts.append(tuple(d))
-    fo.write("{}\n".format(line2))
+    fo.write(f"{line2}\n")
 
     # close ts,csv
     fo.close()
 
     # csub files
-    opth = "{}.csub.obs".format(name)
+    opth = f"{name}.csub.obs"
     csub = flopy.mf6.ModflowGwfcsub(
         gwf,
         print_input=True,
@@ -519,8 +457,8 @@ def get_model(idx, ws):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -530,34 +468,28 @@ def get_model(idx, ws):
 
 
 # SUB package problem 3
-def build_model(idx, dir):
-
+def build_models(idx, test):
     # build MODFLOW 6 files
-    ws = dir
-    sim = get_model(idx, ws)
+    sim = get_model(idx, test.workspace)
 
     # build comparison files
     cpth = cmppths[idx]
-    ws = os.path.join(dir, cpth)
+    ws = os.path.join(test.workspace, cpth)
     mc = get_model(idx, ws)
 
     return sim, mc
 
 
-def eval_comp(sim):
-    print("evaluating compaction...")
-
+def check_output(idx, test):
     # MODFLOW 6 total compaction results
-    fpth = os.path.join(sim.simpath, "csub_obs.csv")
+    fpth = os.path.join(test.workspace, "csub_obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # get results from listing file
-    fpth = os.path.join(
-        sim.simpath, "{}.lst".format(os.path.basename(sim.name))
-    )
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.lst")
     budl = flopy.utils.Mf6ListBudget(fpth)
     names = list(bud_lst)
     d0 = budl.get_budget(names=names)[0]
@@ -569,13 +501,11 @@ def eval_comp(sim):
     d = np.recarray(nbud, dtype=dtype)
     for key in bud_lst:
         d[key] = 0.0
-    fpth = os.path.join(
-        sim.simpath, "{}.cbc".format(os.path.basename(sim.name))
-    )
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.cbc")
     cobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     kk = cobj.get_kstpkper()
     times = cobj.get_times()
-    for idx, (k, t) in enumerate(zip(kk, times)):
+    for i, (k, t) in enumerate(zip(kk, times)):
         for text in cbc_bud:
             qin = 0.0
             qout = 0.0
@@ -588,113 +518,57 @@ def eval_comp(sim):
                             qout -= vv
                         else:
                             qin += vv
-            d["totim"][idx] = t
-            d["time_step"][idx] = k[0]
+            d["totim"][i] = t
+            d["time_step"][i] = k[0]
             d["stress_period"] = k[1]
-            key = "{}_IN".format(text)
-            d[key][idx] = qin
-            key = "{}_OUT".format(text)
-            d[key][idx] = qout
+            key = f"{text}_IN"
+            d[key][i] = qin
+            key = f"{text}_OUT"
+            d[key][i] = qout
 
     diff = np.zeros((nbud, len(bud_lst)), dtype=float)
-    for idx, key in enumerate(bud_lst):
-        diff[:, idx] = d0[key] - d[key]
+    for i, key in enumerate(bud_lst):
+        diff[:, i] = d0[key] - d[key]
     diffmax = np.abs(diff).max()
-    msg = "maximum absolute total-budget difference ({}) ".format(diffmax)
+    msg = f"maximum absolute total-budget difference ({diffmax}) "
 
     # write summary
-    fpth = os.path.join(
-        sim.simpath, "{}.bud.cmp.out".format(os.path.basename(sim.name))
-    )
-    f = open(fpth, "w")
-    for i in range(diff.shape[0]):
-        if i == 0:
-            line = "{:>10s}".format("TIME")
-            for idx, key in enumerate(bud_lst):
-                line += "{:>25s}".format(key + "_LST")
-                line += "{:>25s}".format(key + "_CBC")
-                line += "{:>25s}".format(key + "_DIF")
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.bud.cmp.out")
+    with open(fpth, "w") as f:
+        for i in range(diff.shape[0]):
+            if i == 0:
+                line = f"{'TIME':>10s}"
+                for key in bud_lst:
+                    line += f"{key + '_LST':>25s}"
+                    line += f"{key + '_CBC':>25s}"
+                    line += f"{key + '_DIF':>25s}"
+                f.write(line + "\n")
+            line = f"{d['totim'][i]:10g}"
+            for ii, key in enumerate(bud_lst):
+                line += f"{d0[key][i]:25g}"
+                line += f"{d[key][i]:25g}"
+                line += f"{diff[i, ii]:25g}"
             f.write(line + "\n")
-        line = "{:10g}".format(d["totim"][i])
-        for idx, key in enumerate(bud_lst):
-            line += "{:25g}".format(d0[key][i])
-            line += "{:25g}".format(d[key][i])
-            line += "{:25g}".format(diff[i, idx])
-        f.write(line + "\n")
-    f.close()
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
-    return
 
-
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-    r_exe = None
-    if not is_CI:
-        if replace_exe is not None:
-            r_exe = replace_exe
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(
-        Simulation(
-            dir,
-            exfunc=eval_comp,
-            exe_dict=r_exe,
-            htol=htol[idx],
-            idxsim=idx,
-            mf6_regression=True,
-        )
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        htol=htol[idx],
+        compare="mf6_regression",
     )
-
-    return
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(
-            dir,
-            exfunc=eval_comp,
-            exe_dict=replace_exe,
-            htol=htol[idx],
-            idxsim=idx,
-            mf6_regression=True,
-        )
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

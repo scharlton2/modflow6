@@ -1,43 +1,21 @@
 """
-# Test the ability of a uzf to route waves through a simple 1d vertical
-# column.
-
+Test the ability of a uzf to route waves through a simple 1d vertical
+column.
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["gwf_uzf01a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["gwf_uzf01a"]
 nlay, nrow, ncol = 100, 1, 1
 
 
-def build_model(idx, exdir):
-
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
 
     perlen = [500.0]
     nper = len(perlen)
@@ -55,19 +33,17 @@ def build_model(idx, exdir):
     sy = 0.1
 
     tdis_rc = []
-    for idx in range(nper):
-        tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
+    for i in range(nper):
+        tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
     # build MODFLOW 6 files
-    ws = exdir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     nouter, ninner = 100, 10
@@ -113,9 +89,7 @@ def build_model(idx, exdir):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -157,43 +131,13 @@ def build_model(idx, exdir):
     thti = thtr
     thts = sy
     eps = 4
-    uzf_pkdat = [
-        [
-            0,
-            (0, 0, 0),
-            1,
-            1,
-            sd,
-            vks,
-            thtr,
-            thts,
-            thti,
-            eps,
-            "uzf 001",
-        ]
-    ] + [
-        [
-            k,
-            (k, 0, 0),
-            0,
-            k + 1,
-            sd,
-            vks,
-            thtr,
-            thts,
-            thti,
-            eps,
-            f"uzf {k + 1:03d}",
-        ]
+    uzf_pkdat = [[0, (0, 0, 0), 1, 1, sd, vks, thtr, thts, thti, eps, "uzf 001"]] + [
+        [k, (k, 0, 0), 0, k + 1, sd, vks, thtr, thts, thti, eps, f"uzf {k + 1:03d}"]
         for k in range(1, nlay - 1)
     ]
     uzf_pkdat[-1][3] = -1
     infiltration = 2.01
-    uzf_spd = {
-        0: [
-            [0, infiltration, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        ]
-    }
+    uzf_spd = {0: [[0, infiltration, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]}
     uzf = flopy.mf6.ModflowGwfuzf(
         gwf,
         print_input=True,
@@ -205,16 +149,17 @@ def build_model(idx, exdir):
         nuzfcells=len(uzf_pkdat),
         packagedata=uzf_pkdat,
         perioddata=uzf_spd,
-        budget_filerecord="{}.uzf.bud".format(name),
+        budget_filerecord=f"{name}.uzf.bud",
+        budgetcsv_filerecord=f"{name}.uzf.bud.csv",
         observations=uzf_obs,
-        filename="{}.uzf".format(name),
+        filename=f"{name}.uzf",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.bud".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.bud",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -224,18 +169,14 @@ def build_model(idx, exdir):
     obs_lst.append(["obs1", "head", (0, 0, 0)])
     obs_lst.append(["obs2", "head", (1, 0, 0)])
     obs_dict = {f"{name}.obs.csv": obs_lst}
-    obs = flopy.mf6.ModflowUtlobs(
-        gwf, pname="head_obs", digits=20, continuous=obs_dict
-    )
+    obs = flopy.mf6.ModflowUtlobs(gwf, pname="head_obs", digits=20, continuous=obs_dict)
 
     return sim, None
 
 
-def eval_flow(sim):
-    print("evaluating flow...")
-
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
+def check_output(idx, test):
+    name = test.name
+    ws = test.workspace
 
     # check binary grid file
     fname = os.path.join(ws, name + ".dis.grb")
@@ -261,9 +202,7 @@ def eval_flow(sim):
     for fjf in flow_ja_face:
         fjf = fjf.flatten()
         res = fjf[ia[:-1]]
-        errmsg = "min or max residual too large {} {}".format(
-            res.min(), res.max()
-        )
+        errmsg = f"min or max residual too large {res.min()} {res.max()}"
         assert np.allclose(res, 0.0, atol=1.0e-6), errmsg
 
     # Open the uzf observation file
@@ -275,47 +214,20 @@ def eval_flow(sim):
         names[-1]: obs_obj.get_data(obsname=names[-1]),
     }
     cbc = uobj.get_ts(idx=[[0, 0, 1], [0, 0, 49]], text="GWF")
-    for idx, key in enumerate(obs.keys()):
-        assert np.allclose(obs[key][key], -cbc[:, idx + 1]), (
+    for i, key in enumerate(obs.keys()):
+        assert np.allclose(obs[key][key], -cbc[:, i + 1]), (
             f"observation data for {key} is not the same as "
             "data in the cell-by-cell file."
         )
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, exdir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, exdir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, exdir)
-
-    # run the test model
-    test.run_mf6(Simulation(exdir, exfunc=eval_flow, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, exdir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, exdir)
-        sim = Simulation(exdir, exfunc=eval_flow, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

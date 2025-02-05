@@ -20,7 +20,7 @@
 \usepackage{etoolbox}
 \usepackage{verbatim}
 
-\usepackage[]{hyperref}
+\usepackage{hyperref}
 \hypersetup{
     pdftitle={ZONEBUDGET for MODFLOW 6},
     pdfauthor={MODFLOW 6 Development Team},
@@ -55,23 +55,14 @@
 %\renewcommand{\theauthorslastfirst}{}
 \renewcommand{\reportcitingtheauthors}{MODFLOW 6 Development Team}
 \renewcommand{\colophonmoreinfo}{}
-\renewcommand{\theoffice}{Office of Groundwater \\ U.S. Geological Survey \\ Mail Stop 411 \\ 12201 Sunrise Valley Drive \\ Reston, VA 20192 \\ (703) 648-5001}
 \renewcommand{\reportbodypages}{}
 \urlstyle{rm}
 \renewcommand{\reportwebsiteroot}{https://doi.org/10.5066/}
 \renewcommand{\reportwebsiteremainder}{F76Q1VQV}
-%\renewcommand{\doisecretary}{RYAN K. ZINKE}
-%\renewcommand{\usgsdirector}{William H. Werkheiser}
-%\ifdef{\usgsdirectortitle}{\renewcommand{\usgsdirectortitle}{Acting Director}}{}
 \ifdef{\usgsissn}{\renewcommand{\usgsissn}{}}{}
 \renewcommand{\theconventions}{}
 \definecolor{coverbar}{RGB}{136, 21, 53}
 \renewcommand{\bannercolor}{\color{coverbar}}
-%\renewcommand{\thePSC}{the MODFLOW 6 Development Team}
-%\renewcommand{\theeditor}{Christian D. Langevin}
-%\renewcommand{\theillustrator}{None}
-%\renewcommand{\thefirsttypesetter}{Joseph D. Hughes}
-%\renewcommand{\thesecondtypesetter}{Cian Dawson}
 
 \newcommand{\customcolophon}{
 Publishing support provided by the U.S. Geological Survey \\
@@ -79,8 +70,8 @@ Publishing support provided by the U.S. Geological Survey \\
 \newline \newline
 For information concerning this publication, please contact:
 \newline \newline
-Office of Groundwater \\ U.S. Geological Survey \\ Mail Stop 411 \\ 12201 Sunrise Valley Drive \\ Reston, VA 20192 \\ (703) 648--5001 \\
-https://water.usgs.gov/ogw/
+Integrated Modeling and Prediction Division \\ U.S. Geological Survey \\ Mail Stop 411 \\ 12201 Sunrise Valley Drive \\ Reston, VA 20192 \\
+https://www.usgs.gov/mission-areas/water-resources
 }
 
 
@@ -104,7 +95,9 @@ https://water.usgs.gov/ogw/
 
 % -------------------------------------------------
 \section{Abstract}
-The computer program ZONEBUDGET 6, which is written in FORTRAN, calculates subregional water budgets using results from MODFLOW 6. ZONEBUDGET uses cell-by-cell flow data saved by the model in order to calculate the budgets. Subregions of the modeled region are designated by zone numbers. The user assigns a zone number for each cell in the model. 
+The computer program ZONEBUDGET 6, which is written in FORTRAN, calculates subregional water budgets using results from MODFLOW 6. ZONEBUDGET uses cell-by-cell flow data saved by the model in order to calculate the budgets. Subregions of the modeled region are designated by zone numbers. The user assigns a zone number for each cell in the model.
+
+ZONEBUDGET 6 is designed to work with output from the Groundwater Flow (GWF) and Groundwater Transport (GWT) Models, and the advanced packages for those models. Output from new models that may be added to MODFLOW 6 in the future should also work with ZONEBUDGET 6.
 
 % -------------------------------------------------
 \section{Introduction}
@@ -164,7 +157,7 @@ where:
 \begin{itemize}
 \item \texttt{BUD <budgetfile>}---is the keyword and name of the MODFLOW 6 budget file.  This file contains double precision numeric values of simulated flow.
 \item \texttt{ZON <zonefile>}---is the keyword and name of the zone input file.
-\item \texttt{GRB <binarygridfile>}---is the keyword and name of the binary grid file created by MODFLOW 6.  Note that if the NOGRB keyword is specified in the OPTIONS block of the Discretization Package input file, then MODFLOW 6 will not create the binary grid file needed to run ZONEBUDGET.  The binary grid file must be provided if the budget file is for a Groundwater Flow (GWF) Model.  The binary grid file is not needed when ZONEBUDGET is used to process the budget file from one of the advanced packages (described later).
+\item \texttt{GRB <binarygridfile>}---is the keyword and name of the binary grid file created by MODFLOW 6.  Note that if the NOGRB keyword is specified in the OPTIONS block of the Discretization Package input file, then MODFLOW 6 will not create the binary grid file needed to run ZONEBUDGET.  The binary grid file must be provided if the budget file is for a Groundwater Flow (GWF) or Groundwater Transport (GWT) Model.  The binary grid file is not needed when ZONEBUDGET is used to process the budget file from one of the advanced packages (described later).
 \end{itemize}
 
 The following is an example of a ZONEBUDGET name file:
@@ -291,10 +284,15 @@ This section describes changes introduced into MODFLOW 6 with each official rele
 
 \begin{itemize}
 
-\item
-\currentmodflowversion
+%\item
+%\currentmodflowversion
+%\begin{itemize}
+%  \item None.
+%\end{itemize}
+
+\item Version 6.4.0
 \begin{itemize}
-  \item None.
+  \item Fixed error that prevented the program from working properly when the path to the ZONEBUDGET executable contained one or more spaces in it.
 \end{itemize}
 
 \item Version 6.1.0---December 12, 2019

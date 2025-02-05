@@ -1,106 +1,92 @@
+import argparse
+import importlib
 import os
 import shutil
 import subprocess
-import importlib
-from contextlib import contextmanager
+import sys
+from pathlib import Path
 
 import flopy
+import pytest
+from conftest import project_root_path
 
-flopypth = flopy.__path__[0]
-print("flopy is installed in {}".format(flopypth))
-
-
-@contextmanager
-def cwd(path):
-    oldpwd = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(oldpwd)
+dfn_path = project_root_path / "doc" / "mf6io" / "mf6ivar" / "dfn"
+fpy_path = flopy.__path__[0]
+print(f"flopy is installed in {fpy_path}")
 
 
 def test_delete_mf6():
-    pth = os.path.join(flopypth, "mf6", "modflow")
+    pth = os.path.join(fpy_path, "mf6", "modflow")
     files = [
-        entry
-        for entry in os.listdir(pth)
-        if os.path.isfile(os.path.join(pth, entry))
+        entry for entry in os.listdir(pth) if os.path.isfile(os.path.join(pth, entry))
     ]
     delete_files(files, pth, exclude="mfsimulation.py")
 
 
+@pytest.mark.order(after="test_delete_mf6")
 def test_delete_dfn():
-    pth = os.path.join(flopypth, "mf6", "data", "dfn")
+    pth = os.path.join(fpy_path, "mf6", "data", "dfn")
     files = [
-        entry
-        for entry in os.listdir(pth)
-        if os.path.isfile(os.path.join(pth, entry))
+        entry for entry in os.listdir(pth) if os.path.isfile(os.path.join(pth, entry))
     ]
     delete_files(files, pth, exclude="flopy.dfn")
 
 
-def test_copy_dfn():
-    pth0 = os.path.join("..", "doc", "mf6io", "mf6ivar", "dfn")
+@pytest.mark.order(after="test_delete_dfn")
+@pytest.mark.parametrize("path", [dfn_path])
+def test_copy_dfn(path):
     files = [
-        entry
-        for entry in os.listdir(pth0)
-        if os.path.isfile(os.path.join(pth0, entry))
+        entry for entry in os.listdir(path) if os.path.isfile(os.path.join(path, entry))
     ]
-    pth1 = os.path.join(flopypth, "mf6", "data", "dfn")
+    pth1 = os.path.join(fpy_path, "mf6", "data", "dfn")
     for fn in files:
         ext = os.path.splitext(fn)[1].lower()
         if "dfn" in ext:
-            fpth0 = os.path.join(pth0, fn)
+            fpth0 = os.path.join(path, fn)
             fpth1 = os.path.join(pth1, fn)
-            print('copying {} from "{}" to "{}"'.format(fn, pth0, pth1))
+            print(f'copying {fn} from "{path}" to "{pth1}"')
             shutil.copyfile(fpth0, fpth1)
 
 
+@pytest.mark.order(after="test_copy_dfn")
 def test_create_packages():
     # get list of files in mf6/modflow
-    pth = os.path.join(flopypth, "mf6", "modflow")
+    pth = os.path.join(fpy_path, "mf6", "modflow")
     list_files(pth)
 
-    pth = os.path.join(flopypth, "mf6", "utils")
+    pth = os.path.join(fpy_path, "mf6", "utils")
     fn = "createpackages.py"
 
     # determine if createpackages.py exists
     fpth = os.path.join(pth, fn)
-    print('testing if "{}" exists'.format(fpth))
+    print(f'testing if "{fpth}" exists')
     exist = os.path.isfile(fpth)
-    assert exist, '"{}" does not exist'.format(fpth)
+    assert exist, f'"{fpth}" does not exist'
 
-    # run createrpackages.py script
-    print("running...{}".format(fn))
-    cmd = ["python", fn]
-    buff, ierr = run_command(cmd, pth)
-    assert ierr == 0, "could not run {}".format(fn)
-    print("successfully ran...{}".format(fn))
+    # run createpackages.py script
+    print(f"running...{fn}")
+    subprocess.check_output([sys.executable, "createpackages.py"], cwd=pth)
 
     # reload flopy
     print("reloading flopy")
     importlib.reload(flopy)
 
     # get updated list of files in mf6/modflow
-    pth = os.path.join(flopypth, "mf6", "modflow")
+    pth = os.path.join(fpy_path, "mf6", "modflow")
     list_files(pth)
 
 
 def list_files(pth, exts=["py"]):
-    print("\nLIST OF FILES IN {}".format(pth))
+    print(f"\nLIST OF FILES IN {pth}")
     files = [
-        entry
-        for entry in os.listdir(pth)
-        if os.path.isfile(os.path.join(pth, entry))
+        entry for entry in os.listdir(pth) if os.path.isfile(os.path.join(pth, entry))
     ]
     idx = 0
     for fn in files:
         ext = os.path.splitext(fn)[1][1:].lower()
         if ext in exts:
             idx += 1
-            print("    {:5d} - {}".format(idx, fn))
-    return
+            print(f"    {idx:5d} - {fn}")
 
 
 def delete_files(files, pth, allow_failure=False, exclude=None):
@@ -115,56 +101,24 @@ def delete_files(files, pth, allow_failure=False, exclude=None):
             continue
         fpth = os.path.join(pth, fn)
         try:
-            print("removing...{}".format(fn))
+            print(f"removing...{fn}")
             os.remove(fpth)
         except:
-            print("could not remove...{}".format(fn))
+            print(f"could not remove...{fn}")
             if not allow_failure:
                 return False
     return True
 
 
-def run_command(argv, pth, timeout=10):
-    ierr = 0
-    with subprocess.Popen(
-        argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=pth
-    ) as process:
-        try:
-            output, unused_err = process.communicate(timeout=timeout)
-            buff = output.decode("utf-8")
-        except subprocess.TimeoutExpired:
-            process.kill()
-            output, unused_err = process.communicate()
-            buff = output.decode("utf-8")
-            ierr = 100
-        except:
-            output, unused_err = process.communicate()
-            buff = output.decode("utf-8")
-            ierr = 101
-
-    return buff, ierr
-
-
-def main():
-    # write message
-    tnam = os.path.splitext(os.path.basename(__file__))[0]
-    msg = "Running {} test".format(tnam)
-    print(msg)
-
-    print("deleting existing MODFLOW 6 FloPy files")
-    test_delete_mf6()
-    print("deleting existing MODFLOW 6 dfn files")
-    test_delete_dfn()
-    print("copying MODFLOW 6 repo dfn files")
-    test_copy_dfn()
-    print("creating MODFLOW 6 packages from repo dfn files")
-    test_create_packages()
-
-    return
-
-
 if __name__ == "__main__":
-    print("standalone run of {}".format(os.path.basename(__file__)))
+    parser = argparse.ArgumentParser("Update flopy from DFN files")
+    parser.add_argument("-p", "--path", help="path to DFN files", default=str(dfn_path))
+    args = parser.parse_args()
 
-    # run main routine
-    main()
+    path = Path(args.path).expanduser().resolve()
+    print(f"Updating flopy packages from DFN files in: {path}")
+
+    test_delete_mf6()
+    test_delete_dfn()
+    test_copy_dfn(path)
+    test_create_packages()

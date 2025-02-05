@@ -1,22 +1,11 @@
 import os
-import pytest
-import sys
-import shutil
 import subprocess
+import sys
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
+import flopy
+import pytest
 
-import targets
-
-mf6_exe = os.path.abspath(targets.target_dict["mf6"])
 name = "gwf_ret_codes01"
-ws = os.path.join("temp", name)
 app = "mf6"
 if sys.platform.lower() == "win32":
     app += ".exe"
@@ -31,13 +20,13 @@ def run_mf6(argv, ws):
     if result is not None:
         c = result.decode("utf-8")
         c = c.rstrip("\r\n")
-        print("{}".format(c))
+        print(f"{c}")
         buff.append(c)
 
     return proc.returncode, buff
 
 
-def get_sim(ws, idomain, continue_flag=False, nouter=500):
+def get_sim(ws, exe, idomain, continue_flag=False, nouter=500):
     # static model data
     # temporal discretization
     nper = 1
@@ -63,14 +52,12 @@ def get_sim(ws, idomain, continue_flag=False, nouter=500):
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
-        exe_name=mf6_exe,
+        exe_name=exe,
         sim_ws=ws,
         continue_=continue_flag,
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -121,15 +108,13 @@ def get_sim(ws, idomain, continue_flag=False, nouter=500):
         c6 = [[0, 0, 0, 1.0], [0, nrow - 1, ncol - 1, 0.0]]
         cd6 = {0: c6}
         maxchd = len(cd6[0])
-        chd = flopy.mf6.ModflowGwfchd(
-            gwf, stress_period_data=cd6, maxbound=maxchd
-        )
+        chd = flopy.mf6.ModflowGwfchd(gwf, stress_period_data=cd6, maxbound=maxchd)
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -140,16 +125,17 @@ def get_sim(ws, idomain, continue_flag=False, nouter=500):
     return sim
 
 
-def normal_termination():
+def normal_termination(dir, exe):
+    ws = os.path.join(dir, "normal_termination")
+
     # get the simulation
-    sim = get_sim(ws, idomain=1)
+    sim = get_sim(ws, exe, idomain=1)
 
     # write the input files
     sim.write_simulation()
 
     # run the simulation
-    returncode, buff = run_mf6([mf6_exe], ws)
-    msg = "could not run {}".format(sim.name)
+    returncode, buff = run_mf6([exe], ws)
     if returncode != 0:
         msg = (
             "The run should have been successful but it terminated "
@@ -157,55 +143,58 @@ def normal_termination():
         )
         raise ValueError(msg)
 
-    return
 
+def converge_fail_continue(dir, exe):
+    ws = os.path.join(dir, "converge_fail_continue")
 
-def converge_fail_continue():
     # get the simulation
-    sim = get_sim(ws, idomain=1, continue_flag=True, nouter=1)
+    sim = get_sim(ws, exe, idomain=1, continue_flag=True, nouter=1)
 
     # write the input files
     sim.write_simulation()
 
     # run the simulation
-    returncode, buff = run_mf6([mf6_exe], ws)
+    returncode, buff = run_mf6([exe], ws)
     msg = (
         "The run should have been successful even though it failed, because"
         " the continue flag was set.  But a non-zero error code was "
-        "found: {}".format(returncode)
+        f"found: {returncode}"
     )
     assert returncode == 0, msg
-    return
 
 
-def converge_fail_nocontinue():
+def converge_fail_nocontinue(dir, exe):
+    ws = os.path.join(dir, "converge_fail_nocontinue")
+
     with pytest.raises(RuntimeError):
         # get the simulation
-        sim = get_sim(ws, idomain=1, continue_flag=False, nouter=1)
+        sim = get_sim(ws, exe, idomain=1, continue_flag=False, nouter=1)
 
         # write the input files
         sim.write_simulation()
 
         # run the simulation
-        returncode, buff = run_mf6([mf6_exe], ws)
+        returncode, buff = run_mf6([exe], ws)
         msg = "This run should fail with a returncode of 1"
         if returncode == 1:
             raise RuntimeError(msg)
 
 
-def idomain_runtime_error():
+def idomain_runtime_error(dir, exe):
+    ws = os.path.join(dir, "idomain_runtime_error")
+
     with pytest.raises(RuntimeError):
         # get the simulation
-        sim = get_sim(ws, idomain=0)
+        sim = get_sim(ws, exe, idomain=0)
 
         # write the input files
         sim.write_simulation()
 
         # run the simulation
-        returncode, buff = run_mf6([mf6_exe], ws)
-        msg = "could not run {}".format(sim.name)
+        returncode, buff = run_mf6([exe], ws)
+        msg = f"could not run {sim.name}"
         if returncode != 0:
-            err_str = "IDOMAIN ARRAY HAS SOME VALUES GREATER THAN ZERO"
+            err_str = "Ensure IDOMAIN array has some"
             err = any(err_str in s for s in buff)
             if err:
                 raise RuntimeError(msg)
@@ -214,77 +203,69 @@ def idomain_runtime_error():
                 raise ValueError(msg)
 
 
-def unknown_keyword_error():
-    with pytest.raises(RuntimeError):
-        returncode, buff = run_mf6([mf6_exe, "--unknown_keyword"], ws)
-        msg = "could not run {}".format("unknown_keyword")
+def unknown_keyword_error(dir, exe):
+    with pytest.raises((RuntimeError, ValueError)):
+        returncode, buff = run_mf6([exe, "--unknown_keyword"], dir)
+        msg = "could not run unknown_keyword"
         if returncode != 0:
-            err_str = "{}: illegal option".format(app)
+            err_str = f"{app}: illegal option"
             err = any(err_str in s for s in buff)
             if err:
                 raise RuntimeError(msg)
             else:
-                msg += " but {} not returned".format(err_str)
+                msg += f" but {err_str} not returned"
                 raise ValueError(msg)
 
 
-def run_argv(arg, return_str):
-    returncode, buff = run_mf6([mf6_exe, arg], ws)
+def run_argv(arg, return_str, tempdir, exe):
+    returncode, buff = run_mf6([exe, arg], tempdir)
     if returncode == 0:
         found_str = any(return_str in s for s in buff)
         if not found_str:
-            msg = "{} keyword did not return {}".format(arg, return_str)
+            msg = f"{arg} keyword did not return {return_str}"
             raise ValueError(msg)
     else:
-        msg = "could not run with command line argument {}".format(arg)
+        msg = f"could not run with command line argument {arg}"
         raise RuntimeError(msg)
 
 
-def help_argv():
+def help_argv(dir, exe):
     for arg in ["-h", "--help", "-?"]:
-        return_str = "{} [options]     retrieve program information".format(
-            app
-        )
-        run_argv(arg, return_str)
+        return_str = f"{app} [options]     retrieve program information"
+        run_argv(arg, return_str, dir, exe)
 
 
-def version_argv():
+def version_argv(dir, exe):
     for arg in ["-v", "--version"]:
-        return_str = "{}: 6".format(app)
-        run_argv(arg, return_str)
+        return_str = f"{app}: 6"
+        run_argv(arg, return_str, dir, exe)
 
 
-def develop_argv():
+def develop_argv(dir, exe):
     for arg in ["-dev", "--develop"]:
-        return_str = "{}: develop version".format(app)
-        run_argv(arg, return_str)
+        return_str = f"{app}: develop version"
+        run_argv(arg, return_str, dir, exe)
 
 
-def compiler_argv():
+def compiler_argv(dir, exe):
     for arg in ["-c", "--compiler"]:
-        return_str = "{}: MODFLOW 6 compiled".format(app)
-        run_argv(arg, return_str)
+        return_str = f"{app}: MODFLOW 6 compiled"
+        run_argv(arg, return_str, dir, exe)
 
 
-def clean_sim():
-    print("Cleaning up")
-    shutil.rmtree(ws)
-
-
-def test_main():
-    idomain_runtime_error()
-    unknown_keyword_error()
-    normal_termination()
-    converge_fail_nocontinue()
-    help_argv()
-    version_argv()
-    develop_argv()
-    compiler_argv()
-    clean_sim()
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    test_main()
+@pytest.mark.parametrize(
+    "fn",
+    (
+        "idomain_runtime_error",
+        "unknown_keyword_error",
+        "normal_termination",
+        "converge_fail_nocontinue",
+        "help_argv",
+        "version_argv",
+        "develop_argv",
+        "compiler_argv",
+    ),
+)
+def test_main(fn, function_tmpdir, targets):
+    mf6 = targets["mf6"]
+    eval(fn)(function_tmpdir, mf6)

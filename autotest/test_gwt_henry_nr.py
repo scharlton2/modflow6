@@ -1,30 +1,20 @@
-# This is the Henry, Newton-Raphson problem described by Langevin et al (2020)
-# with a 20 by 40 grid instead of the 40 by 80 grid described in the paper.
-# There is freshwater inflow on the left and a sloping sea boundary on the
-# right with moves up and down according to a simple sine function.  GHBs
-# and DRNs alternate and move up and down along the boundary to represent
-# the effects of tides on the aquifer.
+"""
+This is the Henry, Newton-Raphson problem described by Langevin et al (2020)
+with a 20 by 40 grid instead of the 40 by 80 grid described in the paper.
+There is freshwater inflow on the left and a sloping sea boundary on the
+right with moves up and down according to a simple sine function.  GHBs
+and DRNs alternate and move up and down along the boundary to represent
+the effects of tides on the aquifer.
+"""
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["henrynr01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["henrynr01"]
 
 # global model variables
 nlay = 20
@@ -77,10 +67,9 @@ def sinfunc(a, b, c, d, x):
     return a * np.sin(b * (x - c)) + d
 
 
-def build_model(idx, dir):
-
-    ws = dir
-    name = ex[idx]
+def build_models(idx, test):
+    ws = test.workspace
+    name = cases[idx]
 
     nrow = 1
     delr = lx / ncol
@@ -107,9 +96,7 @@ def build_model(idx, dir):
     sim.name_file.continue_ = False
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -132,7 +119,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
         no_ptcrecord=True,
     )
     sim.register_ims_package(imsgwf, [gwfname])
@@ -236,14 +223,14 @@ def build_model(idx, dir):
         save_flows=False,
         pname="WEL-1",
         auxiliary="CONCENTRATION",
-        filename="{}.wel".format(gwfname),
+        filename=f"{gwfname}.wel",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -256,7 +243,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwt6",
         modelname=gwtname,
-        model_nam_file="{}.nam".format(gwtname),
+        model_nam_file=f"{gwtname}.nam",
     )
 
     imsgwt = flopy.mf6.ModflowIms(
@@ -271,7 +258,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwtname),
+        filename=f"{gwtname}.ims",
     )
     sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -333,11 +320,9 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
-        concentrationprintrecord=[
-            ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
+        concentrationprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("CONCENTRATION", "ALL")],
         printrecord=[("CONCENTRATION", "LAST"), ("BUDGET", "ALL")],
     )
@@ -350,7 +335,7 @@ def build_model(idx, dir):
         exgtype="GWF6-GWT6",
         exgmnamea=gwfname,
         exgmnameb=gwtname,
-        filename="{}.gwfgwt".format(name),
+        filename=f"{name}.gwfgwt",
     )
 
     return sim, None
@@ -358,8 +343,8 @@ def build_model(idx, dir):
 
 def get_patch_collection(modelgrid, head, conc, cmap="jet", zorder=None):
     # create patches for each cell
-    import matplotlib.patches
     import matplotlib.collections
+    import matplotlib.patches
 
     xv, yv, zv = modelgrid.xyzvertices
     botm = modelgrid.botm
@@ -377,23 +362,21 @@ def get_patch_collection(modelgrid, head, conc, cmap="jet", zorder=None):
                 poly, closed=True, edgecolor="k", facecolor="red"
             )
             patches.append(patch)
-    pc = matplotlib.collections.PatchCollection(
-        patches, cmap=cmap, zorder=zorder
-    )
+    pc = matplotlib.collections.PatchCollection(patches, cmap=cmap, zorder=zorder)
     pc.set_array(conc.flatten())
     return pc
 
 
-def make_plot(sim, headall, concall):
-    print("making plots...")
-
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
-    sim = flopy.mf6.MFSimulation.load(sim_ws=ws)
+def plot_output(idx, test):
+    ws = test.workspace
+    name = test.name
+    sim = test.sims[0]
     gwfname = "gwf_" + name
     gwtname = "gwt_" + name
     gwf = sim.get_model(gwfname)
     gwt = sim.get_model(gwtname)
+    headall = gwf.output.head().get_alldata()
+    concall = gwt.output.concentration().get_alldata()
 
     import matplotlib.patches
     import matplotlib.pyplot as plt
@@ -435,9 +418,7 @@ def make_plot(sim, headall, concall):
         )
         ax.add_patch(patch)
         # aquifer polygon
-        aqpoly = np.array(
-            [[0, 0], [lx, 0], [lx, fz * lz], [lx * fx, lz], [0, lz]]
-        )
+        aqpoly = np.array([[0, 0], [lx, 0], [lx, fz * lz], [lx * fx, lz], [0, lz]])
         patch = matplotlib.patches.Polygon(
             aqpoly, closed=True, facecolor=".7", zorder=1
         )
@@ -463,7 +444,7 @@ def make_plot(sim, headall, concall):
         if ifig == nplots - 1:
             ax.set_xlabel("DISTANCE, IN METERS", fontsize=6)
         ax.set_ylabel("ELEVATION, IN METERS", fontsize=6)
-        ttl = "TIME = {:.3f} days".format(simtime[itime])
+        ttl = f"TIME = {simtime[itime]:.3f} days"
         ax.set_title(ttl, fontsize=6)
         ax.text(1.9, 1.025, figtxt[ifig], fontsize=6)
 
@@ -471,30 +452,17 @@ def make_plot(sim, headall, concall):
     fname = os.path.join(ws, fname)
     plt.savefig(fname, bbox_inches="tight")
 
-    return
 
-
-def eval_transport(sim):
-    print("evaluating transport...")
-
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
+def check_output(idx, test):
+    name = test.name
+    ws = test.workspace
+    sim = test.sims[0]
     gwfname = "gwf_" + name
     gwtname = "gwt_" + name
-
-    # load heads
-    fname = os.path.join(ws, gwfname + ".hds")
-    assert os.path.isfile(fname)
-    headobj = flopy.utils.HeadFile(fname, precision="double")
-    head = headobj.get_alldata()
-
-    # load concs
-    fname = os.path.join(ws, gwtname + ".ucn")
-    assert os.path.isfile(fname)
-    concobj = flopy.utils.HeadFile(
-        fname, text="concentration", precision="double"
-    )
-    conc = concobj.get_alldata()
+    gwf = sim.get_model(gwfname)
+    gwt = sim.get_model(gwtname)
+    headobj = gwf.output.head()
+    concobj = gwt.output.concentration()
 
     # extract 10 simulated heads and concs for cell (0, 0, 20)
     hsim = headobj.get_ts((0, 0, 20))[::125, 1]
@@ -528,53 +496,22 @@ def eval_transport(sim):
         ]
     )
 
-    errmsg = "heads not right for cell (0, 0, 20):\n{}\n{}".format(hsim, hans)
+    errmsg = f"heads not right for cell (0, 0, 20):\n{hsim}\n{hans}"
     assert np.allclose(hsim, hans, atol=1.0e-3), errmsg
 
-    errmsg = "concs not right for cell (0, 0, 20):\n{}\n{}".format(csim, cans)
+    errmsg = f"concs not right for cell (0, 0, 20):\n{csim}\n{cans}"
     assert np.allclose(hsim, hans, atol=1.0e-3), errmsg
 
-    makeplot = False
-    if makeplot:
-        make_plot(sim, head, conc)
-        assert False
 
-    return
-
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_transport, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_transport, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets, plot):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        plot=lambda t: plot_output(idx, t) if plot else None,
+    )
+    test.run()

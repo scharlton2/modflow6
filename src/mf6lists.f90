@@ -23,28 +23,20 @@ module ListsModule
 
   ! -- list of all exchanges in simulation
   type(ListType) :: baseexchangelist
-  
+
   ! -- list of all connections in simulation
   type(ListType) :: baseconnectionlist
-  
-  contains
-  
+
+contains
+
+  !< @brief deallocate
   subroutine lists_da()
-! ******************************************************************************
-! Deallocate the lists
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-! ------------------------------------------------------------------------------
     !
     call basemodellist%Clear()
     call basesolutionlist%Clear()
     call solutiongrouplist%Clear()
     call baseexchangelist%Clear()
     call baseconnectionlist%Clear()
-    
-    return
   end subroutine lists_da
 
 end module ListsModule

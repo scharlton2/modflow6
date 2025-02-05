@@ -1,3 +1,4 @@
+**.env
 *.exe
 *.lib
 *.dll
@@ -41,6 +42,10 @@ Release/
 *.lot
 *.synctex.gz
 *.toc
+*.fdb_latexmk
+*.fls
+*.ilg
+*.ind
 *_genmod.f90
 
 .idea/
@@ -58,24 +63,24 @@ doc/XT3DReport/*.pdf
 doc/UserGuide/*.pdf
 doc/ConverterGuide/*.pdf
 doc/zonebudget/*.pdf
+doc/SuppTechInfo/*.pdf
 
 bin/**
 
 UserPrefs.xml
 
 tmp_simulations/
-autotest/temp/
-autotest/tempbin/
-autotest/*.html
-autotest/notebooks/
 
 distribution/temp/
+distribution/temp_zip/
 distribution/*.zip
+dist
 
 mod_temp/
 obj_temp/
 src_temp/
 pymake/dependencies/
+pymake/dependencies_std/
 
 trash/
 
@@ -108,11 +113,15 @@ CMakeFiles/
 .build_rtd_docs/_mf6io
 .build_rtd_docs/_mf6src
 .build_rtd_docs/_mf6run
+.build_rtd_docs/_dev
 latex/
 html/
 xml/
 distribution/run-time-comparison.md
 doc/ReleaseNotes/run-time-comparison.tex
+doc/ReleaseNotes/deprecations.tex
+doc/mf6io/mf6ivar/md
+doc/mf6io/mf6ivar/tex
 
 # Intel Fortran Visual Studio intermediate files
 msvs/*.fdz
@@ -121,3 +130,23 @@ msvs/*.fdz
 modflow6.code-workspace
 .vscode/settings.json
 .vscode/launch.json
+
+
+# unittests
+unittests/
+autotest/.failed
+autotest/.temp/
+autotest/temp/
+autotest/tempbin/
+autotest/*.html
+autotest/notebooks/
+
+**/__pycache__
+**/.benchmarks
+
+# compiler compatibility markdown tables
+.github/compat/*.md
+
+**.DS_Store
+# pixi environments
+.pixi

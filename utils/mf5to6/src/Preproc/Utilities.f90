@@ -3,9 +3,8 @@ module UtilitiesModule
   use ConstantsModule, only: MAXCHARLEN, DZERO, MAXCHARLEN
   use GlobalVariablesModule, only: optfile, PathToPostObsMf, ScriptType, &
                                    verbose, echo
-  use InputOutputModule, only: GetUnit, openfile, UPCASE, URWORD, &
-                               uget_block, uterminate_block, u8rdcom
-  use SimModule, onlY: store_error, store_note, store_warning, ustop
+  use InputOutputModule, only: GetUnit, openfile, UPCASE, URWORD
+  use SimPHMFModule, only: store_error, store_note, store_warning, ustop
 
   private
   public :: GetArgs, Write1Drel, Write2Drel, Write3Drel, &
@@ -15,7 +14,7 @@ module UtilitiesModule
             BuildArrayFormat, Write1dValues, &
             Write2dValues, Write3dValues, findcell, &
             close_file, GreaterOf, GreatestOf, RemoveElement, &
-            get_extension, ReadMf5to6Options, count_file_records, &
+            get_extension, count_file_records, &
             CalcContribFactors, PhmfOption
 
   interface RemoveElement
@@ -875,65 +874,6 @@ contains
     !
     return
   end subroutine get_extension
-
-  subroutine ReadMf5to6Options()
-    implicit none
-    ! local
-    integer :: ierr, istart, istop, iu, idum, icol
-    double precision :: rdum
-    character(len=MAXCHARLEN) :: ermsg
-    character(len=:), allocatable :: line
-    character(len=10) :: stype
-    logical :: continueread=.true., found
-    integer :: iuext
-    !
-    if (optfile /= '') then
-      iu = GetUnit()
-      call openfile(iu, 0, optfile, 'OPTIONS', filstat_opt='OLD')
-      call uget_block(iu, 0, 'OPTIONS', ierr, found, icol, line, iuext, &
-                      continueread)
-      if (found) then
-        do
-          icol = 1
-          call u8rdcom(iu, 0, line, ierr)
-          call urword(line, icol, istart, istop, 1, idum, rdum, 0, iu)
-          select case (line(istart:istop))
-          case ('PATHTOPOSTOBSMF')
-            call urword(line, icol, istart, istop, 0, idum, rdum, 0, iu)
-            PathToPostObsMf = line(istart:istop)
-          case ('SCRIPT')
-            call urword(line, icol, istart, istop, 1, idum, rdum, 0, iu)
-            stype = line(istart:istop)
-            select case (stype)
-            case ('BATCH')
-              ScriptType = 'BATCH'
-            case ('PYTHON')
-              ScriptType = 'PYTHON'
-            case default
-              ermsg = 'Unknown Script option: ' // line(istart:istop)
-              call store_error(ermsg)
-              call ustop()
-            end select
-          case default
-            ermsg = 'Unknown Mf5to6 option: ' // line(istart:istop)
-            call store_error(ermsg)
-            call ustop()
-          case ('END','BEGIN')
-            call uterminate_block(iu,0,line(istart:istop),    &
-                                  'OPTIONS', icol,line,ierr, iuext)
-            if(ierr==0) exit
-          end select
-        enddo
-        close(iu)
-      else
-        ermsg = 'Mf5to6 options file not found: ' // trim(optfile)
-        call store_error(ermsg)
-        call ustop()
-      endif
-    endif
-    !
-    return
-  end subroutine ReadMf5to6Options
 
   function count_file_records(filename) result(nrecs)
     ! Open a text file, count the number of records in it, and close the file.

@@ -1,37 +1,16 @@
 """
 Test adaptive time step module with a one-d vertical column in which cells
 dry and then rewet based on a ghb in the bottom cell.
-
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["gwf_ats02a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["gwf_ats02a"]
 nlay, nrow, ncol = 5, 1, 1
 botm = [80.0, 60.0, 40.0, 20.0, 0.0]
 
@@ -43,7 +22,7 @@ dtadj = 2.0
 dtfailadj = 5.0
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     perlen = [10, 10]
     nper = len(perlen)
     nstp = [5, 5]
@@ -61,32 +40,30 @@ def build_model(idx, dir):
     for id in range(nper):
         tdis_rc.append((perlen[id], nstp[id], tsmult[id]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
 
     # create tdis package
-    ats_filerecord = None
-    if True:
-        atsperiod = [
-            (i, dt0, dtmin, dtmax, dtadj, dtfailadj) for i in range(nper)
-        ]
-        ats = flopy.mf6.ModflowUtlats(
-            sim, maxats=len(atsperiod), perioddata=atsperiod
-        )
-        ats_filerecord = name + ".ats"
-
     tdis = flopy.mf6.ModflowTdis(
         sim,
-        ats_filerecord=ats_filerecord,
         time_units="DAYS",
         nper=nper,
         perioddata=tdis_rc,
     )
+
+    if True:
+        ats_filerecord = name + ".ats"
+        atsperiod = [(i, dt0, dtmin, dtmax, dtadj, dtfailadj) for i in range(nper)]
+        tdis.ats.initialize(
+            maxats=len(atsperiod),
+            perioddata=atsperiod,
+            filename=ats_filerecord,
+        )
 
     # create gwf model
     gwfname = name
@@ -114,7 +91,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -173,8 +150,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -183,21 +160,17 @@ def build_model(idx, dir):
     obs_lst = []
     obs_lst.append(["obs1", "head", (0, 0, 0)])
     obs_lst.append(["obs2", "head", (4, 0, 0)])
-    obs_dict = {"{}.obs.csv".format(gwfname): obs_lst}
-    obs = flopy.mf6.ModflowUtlobs(
-        gwf, pname="head_obs", digits=20, continuous=obs_dict
-    )
+    obs_dict = {f"{gwfname}.obs.csv": obs_lst}
+    obs = flopy.mf6.ModflowUtlobs(gwf, pname="head_obs", digits=20, continuous=obs_dict)
 
     return sim, None
 
 
-def make_plot(sim):
+def make_plot(test):
     print("making plots...")
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
-    gwfname = name
+    ws = test.workspace
 
-    fname = gwfname + ".hds"
+    fname = test.name + ".hds"
     fname = os.path.join(ws, fname)
     hobj = flopy.utils.HeadFile(fname, precision="double")
     head = hobj.get_alldata()[:, :, 0, 0]
@@ -212,84 +185,47 @@ def make_plot(sim):
     for ilay in range(5):
         h = head[:, ilay]
         h = np.ma.masked_where(h < 0, h)
-        (botline,) = plt.plot(
-            [times.min(), times.max()], [botm[ilay], botm[ilay]]
-        )
+        (botline,) = plt.plot([times.min(), times.max()], [botm[ilay], botm[ilay]])
         plt.plot(
             times,
             h,
             marker="o",
             ls="-",
             color=botline.get_color(),
-            label="Layer {}".format(ilay + 1),
+            label=f"Layer {ilay + 1}",
         )
     plt.legend()
     plt.show()
 
 
-def eval_flow(sim):
-    print("evaluating flow...")
-
-    name = ex[sim.idxsim]
-    gwfname = name
-
-    if False:
-        make_plot(sim)
-
+def check_output(idx, test):
     # This will fail if budget numbers cannot be read
-    fpth = os.path.join(sim.simpath, "{}.lst".format(gwfname))
+    fpth = os.path.join(test.workspace, f"{test.name}.lst")
     mflist = flopy.utils.Mf6ListBudget(fpth)
     names = mflist.get_record_names()
     inc = mflist.get_incremental()
-    msg = "budget times not monotically increasing {}.".format(inc["totim"])
+    msg = f"budget times not monotically increasing {inc['totim']}."
     assert np.all(np.diff(inc["totim"]) > dtmin), msg
     v = inc["totim"][-1]
-    assert v == 20.0, "Last time should be 20.  Found {}".format(v)
+    assert v == 20.0, f"Last time should be 20.  Found {v}"
 
     # ensure obs results changing monotonically
-    fpth = os.path.join(sim.simpath, gwfname + ".obs.csv")
+    fpth = os.path.join(test.workspace, test.name + ".obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
     # ensure layer 1 is dry with the DRY value
-    assert (
-        np.max(tc["OBS1"][:201]) == -1.0e30
-    ), "layer 1 should be dry for this period"
+    assert np.max(tc["OBS1"][:201]) == -1.0e30, "layer 1 should be dry for this period"
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_flow, idxsim=idx))
-
-    return
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_flow, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

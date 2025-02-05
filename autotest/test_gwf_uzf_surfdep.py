@@ -1,40 +1,12 @@
-import os
-import pytest
-import sys
-import numpy as np
-import shutil
-import subprocess
+import flopy
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-import targets
-
-mf6_exe = os.path.abspath(targets.target_dict["mf6"])
 testname = "uzf_3lay_srfdchk"
-testdir = os.path.join("temp", testname)
-os.makedirs(testdir, exist_ok=True)
-everything_was_successful = True
 
 iuz_cell_dict = {}
 cell_iuz_dict = {}
 
 
-def build_model():
-
+def build_model(dir, exe):
     nlay, nrow, ncol = 3, 1, 10
     nper = 1
     perlen = [20.0]
@@ -60,15 +32,11 @@ def build_model():
     name = testname
 
     # build MODFLOW 6 files
-    ws = testdir
-    sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name=mf6_exe, sim_ws=ws
-    )
+    ws = dir
+    sim = flopy.mf6.MFSimulation(sim_name=name, version="mf6", exe_name=exe, sim_ws=ws)
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -108,24 +76,18 @@ def build_model():
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=True, icelltype=1, k=100.0, k33=10
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=True, icelltype=1, k=100.0, k33=10)
 
     # aquifer storage
-    sto = flopy.mf6.ModflowGwfsto(
-        gwf, iconvert=1, ss=1e-5, sy=0.2, transient=True
-    )
+    sto = flopy.mf6.ModflowGwfsto(gwf, iconvert=1, ss=1e-5, sy=0.2, transient=True)
 
     # chd files
     chdval = -3.0
     chdspd = {0: [[(2, 0, 0), chdval]]}
-    chd = flopy.mf6.ModflowGwfchd(
-        gwf, print_flows=True, stress_period_data=chdspd
-    )
+    chd = flopy.mf6.ModflowGwfchd(gwf, print_flows=True, stress_period_data=chdspd)
 
     # transient uzf info
-    # iuzno  cellid landflg ivertcn surfdp vks thtr thts thti eps [bndnm]
+    # ifno  cellid landflg ivertcn surfdp vks thtr thts thti eps [bndnm]
     uzf_pkdat = [
         [0, (0, 0, 1), 1, 8, 6, 1, 0.05, 0.35, 0.05, 4, "uzf01"],
         [1, (0, 0, 2), 1, 9, 6, 1, 0.05, 0.35, 0.05, 4, "uzf02"],
@@ -194,61 +156,39 @@ def build_model():
         nuzfcells=len(uzf_pkdat),
         packagedata=uzf_pkdat,
         perioddata=uzf_spd,
-        budget_filerecord="{}.uzf.bud".format(name),
-        filename="{}.uzf".format(name),
+        budget_filerecord=f"{name}.uzf.bud",
+        filename=f"{name}.uzf",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim
 
 
-# - No need to change any code below
-def test_mf6model():
+def test_mf6model(function_tmpdir, targets):
     # build and run the test model
-    sim = build_model()
+    mf6 = targets["mf6"]
+    sim = build_model(str(function_tmpdir), mf6)
     sim.write_simulation()
     sim.run_simulation()
 
     # ensure that the error msg is contained in the mfsim.lst file
-    f = open(os.path.join(testdir, "mfsim.lst"), "r")
+    f = open(str(function_tmpdir / "mfsim.lst"), "r")
     lines = f.readlines()
     error_count = 0
-    expected_msg = False
     for line in lines:
         if "SURFDEP" and "cannot" in line:
-            expected_msg = True
             error_count += 1
 
-    assert error_count == 8, (
-        "error count = " + str(error_count) + "but should equal 8"
-    )
+    assert error_count == 8, "error count = " + str(error_count) + "but should equal 8"
 
     print("Finished running surfdep check")
-
-    shutil.rmtree(testdir, ignore_errors=True)
-
-    return
-
-
-def main():
-    test_mf6model()
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()

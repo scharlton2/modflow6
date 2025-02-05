@@ -1,38 +1,18 @@
-import os
-import pytest
-import sys
+import flopy
 import numpy as np
-import shutil
-import subprocess
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-import targets
-
-mf6_exe = os.path.abspath(targets.target_dict["mf6"])
+import pytest
+from framework import TestFramework
 
 paktest = "sfr"
-testname = "ts_sfr01"
-testdir = os.path.join("temp", testname)
-os.makedirs(testdir, exist_ok=True)
-everything_was_successful = True
+cases = ["ts_sfr01"]
 
 
-def build_model(timeseries=False):
+def build_models(idx, test, timeseries=False):
     # static model data
     # temporal discretization
     nper = 1
     tdis_rc = []
-    for idx in range(nper):
+    for _ in range(nper):
         tdis_rc.append((1.0, 1, 1.0))
     ts_times = np.arange(0.0, 2.0, 1.0, dtype=float)
 
@@ -56,18 +36,15 @@ def build_model(timeseries=False):
     imsla = "BICGSTAB"
 
     # build MODFLOW 6 files
-    name = testname
-    ws = testdir
+    name = cases[idx]
     sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name=mf6_exe, sim_ws=ws
+        sim_name=name, version="mf6", exe_name="mf6", sim_ws=test.workspace
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
     # set ims csv files
-    csv0 = "{}.outer.ims.csv".format(name)
-    csv1 = "{}.inner.ims.csv".format(name)
+    csv0 = f"{name}.outer.ims.csv"
+    csv1 = f"{name}.inner.ims.csv"
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -119,9 +96,7 @@ def build_model(timeseries=False):
         [(0, 0, 0), 1.0],
         [(0, nrow - 1, ncol - 1), 0.0],
     ]
-    chd = flopy.mf6.modflow.ModflowGwfchd(
-        gwf, stress_period_data=spd, pname="chd-1"
-    )
+    chd = flopy.mf6.modflow.ModflowGwfchd(gwf, stress_period_data=spd, pname="chd-1")
 
     # drn file
     drn6 = [
@@ -346,8 +321,8 @@ def build_model(timeseries=False):
         perioddata.append([0, "inflow", inflow])
         perioddata.append([2, "diversion", 1, divflow])
 
-    budpth = "{}.{}.cbc".format(name, paktest)
-    cnvgpth = "{}.sfr.cnvg.csv".format(name)
+    budpth = f"{name}.{paktest}.cbc"
+    cnvgpth = f"{name}.sfr.cnvg.csv"
     sfr = flopy.mf6.ModflowGwfsfr(
         gwf,
         print_stage=True,
@@ -366,7 +341,7 @@ def build_model(timeseries=False):
         pname="sfr-1",
     )
     if timeseries:
-        fname = "{}.sfr.ts".format(name)
+        fname = f"{name}.sfr.ts"
         sfr.ts.initialize(
             filename=fname,
             timeseries=ts_data,
@@ -434,7 +409,7 @@ def build_model(timeseries=False):
         (0, "slope", "1.000000000000e-003"),
         (0, "rough", "1.000000000000e-001"),
     ]
-    cnvgpth = "{}.lak.cnvg.csv".format(name)
+    cnvgpth = f"{name}.lak.cnvg.csv"
     lak = flopy.mf6.ModflowGwflak(
         gwf,
         mover=True,
@@ -472,7 +447,7 @@ def build_model(timeseries=False):
         [7, 1.0e-8, 0, 0, 0, 0, 0, 0],
         [8, 1.0e-8, 0, 0, 0, 0, 0, 0],
     ]
-    cnvgpth = "{}.uzf.cnvg.csv".format(name)
+    cnvgpth = f"{name}.uzf.cnvg.csv"
     uzf = flopy.mf6.ModflowGwfuzf(
         gwf,
         mover=True,
@@ -510,7 +485,7 @@ def build_model(timeseries=False):
     mvr = flopy.mf6.ModflowGwfmvr(
         gwf,
         maxmvr=len(perioddata),
-        budget_filerecord="{}.mvr.bud".format(name),
+        budget_filerecord=f"{name}.mvr.bud",
         maxpackages=len(packages),
         print_flows=True,
         packages=packages,
@@ -520,8 +495,8 @@ def build_model(timeseries=False):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("BUDGET", "LAST"), ("HEAD", "LAST")],
     )
@@ -529,60 +504,29 @@ def build_model(timeseries=False):
     return sim
 
 
-# - No need to change any code below
-def test_mf6model():
-    # build and run the test model
-    sim = build_model()
-    sim.write_simulation()
-    sim.run_simulation()
+def check_output(idx, test):
+    print("Running surfdep check")
+    with open(test.workspace / "mfsim.lst", "r") as f:
+        lines = f.readlines()
+        error_count = 0
+        for line in lines:
+            if "cprior" and "divflow not within" in line:
+                error_count += 1
 
-    # ensure that the error msg is contained in the mfsim.lst file
-    f = open(os.path.join(testdir, "mfsim.lst"), "r")
-    lines = f.readlines()
-    error_count = 0
-    expected_msg = False
-    for line in lines:
-        if "cprior" and "divflow not within" in line:
-            expected_msg = True
-            error_count += 1
+        # ensure that error msg is in mfsim.lst file
+        assert error_count == 1, (
+            "error count = " + str(error_count) + "but should equal 1"
+        )
 
-    assert error_count == 1, (
-        "error count = " + str(error_count) + "but should equal 1"
+
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        xfail=True,
     )
-
-    print("Finished running surfdep check")
-
-    return
-
-
-def main():
-    # build and run the test model
-    sim = build_model()
-    sim.write_simulation()
-    sim.run_simulation()
-
-    # ensure that the error msg is contained in the mfsim.lst file
-    f = open(os.path.join(testdir, "mfsim.lst"), "r")
-    lines = f.readlines()
-    error_count = 0
-    expected_msg = False
-    for line in lines:
-        if "cprior" and "divflow not within" in line:
-            expected_msg = True
-            error_count += 1
-
-    assert error_count == 1, (
-        "error count = " + str(error_count) + "but should equal 1"
-    )
-
-    print("Finished running surfdep check")
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

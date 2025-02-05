@@ -1,25 +1,13 @@
 import os
-import sys
+
+import flopy
 import numpy as np
 import pytest
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-sys.path.append("scripts")
 from cross_section_functions import get_depths
+from framework import TestFramework
 
 paktest = "sfr"
-
-ex = [
+cases = [
     "sfr_npt01a",
     "sfr_npt01b",
     "sfr_npt01c",
@@ -29,8 +17,9 @@ ex = [
     "sfr_npt01g",
     "sfr_npt01h",
     "sfr_npt01i",
+    "sfr_npt01j",
+    "sfr_npt01k",
 ]
-exdirs = [os.path.join("temp", s) for s in ex]
 
 xsect_types = (
     "wide",
@@ -42,6 +31,8 @@ xsect_types = (
     "v",
     "w",
     "v_invalid",
+    "|/",
+    r"\|",
 )
 
 # spatial discretization data
@@ -99,25 +90,29 @@ np_data = {
         "n": np.array([roughness] * 3, dtype=float),
     },
     xsect_types[7]: {
-        "x": np.array(
-            [0.0, 0.2 * rwid, 0.5 * rwid, 0.7 * rwid, rwid], dtype=float
-        ),
+        "x": np.array([0.0, 0.2 * rwid, 0.5 * rwid, 0.7 * rwid, rwid], dtype=float),
         "h": np.array([1.0, 0.0, 0.5, 0.0, 1.0], dtype=float),
         "n": np.array([roughness] * 5, dtype=float),
     },
     xsect_types[8]: {
-        "x": np.array(
-            [0.0, 0.1 * rwid, 0.5 * rwid, 0.9 * rwid, rwid], dtype=float
-        ),
+        "x": np.array([0.0, 0.1 * rwid, 0.5 * rwid, 0.9 * rwid, rwid], dtype=float),
         "h": np.array([1.0, 1.0, 0.0, 1.0, 1.0], dtype=float),
         "n": np.array([roughness] * 5, dtype=float),
+    },
+    xsect_types[9]: {
+        "x": np.array([0.0, 0.0, rwid], dtype=float),
+        "h": np.array([1.0, 0.0, 1.0], dtype=float),
+        "n": np.array([roughness] * 3, dtype=float),
+    },
+    xsect_types[10]: {
+        "x": np.array([0.0, rwid, rwid], dtype=float),
+        "h": np.array([1.0, 0.0, 1.0], dtype=float),
+        "n": np.array([roughness] * 3, dtype=float),
     },
 }
 
 
-#
-def build_model(idx, ws):
-
+def build_models(idx, test):
     xsect_type = xsect_types[idx]
 
     # static model data
@@ -128,12 +123,12 @@ def build_model(idx, ws):
     ts_flows = np.array([1000.0] + [float(q) for q in range(1000, -100, -100)])
 
     # build MODFLOW 6 files
-    name = ex[idx]
+    name = cases[idx]
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
         exe_name="mf6",
-        sim_ws=ws,
+        sim_ws=test.workspace,
     )
     # create tdis package
     tdis = flopy.mf6.ModflowTdis(
@@ -144,10 +139,7 @@ def build_model(idx, ws):
     )
 
     # create iterative model solution and register the gwf model with it
-    ims = flopy.mf6.ModflowIms(
-        sim,
-        print_option="ALL",
-    )
+    ims = flopy.mf6.ModflowIms(sim, print_option="ALL")
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -179,9 +171,7 @@ def build_model(idx, ws):
     spd = [
         [(0, 0, 0), 0.0],
     ]
-    chd = flopy.mf6.modflow.ModflowGwfchd(
-        gwf, stress_period_data=spd, pname="chd-1"
-    )
+    chd = flopy.mf6.modflow.ModflowGwfchd(gwf, stress_period_data=spd, pname="chd-1")
 
     # sfr file
     packagedata = []
@@ -265,9 +255,7 @@ def build_model(idx, ws):
             ("area", "wet-area", (nreaches - 1,)),
         ]
     }
-    sfr.obs.initialize(
-        filename=fname, digits=25, print_input=True, continuous=sfr_obs
-    )
+    sfr.obs.initialize(filename=fname, digits=25, print_input=True, continuous=sfr_obs)
     if crosssections is not None:
         stations = np_data[xsect_type]["x"] / rwid
         heights = np_data[xsect_type]["h"]
@@ -297,27 +285,19 @@ def build_model(idx, ws):
     return sim, None
 
 
-def eval_npointq(sim):
-    idx = sim.idxsim
-    name = ex[idx]
-    print("evaluating n-point cross-section results..." f"({name})")
-
-    obs_pth = os.path.join(exdirs[idx], f"{name}.sfr.obs.csv")
+def check_output(idx, test):
+    obs_pth = os.path.join(test.workspace, f"{test.name}.sfr.obs.csv")
     obs = flopy.utils.Mf6Obs(obs_pth).get_data()
 
-    assert np.allclose(
-        obs["INFLOW"], np.abs(obs["OUTFLOW"])
-    ), "inflow not equal to outflow"
+    assert np.allclose(obs["INFLOW"], np.abs(obs["OUTFLOW"])), (
+        "inflow not equal to outflow"
+    )
 
     xs_type = xsect_types[idx]
     xs_d = np_data[xs_type]
 
     d = get_depths(
-        obs["INFLOW"],
-        xs_d["x"],
-        xs_d["h"],
-        roughness=xs_d["n"],
-        slope=slope,
+        obs["INFLOW"], xs_d["x"], xs_d["h"], roughness=xs_d["n"], slope=slope
     )
 
     assert np.allclose(obs["DEPTH"], d), (
@@ -326,51 +306,14 @@ def eval_npointq(sim):
         f"calculated depth: {d}"
     )
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, exdir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, exdir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, exdir)
-
-    # run the test models
-    test.run_mf6(
-        Simulation(
-            exdir,
-            exfunc=eval_npointq,
-            idxsim=idx,
-        )
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
     )
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test models
-    for idx, exdir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, exdir)
-
-        sim = Simulation(
-            exdir,
-            exfunc=eval_npointq,
-            idxsim=idx,
-        )
-        test.run_mf6(sim)
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

@@ -1,70 +1,45 @@
-# tests ats on the prudic transport model.  With these ATS settings, the
-# solver should fail on time step 19 in period 2, and should converge on the
-# second try with a smaller time step.  This test will not pass if the states
-# are not restored properly for the advanced transport packages when the
-# failure occurs.
+"""
+Tests ATS on the prudic transport model.  With these ATS settings, the
+solver should fail on time step 19 in period 2, and should converge on the
+second try with a smaller time step.  This test will not pass if the states
+are not restored properly for the advanced transport packages when the
+failure occurs.
+"""
 
 import os
-import pytest
-import shutil
+from os.path import join
+
+import flopy
 import numpy as np
+import pytest
+from conftest import project_root_path
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-
-import targets
-
-exe_name_mf6 = targets.target_dict["mf6"]
-exe_name_mf6 = os.path.abspath(exe_name_mf6)
-
-data_ws = os.path.abspath("./data/prudic2004test2/")
-testdir = "./temp"
+data_path = project_root_path / "autotest" / "data"
+model_path = str(data_path / "prudic2004test2")
 testgroup = "prudic2004t2fmiats"
-d = os.path.join(testdir, testgroup)
-if os.path.isdir(d):
-    shutil.rmtree(d)
-
 nlay = 8
 nrow = 36
 ncol = 23
 delr = 405.665
 delc = 403.717
 top = 100.0
-fname = os.path.join(data_ws, "bot1.dat")
+fname = os.path.join(model_path, "bot1.dat")
 bot0 = np.loadtxt(fname)
 botm = [bot0] + [bot0 - (15.0 * k) for k in range(1, nlay)]
-fname = os.path.join(data_ws, "idomain1.dat")
+fname = os.path.join(model_path, "idomain1.dat")
 idomain0 = np.loadtxt(fname, dtype=int)
 idomain = nlay * [idomain0]
 
 
-def run_flow_model():
+def run_flow_model(dir, exe):
     global idomain
     name = "flow"
     gwfname = name
-    wsf = os.path.join(testdir, testgroup, name)
-    sim = flopy.mf6.MFSimulation(
-        sim_name=name, sim_ws=wsf, exe_name=exe_name_mf6
-    )
+    wsf = join(dir, testgroup, name)
+    sim = flopy.mf6.MFSimulation(sim_name=name, sim_ws=wsf, exe_name=exe)
     tdis_rc = [(1.0, 1, 1.0), (365.25 * 25, 1, 1.0)]
     nper = len(tdis_rc)
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     gwf = flopy.mf6.ModflowGwf(sim, modelname=gwfname, save_flows=True)
 
@@ -87,7 +62,7 @@ def run_flow_model():
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
 
     dis = flopy.mf6.ModflowGwfdis(
@@ -130,54 +105,35 @@ def run_flow_model():
 
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.bud".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
-        headprintrecord=[
-            ("COLUMNS", ncol, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwfname}.bud",
+        head_filerecord=f"{gwfname}.hds",
+        headprintrecord=[("COLUMNS", ncol, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
     )
 
     rch_on = True
     if rch_on:
-        rch = flopy.mf6.ModflowGwfrcha(
-            gwf, recharge={0: 4.79e-3}, pname="RCH-1"
-        )
+        rch = flopy.mf6.ModflowGwfrcha(gwf, recharge={0: 4.79e-3}, pname="RCH-1")
 
     chdlist = []
-    fname = os.path.join(data_ws, "chd.dat")
+    fname = os.path.join(model_path, "chd.dat")
     for line in open(fname, "r").readlines():
         ll = line.strip().split()
         if len(ll) == 4:
             k, i, j, hd = ll
-            chdlist.append(
-                [
-                    (
-                        int(k) - 1,
-                        int(i) - 1,
-                        int(j) - 1,
-                    ),
-                    float(hd),
-                ]
-            )
-    chd = flopy.mf6.ModflowGwfchd(
-        gwf, stress_period_data=chdlist, pname="CHD-1"
-    )
+            chdlist.append([(int(k) - 1, int(i) - 1, int(j) - 1), float(hd)])
+    chd = flopy.mf6.ModflowGwfchd(gwf, stress_period_data=chdlist, pname="CHD-1")
 
     rivlist = []
-    fname = os.path.join(data_ws, "riv.dat")
+    fname = os.path.join(model_path, "riv.dat")
     for line in open(fname, "r").readlines():
         ll = line.strip().split()
         if len(ll) == 7:
             k, i, j, s, c, rb, bn = ll
             rivlist.append(
                 [
-                    (
-                        int(k) - 1,
-                        int(i) - 1,
-                        int(j) - 1,
-                    ),
+                    (int(k) - 1, int(i) - 1, int(j) - 1),
                     float(s),
                     float(c),
                     float(rb),
@@ -189,7 +145,7 @@ def run_flow_model():
     )[0]
     for i, t in enumerate(rivlist):
         rivra[i] = tuple(t)
-    fname = os.path.join(data_ws, "sfr-packagedata.dat")
+    fname = os.path.join(model_path, "sfr-packagedata.dat")
     sfrpd = np.genfromtxt(fname, names=True)
     sfrpackagedata = flopy.mf6.ModflowGwfsfr.packagedata.empty(
         gwf, boundnames=True, maxbound=sfrpd.shape[0]
@@ -201,7 +157,7 @@ def run_flow_model():
         if name in sfrpd.dtype.names:
             sfrpackagedata[name] = sfrpd[name]
     sfrpackagedata["boundname"] = rivra["boundname"]
-    fname = os.path.join(data_ws, "sfr-connectiondata.dat")
+    fname = os.path.join(model_path, "sfr-connectiondata.dat")
     with open(fname) as f:
         lines = f.readlines()
     sfrconnectiondata = []
@@ -236,7 +192,8 @@ def run_flow_model():
             budget_filerecord=gwfname + ".sfr.bud",
             mover=True,
             pname="SFR-1",
-            unit_conversion=128390.00,
+            length_conversion=3.28084,
+            time_conversion=86400.0,
             boundnames=True,
             nreaches=len(rivlist),
             packagedata=sfrpackagedata,
@@ -245,7 +202,7 @@ def run_flow_model():
             observations=sfr_obs,
         )
 
-    fname = os.path.join(data_ws, "lakibd.dat")
+    fname = os.path.join(model_path, "lakibd.dat")
     lakibd = np.loadtxt(fname, dtype=int)
     lakeconnectiondata = []
     nlakecon = [0, 0]
@@ -410,9 +367,7 @@ def run_flow_model():
         fname = os.path.join(wsf, fname)
         lkstage = None
         if os.path.isfile(fname):
-            lksobj = flopy.utils.HeadFile(
-                fname, precision="double", text="stage"
-            )
+            lksobj = flopy.utils.HeadFile(fname, precision="double", text="stage")
             lkstage = lksobj.get_data().flatten()
             lksobj.file.close()
 
@@ -421,9 +376,7 @@ def run_flow_model():
         fname = os.path.join(wsf, fname)
         sfstage = None
         if os.path.isfile(fname):
-            bobj = flopy.utils.HeadFile(
-                fname, precision="double", text="stage"
-            )
+            bobj = flopy.utils.HeadFile(fname, precision="double", text="stage")
             sfstage = bobj.get_data().flatten()
             bobj.file.close()
 
@@ -448,35 +401,18 @@ def run_flow_model():
                 for node, node2, q in d:
                     print(p1, node, p2, node2, q)
 
-    return
 
-
-def run_transport_model():
+def run_transport_model(dir, exe):
     name = "transport"
     gwtname = name
-    wst = os.path.join(testdir, testgroup, name)
+    wst = join(dir, testgroup, name)
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
-        exe_name=exe_name_mf6,
+        exe_name=exe,
         sim_ws=wst,
         continue_=False,
     )
-
-    ats_filerecord = None
-    if True:
-        dt0 = 100
-        dtmin = 1.0e-5
-        dtmax = 10000.0
-        dtadj = 2.0
-        dtfailadj = 5.0
-        atsperiod = [
-            (1, dt0, dtmin, dtmax, dtadj, dtfailadj),
-        ]
-        ats = flopy.mf6.ModflowUtlats(
-            sim, maxats=len(atsperiod), perioddata=atsperiod
-        )
-        ats_filerecord = name + ".ats"
 
     tdis_rc = [(1.0, 1, 1.0), (365.25 * 25, 25, 1.0)]
     nper = len(tdis_rc)
@@ -485,8 +421,23 @@ def run_transport_model():
         time_units="DAYS",
         nper=nper,
         perioddata=tdis_rc,
-        ats_filerecord=ats_filerecord,
     )
+
+    if True:
+        dt0 = 100
+        dtmin = 1.0e-5
+        dtmax = 10000.0
+        dtadj = 2.0
+        dtfailadj = 5.0
+        ats_filerecord = name + ".ats"
+        atsperiod = [
+            (1, dt0, dtmin, dtmax, dtadj, dtfailadj),
+        ]
+        tdis.ats.initialize(
+            maxats=len(atsperiod),
+            perioddata=atsperiod,
+            filename=ats_filerecord,
+        )
 
     gwt = flopy.mf6.ModflowGwt(sim, modelname=gwtname)
 
@@ -510,7 +461,7 @@ def run_transport_model():
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwtname),
+        filename=f"{gwtname}.ims",
     )
     sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -592,15 +543,14 @@ def run_transport_model():
     nreach = 38
     sftpackagedata = []
     for irno in range(nreach):
-        t = (irno, 0.0, 99.0, 999.0, "myreach{}".format(irno + 1))
+        t = (irno, 0.0, 99.0, 999.0, f"myreach{irno + 1}")
         sftpackagedata.append(t)
 
     sftperioddata = [(0, "STATUS", "ACTIVE"), (0, "CONCENTRATION", 0.0)]
 
     sft_obs = {
         (gwtname + ".sft.obs.csv",): [
-            ("sft{}conc".format(i + 1), "CONCENTRATION", i + 1)
-            for i in range(nreach)
+            (f"sft{i + 1}conc", "CONCENTRATION", i + 1) for i in range(nreach)
         ]
     }
     # append additional obs attributes to obs dictionary
@@ -640,8 +590,8 @@ def run_transport_model():
 
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
         concentrationprintrecord=[
             ("COLUMNS", ncol, "WIDTH", 15, "DIGITS", 6, "GENERAL")
         ],
@@ -654,21 +604,56 @@ def run_transport_model():
 
     fname = gwtname + ".lkt.bin"
     fname = os.path.join(wst, fname)
-    bobj = flopy.utils.HeadFile(
-        fname, precision="double", text="concentration"
-    )
+    bobj = flopy.utils.HeadFile(fname, precision="double", text="concentration")
     lkaconc = bobj.get_alldata()[:, 0, 0, :]
     times = bobj.times
     bobj.file.close()
 
     fname = gwtname + ".sft.bin"
     fname = os.path.join(wst, fname)
-    bobj = flopy.utils.HeadFile(
-        fname, precision="double", text="concentration"
-    )
+    bobj = flopy.utils.HeadFile(fname, precision="double", text="concentration")
     sfaconc = bobj.get_alldata()[:, 0, 0, :]
     times = bobj.times
     bobj.file.close()
+    times = np.array(times)
+    ans_times = [
+        1.0,
+        101.0,
+        201.0,
+        301.0,
+        501.0,
+        701.0,
+        901.0,
+        1101.0,
+        1501.0,
+        1901.0,
+        2301.0,
+        2701.0,
+        3101.0,
+        3501.0,
+        3901.0,
+        4301.0,
+        4701.0,
+        5101.0,
+        5501.0,
+        5581.0,
+        5661.0,
+        5821.0,
+        5981.0,
+        6141.0,
+        6301.0,
+        6621.0,
+        6941.0,
+        7581.0,
+        8221.0,
+        8861.0,
+        9132.25,
+    ]
+    ans_times = np.array(ans_times)
+    errmsg = "Expected number of total timesteps is different."
+    assert times.shape == ans_times.shape, errmsg
+    errmsg = f"Times {times} not equal expected times {ans_times}"
+    assert np.allclose(times, ans_times)
 
     # set atol
     atol = 0.05
@@ -676,125 +661,119 @@ def run_transport_model():
     # check simulated concentration in lak 1 and 2 sfr reaches
     res_lak1 = lkaconc[:, 0]
     ans_lak1 = [
-        -1.73249951e-19,
-        -3.18568873e-07,
-        -1.93254232e-06,
-        5.37979095e-07,
-        5.58611972e-03,
-        4.53905550e-02,
-        1.92733156e-01,
-        5.68672833e-01,
-        2.99824969e00,
-        7.10780047e00,
-        1.22648840e01,
-        1.76704726e01,
-        2.26942092e01,
-        2.70010187e01,
-        3.05038540e01,
-        3.32193779e01,
-        3.52479250e01,
-        3.67285097e01,
-        3.77909702e01,
-        3.79877645e01,
-        3.81699209e01,
-        3.83384907e01,
-        3.84944857e01,
-        3.86388564e01,
-        3.87724831e01,
-        3.88961784e01,
-        3.91093083e01,
-        3.92927299e01,
-        3.95693787e01,
-        3.99100255e01,
-        4.01258276e01,
-        4.02675337e01,
-        4.03501250e01,
+        -1.7334085635551077e-19,
+        -3.187033329925361e-07,
+        -1.9287290216857604e-06,
+        5.808788660373555e-07,
+        0.005591936631026452,
+        0.04542773591098022,
+        0.1928635682644908,
+        0.5690001383534176,
+        2.999420704893868,
+        7.110019025850782,
+        12.268025985205634,
+        17.67417138740906,
+        22.69808352286938,
+        27.00477920391491,
+        30.50733530522461,
+        33.222437858798955,
+        35.25052779893794,
+        36.73069024938392,
+        37.792799707882,
+        37.98952686059535,
+        38.171619378463866,
+        38.48532541433273,
+        38.755615320864834,
+        38.98852685483134,
+        39.189072004020026,
+        39.491640226795035,
+        39.71996654913013,
+        40.00486884056597,
+        40.18758842234358,
+        40.309629842366334,
+        40.35288988875558,
     ]
     ans_lak1 = np.array(ans_lak1)
     d = res_lak1 - ans_lak1
-    msg = "{}\n{}\n{}".format(res_lak1, ans_lak1, d)
+    msg = f"{res_lak1}\n{ans_lak1}\n{d}"
     assert np.allclose(res_lak1, ans_lak1, atol=atol), msg
 
     res_sfr3 = sfaconc[:, 30]
     ans_sfr3 = [
-        -7.67944653e-23,
-        -1.36626135e-08,
-        -9.22237557e-08,
-        4.99905352e-08,
-        3.99099797e-04,
-        3.35353676e-03,
-        1.47391122e-02,
-        4.50924724e-02,
-        2.78746896e-01,
-        7.45757915e-01,
-        1.46650909e00,
-        2.44405848e00,
-        3.67524186e00,
-        5.15790366e00,
-        6.87288671e00,
-        8.78052541e00,
-        1.08386493e01,
-        1.30048172e01,
-        1.52293421e01,
-        1.56761479e01,
-        1.61242587e01,
-        1.65730359e01,
-        1.70216907e01,
-        1.74706790e01,
-        1.79202485e01,
-        1.83702377e01,
-        1.92703764e01,
-        2.01670548e01,
-        2.19177092e01,
-        2.50962473e01,
-        2.78395994e01,
-        3.00921256e01,
-        3.15755870e01,
+        -7.607756096700458e-23,
+        -1.3669399889004086e-08,
+        -9.199259301584774e-08,
+        5.257821481671474e-08,
+        0.00039938114816238295,
+        0.003355197965954286,
+        0.014744417223049597,
+        0.04510445881222458,
+        0.27877628044373737,
+        0.7458007019884897,
+        1.4665631236737788,
+        2.444128940946191,
+        3.6753371432162,
+        5.158039470416099,
+        6.873092531310018,
+        8.780865680435873,
+        10.839098670662382,
+        13.005360141577922,
+        15.230011242915861,
+        15.676842775991494,
+        16.124955033719825,
+        17.022019083397183,
+        17.92055413970275,
+        18.81985349843973,
+        19.717233813700727,
+        21.475928749632136,
+        23.177014613583257,
+        26.206656959204977,
+        28.767131611820425,
+        30.825804240468084,
+        31.611737865014057,
     ]
     ans_sfr3 = np.array(ans_sfr3)
     d = res_sfr3 - ans_sfr3
-    msg = "{}\n{}\n{}".format(res_sfr3, ans_sfr3, d)
+    msg = f"{res_sfr3}\n{ans_sfr3}\n{d}"
     assert np.allclose(res_sfr3, ans_sfr3, atol=atol), msg
 
     res_sfr4 = sfaconc[:, 37]
     ans_sfr4 = [
-        -2.00171747e-20,
-        -1.31881904e-07,
-        -8.75301649e-07,
-        7.69101706e-07,
-        3.28388144e-03,
-        2.67384200e-02,
-        1.13765608e-01,
-        3.36399332e-01,
-        1.79195755e00,
-        4.28594083e00,
-        7.47548917e00,
-        1.09172977e01,
-        1.42591448e01,
-        1.73135656e01,
-        2.00235978e01,
-        2.23809139e01,
-        2.44226417e01,
-        2.62073204e01,
-        2.77851731e01,
-        2.80928500e01,
-        2.83929590e01,
-        2.86858017e01,
-        2.89715918e01,
-        2.92510600e01,
-        2.95248063e01,
-        2.97932113e01,
-        3.03110243e01,
-        3.08107687e01,
-        3.17411221e01,
-        3.33403357e01,
-        3.46770708e01,
-        3.57548963e01,
-        3.64587547e01,
+        -2.0041563248238944e-20,
+        -1.319932823356964e-07,
+        -8.732574723159916e-07,
+        7.946044660303284e-07,
+        0.00328713663771796,
+        0.026759005065411397,
+        0.11383700188916444,
+        0.33657660610442625,
+        1.7925681982241561,
+        4.287068052572867,
+        7.4770472357597395,
+        10.91908508386622,
+        14.260965416010272,
+        17.315284886138496,
+        20.02515736345197,
+        22.382282530045032,
+        24.423804946506543,
+        26.208303689647263,
+        27.786040077700754,
+        28.093696017884817,
+        28.393775338962325,
+        28.966213039403637,
+        29.515140249737588,
+        30.043603904714946,
+        30.553203510121918,
+        31.501577161886416,
+        32.38308331851197,
+        33.88529441352757,
+        35.12256241115968,
+        36.10351180222542,
+        36.47615223874849,
     ]
     ans_sfr4 = np.array(ans_sfr4)
     d = res_sfr4 - ans_sfr4
-    msg = "{}\n{}\n{}".format(res_sfr4, ans_sfr4, d)
+    msg = f"{res_sfr4}\n{ans_sfr4}\n{d}"
     assert np.allclose(res_sfr4, ans_sfr4, atol=atol), msg
 
     # make some checks on lake obs csv file
@@ -803,10 +782,8 @@ def run_transport_model():
     try:
         tc = np.genfromtxt(fname, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fname)
-    errmsg = "to-mvr boundname and outlet number do not match for {}".format(
-        fname
-    )
+        assert False, f'could not load data from "{fname}"'
+    errmsg = f"to-mvr boundname and outlet number do not match for {fname}"
     assert np.allclose(tc["LKT1TOMVR"], tc["LKT1BNTOMVR"]), errmsg
 
     # check simulation list file for ats information
@@ -828,7 +805,7 @@ def run_transport_model():
     ]
     all_found = True
     for stxt in txtlist:
-        msg = "Checking for string in mfsim.lst: {}".format(stxt)
+        msg = f"Checking for string in mfsim.lst: {stxt}"
         found = False
         for line in lines:
             if stxt in line:
@@ -837,27 +814,12 @@ def run_transport_model():
         if not found:
             msg += " -- NOT FOUND!"
             all_found = False
-            print("text not found in mfsim.lst: {}".format(stxt))
+            print(f"text not found in mfsim.lst: {stxt}")
         print(msg)
-    assert (
-        all_found
-    ), "One or more required text strings not found in mfsim.lst"
-
-    return
+    assert all_found, "One or more required text strings not found in mfsim.lst"
 
 
-def test_prudic2004t2fmiats():
-    run_flow_model()
-    run_transport_model()
-    d = os.path.join(testdir, testgroup)
-    #    if os.path.isdir(d):
-    #        shutil.rmtree(d)
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run tests
-    test_prudic2004t2fmiats()
+@pytest.mark.slow
+def test_prudic2004t2fmiats(function_tmpdir, targets):
+    run_flow_model(dir=str(function_tmpdir), exe=targets["mf6"])
+    run_transport_model(dir=str(function_tmpdir), exe=targets["mf6"])

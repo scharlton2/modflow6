@@ -1,32 +1,14 @@
-import pytest
 import os
-import numpy as np
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
+import flopy
 import flopy.utils.binaryfile as bf
-
-from framework import testing_framework
-from simulation import Simulation
+import numpy as np
+import pytest
+from framework import TestFramework
 
 include_NWT = False
 
-ex = ["uzf_3lay_wc_chk"]
-exdirs = [os.path.join("temp", name) for name in ex]
+cases = ["uzf_3lay_wc_chk"]
 
 iuz_cell_dict = {}
 cell_iuz_dict = {}
@@ -66,7 +48,7 @@ ghbspd = {
     3: [[(2, 0, 0), ghbelv2, ghbcond], [(2, 0, ncol - 1), ghbelv2, ghbcond]],
 }
 
-# iuzno  cellid landflg ivertcn surfdp vks thtr thts thti eps [bndnm]
+# ifno  cellid landflg ivertcn surfdp vks thtr thts thti eps [bndnm]
 surfdep1 = 1.0
 surfdep2 = 0.001
 vks = 0.5
@@ -240,12 +222,11 @@ uzf_spd = {
 
 
 def build_mf6_model(idx, ws):
-
     tdis_rc = []
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
     sim = flopy.mf6.MFSimulation(
@@ -253,9 +234,7 @@ def build_mf6_model(idx, ws):
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -300,25 +279,16 @@ def build_mf6_model(idx, ws):
     )
 
     # aquifer storage
-    sto = flopy.mf6.ModflowGwfsto(
-        gwf, iconvert=1, ss=ss, sy=sy, transient=True
-    )
+    sto = flopy.mf6.ModflowGwfsto(gwf, iconvert=1, ss=ss, sy=sy, transient=True)
 
     # ghb files
-    ghb = flopy.mf6.ModflowGwfghb(
-        gwf, print_flows=True, stress_period_data=ghbspd
-    )
+    ghb = flopy.mf6.ModflowGwfghb(gwf, print_flows=True, stress_period_data=ghbspd)
 
     # transient uzf info
     uzf_obs = {
-        "{}.uzfobs".format(name): [
+        f"{name}.uzfobs": [
             ("uzf01_dpth=0.5", "water-content", "uzf01", 0.5),
-            (
-                "uzf01_dpth=1.5",
-                "water-content",
-                "uzf01",
-                1.5,
-            ),  # Relies on boundnames
+            ("uzf01_dpth=1.5", "water-content", "uzf01", 1.5),  # Relies on boundnames
             ("uzf01_dpth=2.5", "water-content", "uzf01", 2.5),
             ("uzf01_dpth=3.5", "water-content", "uzf01", 3.5),
             ("uzf01_dpth=4.49", "water-content", "uzf01", 4.49),
@@ -341,27 +311,26 @@ def build_mf6_model(idx, ws):
         nuzfcells=len(uzf_pkdat),
         packagedata=uzf_pkdat,
         perioddata=uzf_spd,
-        budget_filerecord="{}.uzf.bud".format(name),
-        filename="{}.uzf".format(name),
+        budget_filerecord=f"{name}.uzf.bud",
+        filename=f"{name}.uzf",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim
 
 
 def build_mfnwt_model(idx, ws):
-
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW-NWT files
     ws = os.path.join(ws, "mfnwt")
@@ -404,9 +373,7 @@ def build_mfnwt_model(idx, ws):
 
     # Instantiate link mass-transport package (for writing cell-by-cell
     # water contents)
-    flopy.modflow.ModflowLmt(
-        mf, output_file_format="formatted", package_flows=["UZF"]
-    )
+    flopy.modflow.ModflowLmt(mf, output_file_format="formatted", package_flows=["UZF"])
 
     # Instantiate general head boundary package
     ghb = flopy.modflow.ModflowGhb(mf, stress_period_data=nwt_ghb_spdat)
@@ -452,26 +419,22 @@ def build_mfnwt_model(idx, ws):
     return mf
 
 
-def build_model(idx, ws):
+def build_models(idx, test):
     # Start by building the MF6 model
-    sim = build_mf6_model(idx, ws)
+    sim = build_mf6_model(idx, test.workspace)
 
     # Construct MF-NWT model for comparing water contents
     #   Commented out to avoid NWT dependency, but left behind for
     #   local testing if needed in the future.
     if include_NWT:
-        mc = build_mfnwt_model(idx, ws)
+        mc = build_mfnwt_model(idx, test.workspace)
     else:
         mc = None
     return sim, mc
 
 
-def eval_model(sim):
-    print("evaluating model...")
-
-    idx = sim.idxsim
-    name = ex[idx]
-    ws = os.path.join("temp", name)
+def check_output(idx, test):
+    ws = test.workspace
 
     # Get the MF6 heads
     fpth = os.path.join(ws, "uzf_3lay_wc_chk.hds")
@@ -479,7 +442,7 @@ def eval_model(sim):
     hds = hobj.get_alldata()
 
     # Get the MF6 water contents
-    wcpth = os.path.join(ws, ex[0] + ".uzfwc.bin")
+    wcpth = os.path.join(ws, cases[0] + ".uzfwc.bin")
     mf6_wc_obj = bf.HeadFile(wcpth, text="   water-content")
 
     ckstpkper_wc = mf6_wc_obj.get_kstpkper()
@@ -507,7 +470,7 @@ def eval_model(sim):
                 if "WATER CONTENT   ".lower() in line.lower():
                     line = next(f)
                     wc_tmp = []
-                    while not "          10           1           3" in line:
+                    while "          10           1           3" not in line:
                         m_arr = line.strip().split()
                         for i, val in enumerate(m_arr):
                             wc_tmp.append(float(val))
@@ -544,54 +507,28 @@ def eval_model(sim):
     if include_NWT:
         # Compare MF6 results with NWT
         # layer 1
-        assert np.allclose(
-            mf6_wc[:, 0, 0, :], mfnwt_wc[:, 0, 0, :], atol=0.01
-        ), "mf6 water contents different than NWT"
+        assert np.allclose(mf6_wc[:, 0, 0, :], mfnwt_wc[:, 0, 0, :], atol=0.01), (
+            "mf6 water contents different than NWT"
+        )
         # layer 2 (has a mixed condition later in the simulation
-        assert np.allclose(
-            mf6_wc[:, 1, 0, :], mfnwt_wc[:, 1, 0, :], atol=0.01
-        ), "mf6 water contents different than NWT"
+        assert np.allclose(mf6_wc[:, 1, 0, :], mfnwt_wc[:, 1, 0, :], atol=0.01), (
+            "mf6 water contents different than NWT"
+        )
     else:
-        assert np.allclose(
-            mf6_wc[:, 0, 0, 1], mfnwt_wc, atol=0.01
-        ), "mf6 water contents different than established solution"
+        assert np.allclose(mf6_wc[:, 0, 0, 1], mfnwt_wc, atol=0.01), (
+            "mf6 water contents different than established solution"
+        )
 
     print("Finished running checks")
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, exdir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, exdir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, exdir)
-
-    # run the test models
-    test.run_mf6(
-        Simulation(
-            exdir,
-            exfunc=eval_model,
-            idxsim=idx,
-        )
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
     )
-    return
-
-
-def main():
-    for idx, exdir in enumerate(exdirs):
-        test_mf6model(idx, exdir)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

@@ -1,38 +1,17 @@
 import os
+
+import flopy
 import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = [
+cases = [
     "csub_sub02a",
     "csub_sub02b",
     "csub_sub02c",
     "csub_sub02d",
     "csub_sub02e",
 ]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-cmppth = "mf6-regression"
-
+cmppth = "mf6_regression"
 cg_ske = 1.14e-3 / (500.0 - 20.0)
 cg_S = cg_ske * (500.0 - 20.0)
 ss = [cg_S, cg_S, cg_ske, cg_ske, cg_S]
@@ -40,19 +19,13 @@ storagecoeff = [True, True, False, False, True]
 cdelay = [False, True, False, True, True]
 ndelaycells = [None, 19, None, 19, 19]
 
-# run all examples on Travis
-continuous_integration = [True for e in ex]
-
-# set replace_exe to None to use default executable
-replace_exe = None
-
 # static model data
 nlay, nrow, ncol = 1, 1, 1
 nper = 10
-perlen = [182.625 for i in range(nper)]
-nstp = [10 for i in range(nper)]
-tsmult = [1.05 for i in range(nper)]
-steady = [False for i in range(nper)]
+perlen = [182.625 for _ in range(nper)]
+nstp = [10 for _ in range(nper)]
+tsmult = [1.05 for _ in range(nper)]
+steady = [False for _ in range(nper)]
 delr, delc = 1000.0, 1000.0
 top = -100.0
 botm = [-600.0]
@@ -67,8 +40,8 @@ nouter, ninner = 1000, 300
 hclose, rclose, relax = 1e-6, 1e-6, 0.97
 
 tdis_rc = []
-for idx in range(nper):
-    tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
+for i in range(nper):
+    tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
 ib = 1
 
@@ -102,7 +75,7 @@ dp = [[kv, cr, cc]]
 
 
 def get_model(idx, ws):
-    name = ex[idx]
+    name = cases[idx]
     ss = 1.14e-3
     sc6 = True
     if not storagecoeff[idx]:
@@ -136,9 +109,7 @@ def get_model(idx, ws):
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution
     ims = flopy.mf6.ModflowIms(
@@ -157,9 +128,7 @@ def get_model(idx, ws):
     )
 
     # create gwf model
-    gwf = flopy.mf6.ModflowGwf(
-        sim, modelname=name, model_nam_file="{}.nam".format(name)
-    )
+    gwf = flopy.mf6.ModflowGwf(sim, modelname=name, model_nam_file=f"{name}.nam")
 
     dis = flopy.mf6.ModflowGwfdis(
         gwf,
@@ -170,16 +139,14 @@ def get_model(idx, ws):
         delc=delc,
         top=top,
         botm=botm,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{name}.ic")
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -217,8 +184,8 @@ def get_model(idx, ws):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -226,59 +193,20 @@ def get_model(idx, ws):
     return sim
 
 
-def build_model(idx, dir):
-    ws = dir
-    sim = get_model(idx, ws)
-
-    ws = os.path.join(dir, cmppth)
+def build_models(idx, test):
+    sim = get_model(idx, test.workspace)
+    ws = os.path.join(test.workspace, cmppth)
     mc = get_model(idx, ws)
     return sim, mc
 
 
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    if is_CI and not continuous_integration[idx]:
-        return
-
-    # run the test model
-    test.run_mf6(Simulation(dir, mf6_regression=True))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for dir in exdirs:
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(
-            dir,
-            mf6_regression=True,
-        )
-        test.run_mf6(sim)
-
-    return
-
-
-# use python test_gwf_csub_sub02.py --mf2005 mf2005devdbl
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        targets=targets,
+        compare="mf6_regression",
+    )
+    test.run()

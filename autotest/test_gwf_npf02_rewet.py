@@ -1,24 +1,11 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["npf02_hreweta", "npf02_hrewetb", "npf02_hrewetc", "npf02_hrewetd"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["npf02_hreweta", "npf02_hrewetb", "npf02_hrewetc", "npf02_hrewetd"]
 ncols = [[15], [10, 5], [15], [10, 5]]
 nlays = [1, 1, 3, 3]
 
@@ -57,13 +44,13 @@ def get_local_data(idx):
     nmodels = len(ncolst)
     mnames = []
     for jdx in range(nmodels):
-        mname = "gwf{}".format(jdx)
+        mname = f"gwf{jdx}"
         mnames.append(mname)
     return ncolst, nmodels, mnames
 
 
-def build_model(idx, dir):
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
     nlay = nlays[idx]
 
     if nlay == 1:
@@ -92,17 +79,15 @@ def build_model(idx, dir):
     cd6left[1] = c6left
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
     # set ims csv files
-    csv0 = "{}.outer.ims.csv".format(name)
-    csv1 = "{}.inner.ims.csv".format(name)
+    csv0 = f"{name}.outer.ims.csv"
+    csv1 = f"{name}.inner.ims.csv"
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -153,9 +138,7 @@ def build_model(idx, dir):
     for jdx in range(nmodels):
         mname = mnames[jdx]
 
-        gwf = flopy.mf6.ModflowGwf(
-            sim, modelname=mname, model_nam_file="{}.nam".format(mname)
-        )
+        gwf = flopy.mf6.ModflowGwf(sim, modelname=mname, model_nam_file=f"{mname}.nam")
 
         dis = flopy.mf6.ModflowGwfdis(
             gwf,
@@ -166,13 +149,11 @@ def build_model(idx, dir):
             delc=delc,
             top=top,
             botm=botm,
-            filename="{}.dis".format(mname),
+            filename=f"{mname}.dis",
         )
 
         # initial conditions
-        ic = flopy.mf6.ModflowGwfic(
-            gwf, strt=strt, filename="{}.ic".format(mname)
-        )
+        ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{mname}.ic")
 
         # node property flow
         npf = flopy.mf6.ModflowGwfnpf(
@@ -186,7 +167,7 @@ def build_model(idx, dir):
 
         # chd files
         if jdx == 0:
-            fn = "{}.chd1.chd".format(mname)
+            fn = f"{mname}.chd1.chd"
             chd1 = flopy.mf6.modflow.ModflowGwfchd(
                 gwf,
                 stress_period_data=cd6left,
@@ -196,7 +177,7 @@ def build_model(idx, dir):
                 print_input=True,
             )
         if jdx == nmodels - 1:
-            fn = "{}.chd2.chd".format(mname)
+            fn = f"{mname}.chd2.chd"
             chd2 = flopy.mf6.modflow.ModflowGwfchd(
                 gwf,
                 stress_period_data=cd6right,
@@ -209,11 +190,9 @@ def build_model(idx, dir):
         # output control
         oc = flopy.mf6.ModflowGwfoc(
             gwf,
-            budget_filerecord="{}.cbc".format(mname),
-            head_filerecord="{}.hds".format(mname),
-            headprintrecord=[
-                ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-            ],
+            budget_filerecord=f"{mname}.cbc",
+            head_filerecord=f"{mname}.hds",
+            headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
             saverecord=[("HEAD", "LAST")],
             printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
         )
@@ -221,9 +200,7 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_hds(sim):
-    print("evaluating rewet heads...")
-
+def check_output(idx, test):
     hdata01lay = [
         [
             1.000000000000000000e02,
@@ -297,7 +274,6 @@ def eval_hds(sim):
         ],
     ]
 
-    idx = sim.idxsim
     ncolst, nmodels, mnames = get_local_data(idx)
     nlay = nlays[idx]
 
@@ -309,7 +285,7 @@ def eval_hds(sim):
     imid = int(nrow / 2)
 
     for j in range(nmodels):
-        fn = os.path.join(sim.simpath, "{}.hds".format(mnames[j]))
+        fn = os.path.join(test.workspace, f"{mnames[j]}.hds")
         hobj = flopy.utils.HeadFile(fn)
         times = hobj.get_times()
         ioff = 0
@@ -327,7 +303,7 @@ def eval_hds(sim):
             hval[n, ioff:i1] = ht.copy()
 
     # # save results if the know results change slightly
-    # fpth = os.path.join(sim.simpath, "results.dat")
+    # fpth = os.path.join(sim.workspace, "results.dat")
     # np.savetxt(fpth, hval, delimiter=",")
 
     # known results
@@ -340,52 +316,24 @@ def eval_hds(sim):
     diff = hval - h0
     diffmax = np.abs(diff).max()
     dtol = 1e-9
-    msg = "maximum absolute maw head difference ({}) ".format(diffmax)
+    msg = f"maximum absolute maw head difference ({diffmax}) "
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_hds, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_hds, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

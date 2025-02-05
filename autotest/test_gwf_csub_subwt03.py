@@ -1,52 +1,24 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from conftest import project_root_path
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = ["csub_subwt03a", "csub_subwt03b", "csub_subwt03c", "csub_subwt03d"]
-nex = len(ex)
-exdirs = [os.path.join("temp", s) for s in ex]
-
-ddir = "data"
+cases = ["csub_subwt03a", "csub_subwt03b", "csub_subwt03c", "csub_subwt03d"]
+nex = len(cases)
 cmppth = "mf6"
-
 htol = None  # 0.1
 dtol = 1e-3
 budtol = 1e-2
-
 paktest = "csub"
-
 isnewton = 2 * [None, "NEWTON"]
 headbased = [True, True, False, False]
 delay = 4 * [False]
 
-# set travis to True when version 1.13.0 is released
-continuous_integration = [True for s in ex]
-
-# set replace_exe to None to use default executable
-replace_exe = None
-
 # static model data
-pth = os.path.join(ddir, "ibc01_ibound.ref")
+pth = str(project_root_path / "autotest" / "data" / "ibc01_ibound.ref")
 ib0 = np.genfromtxt(pth)
 
 # temporal discretization
@@ -56,8 +28,8 @@ nstp = [1, 60, 60]
 tsmult = [1.0, 1.0, 1.0]
 steady = [True, False, False]
 tdis_rc = []
-for idx in range(nper):
-    tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
+for i in range(nper):
+    tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
 # spatial discretization
 nlay, nrow, ncol = 4, ib0.shape[0], ib0.shape[1]
@@ -84,18 +56,18 @@ sy = [0.3, 0.0, 0.0, 0.0]
 wnlays = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3]
 wnrows = [0, 1, 1, 1, 2, 3, 4, 4, 5, 6, 13, 13, 15, 15, 16, 17, 17, 18, 8, 11]
 wncols = [7, 4, 7, 11, 3, 11, 2, 12, 13, 1, 1, 13, 2, 12, 12, 3, 11, 6, 9, 6]
-wrates0 = [2.2e3 for n in range(18)] + [0.0, 0.0]
-wrates1 = [2.2e3 for n in range(18)] + [-7.2e04, -7.2e04]
+wrates0 = [2.2e3 for _ in range(18)] + [0.0, 0.0]
+wrates1 = [2.2e3 for _ in range(18)] + [-7.2e04, -7.2e04]
 
 w0 = []
 w1 = []
 ws0 = []
 ws1 = []
-for idx, (k, i, j) in enumerate(zip(wnlays, wnrows, wncols)):
-    w0.append((k, i, j, wrates0[idx]))
-    w1.append((k, i, j, wrates1[idx]))
-    ws0.append(((k, i, j), wrates0[idx]))
-    ws1.append(((k, i, j), wrates1[idx]))
+for i, (k, i, j) in enumerate(zip(wnlays, wnrows, wncols)):
+    w0.append((k, i, j, wrates0[i]))
+    w1.append((k, i, j, wrates1[i]))
+    ws0.append(((k, i, j), wrates0[i]))
+    ws1.append(((k, i, j), wrates1[i]))
 wd = {0: w0, 1: w1, 2: w0}
 wd6 = {0: ws0, 1: ws1, 2: ws0}
 
@@ -209,7 +181,7 @@ def get_interbed(headbased=False, delay=False):
                 if i == 19 and (j == 7 or j == 8):
                     iactive = 0
                 if iactive > 0:
-                    tag = "{:02d}_{:02d}_{:02d}".format(k + 1, i + 1, j + 1)
+                    tag = f"{k + 1:02d}_{i + 1:02d}_{j + 1:02d}"
                     d = [
                         csubno,
                         (k, i, j),
@@ -229,11 +201,11 @@ def get_interbed(headbased=False, delay=False):
     return swt6
 
 
-def build_model(idx, dir):
-    sim = build_mf6(idx, dir)
+def build_models(idx, test):
+    sim = build_mf6(idx, test.workspace)
 
     # build mf6 with interbeds
-    wsc = os.path.join(dir, "mf6")
+    wsc = os.path.join(test.workspace, "mf6")
     mc = build_mf6(idx, wsc, interbed=True)
 
     return sim, mc
@@ -241,15 +213,12 @@ def build_model(idx, dir):
 
 # build MODFLOW 6 files
 def build_mf6(idx, ws, interbed=False):
-
-    name = ex[idx]
+    name = cases[idx]
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -283,16 +252,14 @@ def build_mf6(idx, ws, interbed=False):
         top=top,
         botm=botm,
         idomain=ib,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{name}.ic")
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -342,7 +309,7 @@ def build_mf6(idx, ws, interbed=False):
         cg_ske_cr = [cr for k in range(nlay)]
     if interbed:
         cg_ske_cr[2] = 0
-    opth = "{}.csub.obs".format(name)
+    opth = f"{name}.csub.obs"
     csub = flopy.mf6.ModflowGwfcsub(
         gwf,
         print_input=True,
@@ -371,8 +338,8 @@ def build_mf6(idx, ws, interbed=False):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -380,22 +347,20 @@ def build_mf6(idx, ws, interbed=False):
     return sim
 
 
-def eval_comp(sim):
-    print("evaluating compaction...")
-
+def check_output(idx, test):
     # MODFLOW 6 without interbeds
-    fpth = os.path.join(sim.simpath, "csub_obs.csv")
+    fpth = os.path.join(test.workspace, "csub_obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # MODFLOW 6 with interbeds
-    fpth = os.path.join(sim.simpath, cmppth, "csub_obs.csv")
+    fpth = os.path.join(test.workspace, cmppth, "csub_obs.csv")
     try:
         tci = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     diffmax = 0.0
     tagmax = None
@@ -406,51 +371,41 @@ def eval_comp(sim):
             diffmax = diffmaxt
             tagmax = tag
 
-    msg = "maximum compaction difference " + "({}) in tag: {}".format(
-        diffmax, tagmax
-    )
+    msg = "maximum compaction difference " + f"({diffmax}) in tag: {tagmax}"
 
     # write summary
-    fpth = os.path.join(
-        sim.simpath, "{}.comp.cmp.out".format(os.path.basename(sim.name))
-    )
-    f = open(fpth, "w")
-    line = "{:>15s}".format("TOTIM")
-    for tag in tc.dtype.names[1:]:
-        line += " {:>15s}".format("{}_SK".format(tag))
-        line += " {:>15s}".format("{}_SKIB".format(tag))
-        line += " {:>15s}".format("{}_DIFF".format(tag))
-    f.write(line + "\n")
-    for i in range(diff.shape[0]):
-        line = "{:15g}".format(tc["time"][i])
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.comp.cmp.out")
+    with open(fpth, "w") as f:
+        line = f"{'TOTIM':>15s}"
         for tag in tc.dtype.names[1:]:
-            line += " {:15g}".format(tc[tag][i])
-            line += " {:15g}".format(tci[tag][i])
-            line += " {:15g}".format(tc[tag][i] - tci[tag][i])
+            line += f" {f'{tag}_SK':>15s}"
+            line += f" {f'{tag}_SKIB':>15s}"
+            line += f" {f'{tag}_DIFF':>15s}"
         f.write(line + "\n")
-    f.close()
+        for i in range(diff.shape[0]):
+            line = f"{tc['time'][i]:15g}"
+            for tag in tc.dtype.names[1:]:
+                line += f" {tc[tag][i]:15g}"
+                line += f" {tci[tag][i]:15g}"
+                line += f" {tc[tag][i] - tci[tag][i]:15g}"
+            f.write(line + "\n")
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
     # compare budgets
-    cbc_compare(sim)
-
-    return
+    cbc_compare(test)
 
 
 # compare cbc and lst budgets
-def cbc_compare(sim):
-    print("evaluating cbc and budget...")
+def cbc_compare(test):
     # open cbc file
-    fpth = os.path.join(
-        sim.simpath, "{}.cbc".format(os.path.basename(sim.name))
-    )
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.cbc")
     cobj = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # build list of cbc data to retrieve
@@ -463,13 +418,11 @@ def cbc_compare(sim):
         t = t.strip()
         if paktest in t.lower():
             cbc_bud.append(t)
-            bud_lst.append("{}_IN".format(t))
-            bud_lst.append("{}_OUT".format(t))
+            bud_lst.append(f"{t}_IN")
+            bud_lst.append(f"{t}_OUT")
 
     # get results from listing file
-    fpth = os.path.join(
-        sim.simpath, "{}.lst".format(os.path.basename(sim.name))
-    )
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.lst")
     budl = flopy.utils.Mf6ListBudget(fpth)
     names = list(bud_lst)
     d0 = budl.get_budget(names=names)[0]
@@ -482,7 +435,7 @@ def cbc_compare(sim):
     # get data from cbc dile
     kk = cobj.get_kstpkper()
     times = cobj.get_times()
-    for idx, (k, t) in enumerate(zip(kk, times)):
+    for i, (k, t) in enumerate(zip(kk, times)):
         for text in cbc_bud:
             qin = 0.0
             qout = 0.0
@@ -500,107 +453,56 @@ def cbc_compare(sim):
                             qout -= vv
                         else:
                             qin += vv
-            d["totim"][idx] = t
-            d["time_step"][idx] = k[0]
+            d["totim"][i] = t
+            d["time_step"][i] = k[0]
             d["stress_period"] = k[1]
-            key = "{}_IN".format(text)
-            d[key][idx] = qin
-            key = "{}_OUT".format(text)
-            d[key][idx] = qout
+            key = f"{text}_IN"
+            d[key][i] = qin
+            key = f"{text}_OUT"
+            d[key][i] = qout
 
     diff = np.zeros((nbud, len(bud_lst)), dtype=float)
-    for idx, key in enumerate(bud_lst):
-        diff[:, idx] = d0[key] - d[key]
+    for i, key in enumerate(bud_lst):
+        diff[:, i] = d0[key] - d[key]
     diffmax = np.abs(diff).max()
-    msg = "maximum absolute total-budget difference ({}) ".format(diffmax)
+    msg = f"maximum absolute total-budget difference ({diffmax}) "
 
     # write summary
-    fpth = os.path.join(
-        sim.simpath, "{}.bud.cmp.out".format(os.path.basename(sim.name))
-    )
-    f = open(fpth, "w")
-    for i in range(diff.shape[0]):
-        if i == 0:
-            line = "{:>10s}".format("TIME")
-            for idx, key in enumerate(bud_lst):
-                line += "{:>25s}".format(key + "_LST")
-                line += "{:>25s}".format(key + "_CBC")
-                line += "{:>25s}".format(key + "_DIF")
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.bud.cmp.out")
+    with open(fpth, "w") as f:
+        for i in range(diff.shape[0]):
+            if i == 0:
+                line = f"{'TIME':>10s}"
+                for key in bud_lst:
+                    line += f"{key + '_LST':>25s}"
+                    line += f"{key + '_CBC':>25s}"
+                    line += f"{key + '_DIF':>25s}"
+                f.write(line + "\n")
+            line = f"{d['totim'][i]:10g}"
+            for ii, key in enumerate(bud_lst):
+                line += f"{d0[key][i]:25g}"
+                line += f"{d[key][i]:25g}"
+                line += f"{diff[i, ii]:25g}"
             f.write(line + "\n")
-        line = "{:10g}".format(d["totim"][i])
-        for idx, key in enumerate(bud_lst):
-            line += "{:25g}".format(d0[key][i])
-            line += "{:25g}".format(d[key][i])
-            line += "{:25g}".format(diff[i, idx])
-        f.write(line + "\n")
-    f.close()
 
     if diffmax > budtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
-    return
 
-
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-    r_exe = None
-    if not is_CI:
-        if replace_exe is not None:
-            r_exe = replace_exe
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(
-        Simulation(
-            dir, exe_dict=r_exe, exfunc=eval_comp, cmp_verbose=False, htol=htol
-        )
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        htol=htol,
     )
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for dir in exdirs:
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(
-            dir,
-            exe_dict=replace_exe,
-            exfunc=eval_comp,
-            cmp_verbose=False,
-            htol=htol,
-        )
-        test.run_mf6(sim)
-
-    return
-
-
-# use python testmf6_csub_subwt03.py
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

@@ -1,38 +1,18 @@
 """
-MODFLOW 6 Autotest
 Test the bmi which is used to calculate a recharge rate that results in a
 simulated head in the center of the model domain to be equal to the
 simulated head in the non-bmi simulation.
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
-from modflowapi import ModflowApi
+import pytest
+from framework import TestFramework
+from modflow_devtools.markers import requires_pkg
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation, api_return
-
-ex = ["libgwf_rch02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["libgwf_rch02"]
 
 # recharge package name
 rch_pname = "RCH-1"
@@ -87,7 +67,7 @@ nouter, ninner = 100, 100
 hclose, rclose, relax = 1e-9, 1e-3, 0.97
 
 
-def get_model(ws, name, rech=rch_spd):
+def get_model(ws, name, exe, rech=rch_spd):
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
@@ -96,9 +76,7 @@ def get_model(ws, name, rech=rch_spd):
         memory_print_option="all",
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -149,7 +127,7 @@ def get_model(ws, name, rech=rch_spd):
     rch = flopy.mf6.ModflowGwfrcha(gwf, recharge=rech, pname=rch_pname)
 
     # gwf observations
-    onam = "{}.head.obs".format(name)
+    onam = f"{name}.head.obs"
     cnam = onam + ".csv"
     obs_recarray = {cnam: [("h1_6_6", "HEAD", (0, 5, 5))]}
     gwfobs = flopy.mf6.ModflowUtlobs(
@@ -163,7 +141,7 @@ def get_model(ws, name, rech=rch_spd):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(name),
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -171,26 +149,25 @@ def get_model(ws, name, rech=rch_spd):
     return sim
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     # build MODFLOW 6 files
-    ws = dir
-    name = ex[idx]
-    sim = get_model(ws, name)
+    ws = test.workspace
+    name = cases[idx]
+    sim = get_model(ws, name, "mf6")
 
     # build comparison model
-    ws = os.path.join(dir, "libmf6")
-    mc = get_model(ws, name, rech=0.0)
+    ws = os.path.join(test.workspace, "libmf6")
+    mc = get_model(ws, name, "mf6", rech=0.0)
 
     return sim, mc
 
 
 def run_perturbation(mf6, max_iter, recharge, tag, rch):
-
     mf6.prepare_solve()
     kiter = 0
     while kiter < max_iter:
         # update recharge
-        recharge[:, 0] = rch * area
+        recharge[:] = rch
         mf6.set_value(tag, recharge)
         # solve with updated well rate
         has_converged = mf6.solve()
@@ -201,30 +178,33 @@ def run_perturbation(mf6, max_iter, recharge, tag, rch):
 
 
 def api_func(exe, idx, model_ws=None):
-    print("\nBMI implementation test:")
-    success = False
+    from modflowapi import ModflowApi
 
-    name = ex[idx].upper()
+    print("\nBMI implementation test:")
+
+    name = cases[idx].upper()
     init_wd = os.path.abspath(os.getcwd())
     if model_ws is not None:
         os.chdir(model_ws)
 
+    output_file_path = os.path.join(model_ws, "mfsim.stdout")
+
     # get the observations from the standard run
-    fpth = os.path.join("..", "{}.head.obs.csv".format(ex[idx]))
+    fpth = os.path.join("..", f"{cases[idx]}.head.obs.csv")
     hobs = np.genfromtxt(fpth, delimiter=",", names=True)["H1_6_6"]
 
     try:
         mf6 = ModflowApi(exe)
     except Exception as e:
-        print("Failed to load " + exe)
+        print("Failed to load " + str(exe))
         print("with message: " + str(e))
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # initialize the model
     try:
         mf6.initialize()
     except:
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # time loop
     current_time = mf6.get_current_time()
@@ -239,7 +219,7 @@ def api_func(exe, idx, model_ws=None):
     max_iter = mf6.get_value(mxit_tag)
 
     # get copy of recharge array
-    rch_tag = mf6.get_var_address("BOUND", name, rch_pname)
+    rch_tag = mf6.get_var_address("RECHARGE", name, rch_pname)
     new_recharge = mf6.get_value(rch_tag).copy()
 
     # determine initial recharge value
@@ -249,7 +229,6 @@ def api_func(exe, idx, model_ws=None):
     # model time loop
     idx = 0
     while current_time < end_time:
-
         # target head
         htarget = hobs[idx]
 
@@ -260,11 +239,9 @@ def api_func(exe, idx, model_ws=None):
         est_iter = 0
         while est_iter < 100:
             # base simulation loop
-            has_converged = run_perturbation(
-                mf6, max_iter, new_recharge, rch_tag, rch
-            )
+            has_converged = run_perturbation(mf6, max_iter, new_recharge, rch_tag, rch)
             if not has_converged:
-                return api_return(success, model_ws)
+                return False, open(output_file_path).readlines()
             h0 = head.reshape((nrow, ncol))[5, 5]
             r0 = h0 - htarget
 
@@ -273,7 +250,7 @@ def api_func(exe, idx, model_ws=None):
                 mf6, max_iter, new_recharge, rch_tag, rch + drch
             )
             if not has_converged:
-                return api_return(success, model_ws)
+                return False, open(output_file_path).readlines()
             h1 = head.reshape((nrow, ncol))[5, 5]
             r1 = h1 - htarget
 
@@ -284,11 +261,11 @@ def api_func(exe, idx, model_ws=None):
             # evaluate if the estimation iterations need to continue
             if abs(r0) < 1e-5:
                 msg = (
-                    "Estimation for time {:5.1f}".format(current_time)
-                    + " converged in {:3d}".format(est_iter)
+                    f"Estimation for time {current_time:5.1f}"
+                    + f" converged in {est_iter:3d}"
                     + " iterations"
-                    + " -- final recharge={:10.5f}".format(rch)
-                    + " residual={:10.2g}".format(rch - rch_rates[idx])
+                    + f" -- final recharge={rch:10.5f}"
+                    + f" residual={rch - rch_rates[idx]:10.2g}"
                 )
                 print(msg)
                 break
@@ -297,11 +274,9 @@ def api_func(exe, idx, model_ws=None):
                 rch += dr
 
         # solution with final estimated recharge for the timestep
-        has_converged = run_perturbation(
-            mf6, max_iter, new_recharge, rch_tag, rch
-        )
+        has_converged = run_perturbation(mf6, max_iter, new_recharge, rch_tag, rch)
         if not has_converged:
-            return api_return(success, model_ws)
+            return False, open(output_file_path).readlines()
 
         # finalize time step
         mf6.finalize_solve()
@@ -315,50 +290,24 @@ def api_func(exe, idx, model_ws=None):
     # cleanup
     try:
         mf6.finalize()
-        success = True
     except:
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     if model_ws is not None:
         os.chdir(init_wd)
 
     # cleanup and return
-    return api_return(success, model_ws)
+    return True, open(output_file_path).readlines()
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, idxsim=idx, api_func=api_func))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, idxsim=idx, api_func=api_func)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@requires_pkg("modflowapi")
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        targets=targets,
+        api_func=lambda exe, ws: api_func(exe, idx, ws),
+    )
+    test.run()

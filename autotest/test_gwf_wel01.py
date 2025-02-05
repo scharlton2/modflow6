@@ -3,34 +3,15 @@ Test to confirm that the sum wel and wel-reduced observations is equal
 to the specified well pumping rate when the AUTO_FLOW_REDUCE option is
 specified.
 """
+
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["wel01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["wel01"]
 
 # set static data
 nper = 1
@@ -50,16 +31,15 @@ nouter, ninner = 100, 300
 hclose, rclose, relax = 1e-9, 1e-6, 1.0
 
 
-def build_model(idx, ws):
-
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
 
     # build MODFLOW 6 files
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
         exe_name="mf6",
-        sim_ws=ws,
+        sim_ws=test.workspace,
     )
     # create tdis package
     tdis = flopy.mf6.ModflowTdis(
@@ -104,10 +84,7 @@ def build_model(idx, ws):
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(
-        gwf,
-        strt=strt,
-    )
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
     npf = flopy.mf6.ModflowGwfnpf(
@@ -133,7 +110,11 @@ def build_model(idx, ws):
         "wel.obs.csv": [
             ["q", "wel", (0, 0, 0)],
             ["qred", "wel-reduction", (0, 0, 0)],
-        ]
+        ],
+        "wel.obs.dup.csv": [
+            ["qred", "wel-reduction", (0, 0, 0)],
+            ["q", "wel", (0, 0, 0)],
+        ],
     }
     wel_spd = {0: [[0, 0, 0, -wellq]]}
     wel = flopy.mf6.ModflowGwfwel(
@@ -142,81 +123,64 @@ def build_model(idx, ws):
         print_flows=True,
         auto_flow_reduce="auto_flow_reduce 0.5",
         stress_period_data=wel_spd,
+        afrcsv_filerecord=f"{name}.afr.csv",
     )
-    welobs = wel.obs.initialize(
-        digits=25,
-        print_input=True,
-        continuous=obs,
-    )
+    welobs = wel.obs.initialize(print_input=True, continuous=obs)
 
     # output control
-    oc = flopy.mf6.ModflowGwfoc(
-        gwf,
-        printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-    )
+    oc = flopy.mf6.ModflowGwfoc(gwf, printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")])
 
     return sim, None
 
 
-def eval_obs(sim):
-    print("evaluating well observations...")
-
+def check_output(idx, test):
     # MODFLOW 6 observations
-    fpth = os.path.join(sim.simpath, "wel.obs.csv")
-    try:
-        tc = np.genfromtxt(fpth, names=True, delimiter=",")
-    except:
-        assert False, 'could not load data from "{}"'.format(fpth)
-
-    qtot = tc["Q"] + tc["QRED"]
-
-    # calculate maximum absolute error
-    diff = qtot + wellq
-    diffmax = np.abs(diff).max()
     dtol = 1e-9
-    msg = "maximum absolute well rates ({}) ".format(diffmax)
+    for file_name in ("wel.obs.csv", "wel.obs.dup.csv"):
+        fpth = os.path.join(test.workspace, file_name)
+        try:
+            tc = np.genfromtxt(fpth, names=True, delimiter=",")
+        except:
+            assert False, f'could not load data from "{fpth}"'
 
-    if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
-        assert diffmax < dtol, msg
-    else:
-        sim.success = True
-        print("    " + msg)
+        qtot = tc["Q"] + tc["QRED"]
 
-    return
+        # calculate maximum absolute error
+        diff = qtot + wellq
+        diffmax = np.abs(diff).max()
+        msg = f"maximum absolute well rates ({diffmax}) "
 
+        if diffmax > dtol:
+            test.success = False
+            msg += f"exceeds {dtol}"
+            assert diffmax < dtol, msg
+        else:
+            test.success = True
+            print("    " + msg)
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
+    # MODFLOW 6 AFR CSV output file
+    fpth = os.path.join(test.workspace, "wel01.afr.csv")
+    try:
+        afroutput = np.genfromtxt(fpth, names=True, delimiter=",", deletechars="")
+    except:
+        assert False, f'could not load data from "{fpth}"'
 
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_obs, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_obs, idxsim=idx)
-        test.run_mf6(sim)
+    a1 = afroutput["rate-requested"]
+    a2 = afroutput["rate-actual"] + afroutput["wel-reduction"]
+    errmsg = (
+        "Auto flow reduce requested rate must equal actual rate plus reduced rate.\n"
+    )
+    errmsg += f"{a1} /= {a2}"
+    assert np.allclose(a1, a2), errmsg
 
 
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

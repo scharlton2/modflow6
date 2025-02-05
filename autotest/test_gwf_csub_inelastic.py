@@ -1,41 +1,13 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
+import pytest
+from framework import TestFramework
 
 paktest = "csub"
 budtol = 1e-2
-
-ex = ["csub_de01a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
-updatemat = [None, True]
-# run all examples on Travis
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-replace_exe = None
+cases = ["csub_de01a"]
 
 # static model data
 # spatial discretization
@@ -85,31 +57,17 @@ ini_stress = 20.0
 thick = [1.0]
 
 sub6 = [
-    [
-        0,
-        (1, 0, 1),
-        "nodelay",
-        ini_stress,
-        thick[0],
-        1.0,
-        cc,
-        cr,
-        theta,
-        kv,
-        ini_stress,
-    ]
+    [0, (1, 0, 1), "nodelay", ini_stress, thick[0], 1.0, cc, cr, theta, kv, ini_stress]
 ]
 
 
 def build_mf6(idx, ws, update=None):
-    name = ex[idx]
+    name = cases[idx]
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(sim, modelname=name)
@@ -140,16 +98,14 @@ def build_mf6(idx, ws, update=None):
         delc=delc,
         top=top,
         botm=botm,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt6, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt6, filename=f"{name}.ic")
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -165,7 +121,7 @@ def build_mf6(idx, ws, update=None):
         gwf, maxbound=len(c6), stress_period_data=cd6, save_flows=False
     )
     # initialize time series
-    chnam = "{}.ch.ts".format(name)
+    chnam = f"{name}.ch.ts"
     chd.ts.initialize(
         filename=chnam,
         timeseries=chd_ts,
@@ -174,7 +130,7 @@ def build_mf6(idx, ws, update=None):
     )
 
     # csub files
-    opth = "{}.csub.obs".format(name)
+    opth = f"{name}.csub.obs"
     csub = flopy.mf6.ModflowGwfcsub(
         gwf,
         print_input=True,
@@ -203,8 +159,8 @@ def build_mf6(idx, ws, update=None):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST")],
         printrecord=[("BUDGET", "ALL")],
@@ -212,16 +168,10 @@ def build_mf6(idx, ws, update=None):
     return sim
 
 
-def build_model(idx, dir):
-    name = ex[idx]
-    ws = dir
-
-    # build MODFLOW 6 files
-    sim = build_mf6(idx, ws)
-
-    ws = os.path.join(dir, "mf6")
-    mc = build_mf6(idx, ws, update=True)
-
+def build_models(idx, test):
+    name = cases[idx]
+    sim = build_mf6(idx, test.workspace)
+    mc = build_mf6(idx, os.path.join(test.workspace, "mf6"), update=True)
     return sim, mc
 
 
@@ -235,13 +185,11 @@ def calc_void(theta):
     return theta / (1.0 - theta)
 
 
-def eval_void(sim):
-    print("evaluating void ratio...")
-
-    fpth = os.path.join(sim.simpath, "csub_obs.csv")
+def check_output(idx, test):
+    fpth = os.path.join(test.workspace, "csub_obs.csv")
     cd = np.genfromtxt(fpth, delimiter=",", names=True)
 
-    fpth = os.path.join(sim.simpath, "mf6", "csub_obs.csv")
+    fpth = os.path.join(test.workspace, "mf6", "csub_obs.csv")
     cd2 = np.genfromtxt(fpth, delimiter=",", names=True)
 
     v = calc_comp2void(cd["COMP"])
@@ -251,78 +199,40 @@ def eval_void(sim):
     diff = v - v2
     diffmax = np.abs(diff).max()
     dtol = 0.002
-    msg = "maximum absolute void ratio difference ({}) ".format(diffmax)
+    msg = f"maximum absolute void ratio difference ({diffmax}) "
 
     # write summary
-    fpth = os.path.join(
-        sim.simpath, "{}.comp.cmp.out".format(os.path.basename(sim.name))
-    )
-    f = open(fpth, "w")
-    line = "{:>15s}".format("TOTIM")
-    line += " {:>15s}".format("VOID")
-    line += " {:>15s}".format("MF")
-    line += " {:>15s}".format("DIFF")
-    f.write(line + "\n")
-    for i in range(diff.shape[0]):
-        line = "{:15g}".format(cd["time"][i])
-        line += " {:15g}".format(v[i])
-        line += " {:15g}".format(v[i])
-        line += " {:15g}".format(diff[i])
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.comp.cmp.out")
+    with open(fpth, "w") as f:
+        line = f"{'TOTIM':>15s}"
+        line += f" {'VOID':>15s}"
+        line += f" {'MF':>15s}"
+        line += f" {'DIFF':>15s}"
         f.write(line + "\n")
-    f.close()
+        for i in range(diff.shape[0]):
+            line = f"{cd['time'][i]:15g}"
+            line += f" {v[i]:15g}"
+            line += f" {v[i]:15g}"
+            line += f" {diff[i]:15g}"
+            f.write(line + "\n")
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-    r_exe = None
-    if not is_CI:
-        if replace_exe is not None:
-            r_exe = replace_exe
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-
-    test.run_mf6(Simulation(dir, exfunc=eval_void, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_void, idxsim=idx)
-        test.run_mf6(sim)
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

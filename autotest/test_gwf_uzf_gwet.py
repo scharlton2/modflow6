@@ -1,37 +1,20 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["uzf_3lay"]
-exdirs = []
+cases = ["uzf_3lay"]
+name = "model"
 iuz_cell_dict = {}
 cell_iuz_dict = {}
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+
+nouter, ninner = 100, 300
+hclose, rclose, relax = 1e-9, 1e-3, 0.97
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     nlay, nrow, ncol = 3, 1, 10
     nper = 5
     perlen = [20.0, 20.0, 20.0, 500.0, 2000.0]
@@ -42,25 +25,18 @@ def build_model(idx, dir):
     delc = 1.0
     strt = -25
 
-    nouter, ninner = 100, 300
-    hclose, rclose, relax = 1e-9, 1e-3, 0.97
-
     tdis_rc = []
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
-
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(
@@ -100,24 +76,18 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=True, icelltype=1, k=100.0, k33=10
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=True, icelltype=1, k=100.0, k33=10)
 
     # aquifer storage
-    sto = flopy.mf6.ModflowGwfsto(
-        gwf, iconvert=1, ss=1e-5, sy=0.2, transient=True
-    )
+    sto = flopy.mf6.ModflowGwfsto(gwf, iconvert=1, ss=1e-5, sy=0.2, transient=True)
 
     # chd files
     chdval = -3.0
     chdspd = {0: [[(2, 0, 0), chdval], [(2, 0, ncol - 1), chdval]]}
-    chd = flopy.mf6.ModflowGwfchd(
-        gwf, print_flows=True, stress_period_data=chdspd
-    )
+    chd = flopy.mf6.ModflowGwfchd(gwf, print_flows=True, stress_period_data=chdspd)
 
     # transient uzf info
-    # iuzno  cellid landflg ivertcn surfdp vks thtr thts thti eps [bndnm]
+    # ifno  cellid landflg ivertcn surfdp vks thtr thts thti eps [bndnm]
     uzf_pkdat = [
         [0, (0, 0, 1), 1, 8, 1, 1, 0.05, 0.35, 0.05, 4, "uzf01"],
         [1, (0, 0, 2), 1, 9, 1, 1, 0.05, 0.35, 0.05, 4, "uzf02"],
@@ -258,36 +228,29 @@ def build_model(idx, dir):
         nuzfcells=len(uzf_pkdat),
         packagedata=uzf_pkdat,
         perioddata=uzf_spd,
-        budget_filerecord="{}.uzf.bud".format(name),
-        filename="{}.uzf".format(name),
+        budget_filerecord=f"{name}.uzf.bud",
+        filename=f"{name}.uzf",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model...")
+def check_output(idx, test):
+    ws = test.workspace
+    test = flopy.mf6.MFSimulation.load(sim_ws=ws)
 
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
-    sim = flopy.mf6.MFSimulation.load(sim_ws=ws)
-
-    fpth = os.path.join(ws, "uzf_3lay.hds")
-    hobj = flopy.utils.HeadFile(fpth, precision="double")
-    hds = hobj.get_alldata()
-
-    bpth = os.path.join(ws, "uzf_3lay.cbc")
+    bpth = ws / f"{name}.cbc"
     bobj = flopy.utils.CellBudgetFile(bpth, precision="double")
     bobj.get_unique_record_names()
     # '          STO-SS'
@@ -301,7 +264,7 @@ def eval_model(sim):
     gwet = bobj.get_data(text="UZF-GWET")
     gwet = np.array(gwet)
 
-    uzpth = os.path.join(ws, "uzf_3lay.uzf.bud")
+    uzpth = os.path.join(ws, f"{name}.uzf.bud")
     uzobj = flopy.utils.CellBudgetFile(uzpth, precision="double")
     uzobj.get_unique_record_names()
     # '    FLOW-JA-FACE'
@@ -316,25 +279,25 @@ def eval_model(sim):
 
     # convert ndarray to grid dimensions
     tot_stp = 0
-    tinfo = sim.tdis.perioddata.get_data()
+    tinfo = test.tdis.perioddata.get_data()
     for itm in tinfo:
         tot_stp += int(itm[1])
 
     gwet_arr = np.zeros(
         (
             tot_stp,
-            sim.uzf_3lay.dis.nlay.get_data(),
-            sim.uzf_3lay.dis.nrow.get_data(),
-            sim.uzf_3lay.dis.ncol.get_data(),
+            test.model.dis.nlay.get_data(),
+            test.model.dis.nrow.get_data(),
+            test.model.dis.ncol.get_data(),
         )
     )
 
     uzet_arr = np.zeros(
         (
             tot_stp,
-            sim.uzf_3lay.dis.nlay.get_data(),
-            sim.uzf_3lay.dis.nrow.get_data(),
-            sim.uzf_3lay.dis.ncol.get_data(),
+            test.model.dis.nlay.get_data(),
+            test.model.dis.nrow.get_data(),
+            test.model.dis.ncol.get_data(),
         )
     )
 
@@ -356,7 +319,7 @@ def eval_model(sim):
 
             uzet_arr[tm, lay, row, col] = itm[2]
 
-    uzf_strsPerDat = sim.uzf_3lay.uzf.perioddata.get_data()
+    uzf_strsPerDat = test.model.uzf.perioddata.get_data()
     pet = 0
     for tm in range(tot_stp):
         nstps = 0
@@ -365,12 +328,11 @@ def eval_model(sim):
             if tm < nstps:
                 break
 
-        for i in range(sim.uzf_3lay.dis.nrow.get_data()):
-            for j in range(sim.uzf_3lay.dis.ncol.get_data()):
+        for i in range(test.model.dis.nrow.get_data()):
+            for j in range(test.model.dis.ncol.get_data()):
                 if (0, i, j) in cell_iuz_dict:
-                    iuz = cell_iuz_dict[
-                        (0, i, j)
-                    ]  # For this test, pET only specified in the top layer
+                    # For this test, pET only specified in the top layer
+                    iuz = cell_iuz_dict[(0, i, j)]
                     for m_row in uzf_strsPerDat[mstp]:
                         if m_row[0] == iuz:
                             pet = float(m_row[2])
@@ -387,39 +349,14 @@ def eval_model(sim):
                         + str(j + 1)
                     )
 
-    print("Finished running checks")
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx,name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

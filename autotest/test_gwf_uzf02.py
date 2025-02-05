@@ -1,41 +1,19 @@
 """
-# Test uzf for the vs2d comparison problem in the uzf documentation
-
+Test uzf for the vs2d comparison problem in the uzf documentation
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["gwf_uzf02a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["gwf_uzf02a"]
 nlay, nrow, ncol = 1, 1, 1
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     perlen = [17.7]
     nper = len(perlen)
     nstp = [177]
@@ -65,18 +43,16 @@ def build_model(idx, dir):
     for id in range(nper):
         tdis_rc.append((perlen[id], nstp[id], tsmult[id]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = name
@@ -105,7 +81,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -125,9 +101,7 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -153,9 +127,8 @@ def build_model(idx, dir):
 
     # note: for specifying lake number, use fortran indexing!
     uzf_obs = {
-        name
-        + ".uzf.obs.csv": [
-            ("wc{}".format(k + 1), "water-content", 1, depth)
+        name + ".uzf.obs.csv": [
+            (f"wc{k + 1}", "water-content", 1, depth)
             for k, depth in enumerate(np.linspace(1, 20, 15))
         ]
     }
@@ -187,7 +160,7 @@ def build_model(idx, dir):
             thts,
             thti,
             brooks_corey_epsilon,
-            "uzf0{}".format(k + 1),
+            f"uzf0{k + 1}",
         ]
         for k in range(1, nlay)
     ]
@@ -219,16 +192,16 @@ def build_model(idx, dir):
         nuzfcells=len(uzf_pkdat),
         packagedata=uzf_pkdat,
         perioddata=uzf_spd,
-        budget_filerecord="{}.uzf.bud".format(name),
+        budget_filerecord=f"{name}.uzf.bud",
         observations=uzf_obs,
-        filename="{}.uzf".format(name),
+        filename=f"{name}.uzf",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.bud".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.bud",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -236,10 +209,8 @@ def build_model(idx, dir):
 
     obs_lst = []
     obs_lst.append(["obs1", "head", (0, 0, 0)])
-    obs_dict = {"{}.obs.csv".format(gwfname): obs_lst}
-    obs = flopy.mf6.ModflowUtlobs(
-        gwf, pname="head_obs", digits=20, continuous=obs_dict
-    )
+    obs_dict = {f"{gwfname}.obs.csv": obs_lst}
+    obs = flopy.mf6.ModflowUtlobs(gwf, pname="head_obs", digits=20, continuous=obs_dict)
 
     return sim, None
 
@@ -247,15 +218,12 @@ def build_model(idx, dir):
 def make_plot(sim, obsvals):
     print("making plots...")
 
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
-
     # shows curves for times 2.5, 7.5, 12.6, 17.7
     # which are indices 24, 74, 125, and -1
-    idx = [24, 74, 125, -1]
+    indices = [24, 74, 125, -1]
 
     obsvals = [list(row) for row in obsvals]
-    obsvals = [obsvals[i] for i in idx]
+    obsvals = [obsvals[i] for i in indices]
     obsvals = np.array(obsvals)
 
     import matplotlib.pyplot as plt
@@ -265,7 +233,7 @@ def make_plot(sim, obsvals):
     depth = np.arange(1, 20, 2.0)
     depth = np.linspace(1, 20, 15)
     for row in obsvals:
-        label = "time {}".format(row[0])
+        label = f"time {row[0]}"
         ax.plot(row[1:], depth, label=label, marker="o")
     ax.set_ylim(0.0, 20.0)
     ax.set_xlim(0.15, 0.4)
@@ -275,17 +243,13 @@ def make_plot(sim, obsvals):
     plt.legend()
 
     fname = "fig-xsect.pdf"
-    fname = os.path.join(ws, fname)
+    fname = os.path.join(sim.workspace, fname)
     plt.savefig(fname, bbox_inches="tight")
 
-    return
 
-
-def eval_flow(sim):
-    print("evaluating flow...")
-
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
+def check_output(idx, test):
+    name = test.name
+    ws = test.workspace
 
     # check binary grid file
     fname = os.path.join(ws, name + ".dis.grb")
@@ -311,9 +275,7 @@ def eval_flow(sim):
     for fjf in flow_ja_face:
         fjf = fjf.flatten()
         res = fjf[ia[:-1]]
-        errmsg = "min or max residual too large {} {}".format(
-            res.min(), res.max()
-        )
+        errmsg = f"min or max residual too large {res.min()} {res.max()}"
         assert np.allclose(res, 0.0, atol=1.0e-6), errmsg
 
     bpth = os.path.join(ws, name + ".uzf.bud")
@@ -324,48 +286,21 @@ def eval_flow(sim):
         assert np.allclose(uz["q"], uz_answer), "unsat ET is not correct"
 
     # Make plot of obs
-    fpth = os.path.join(sim.simpath, name + ".uzf.obs.csv")
+    fpth = os.path.join(test.workspace, name + ".uzf.obs.csv")
     try:
         obsvals = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
-    if False:
-        make_plot(sim, obsvals)
-    return
+        assert False, f'could not load data from "{fpth}"'
+    # make_plot(sim, obsvals)
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_flow, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_flow, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

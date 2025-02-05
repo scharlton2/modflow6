@@ -1,45 +1,17 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from conftest import try_get_target
+from flopy.utils.compare import compare_heads
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = ["csub_zdisp01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-
+cases = ["csub_zdisp01"]
 cmppth = "mfnwt"
-
-ddir = "data"
-
-## run all examples on Travis
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-replace_exe = None
-
-htol = [None for idx in range(len(exdirs))]
+htol = [None for _ in range(len(cases))]
 dtol = 1e-3
 budtol = 1e-2
-
 bud_lst = [
     "STO-SS_IN",
     "STO-SS_OUT",
@@ -58,14 +30,14 @@ bud_lst = [
 # static model data
 # temporal discretization
 nper = 31
-perlen = [1.0] + [365.2500000 for i in range(nper - 1)]
-nstp = [1] + [6 for i in range(nper - 1)]
-tsmult = [1.0] + [1.3 for i in range(nper - 1)]
-# tsmult = [1.0] + [1.0 for i in range(nper - 1)]
-steady = [True] + [False for i in range(nper - 1)]
+perlen = [1.0] + [365.2500000 for _ in range(nper - 1)]
+nstp = [1] + [6 for _ in range(nper - 1)]
+tsmult = [1.0] + [1.3 for _ in range(nper - 1)]
+# tsmult = [1.0] + [1.0 for _ in range(nper - 1)]
+steady = [True] + [False for _ in range(nper - 1)]
 tdis_rc = []
-for idx in range(nper):
-    tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
+for i in range(nper):
+    tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
 # spatial discretization data
 nlay, nrow, ncol = 3, 20, 20
@@ -184,7 +156,7 @@ if nndb > 0:
                 # skip constant head cells
                 if idomain[k, i, j] == 0:
                     continue
-                tag = "{:02d}_{:02d}_{:02d}".format(k + 1, i + 1, j + 1)
+                tag = f"{k + 1:02d}_{i + 1:02d}_{j + 1:02d}"
                 # create nodelay entry
                 # no delay beds
                 b = thicknd0[kdx]
@@ -220,18 +192,16 @@ ds16 = [0, nper - 1, 0, nstp[-1] - 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1]
 
 
 # variant SUB package problem 3
-def get_model(idx, dir):
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     zthick = [top - botm[0], botm[0] - botm[1], botm[1] - botm[2]]
@@ -268,11 +238,11 @@ def get_model(idx, dir):
         top=top,
         botm=botm,
         idomain=idomain,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{name}.ic")
 
     # node property flow
     npf = flopy.mf6.ModflowGwfnpf(
@@ -291,11 +261,11 @@ def get_model(idx, dir):
     )
 
     # csub files
-    opth = "{}.csub.obs".format(name)
-    ibcsv = "{}.ib.strain.csv".format(name)
-    skcsv = "{}.sk.strain.csv".format(name)
-    copth = "{}.compaction.gridbin".format(name)
-    zopth = "{}.zdisplacement.gridbin".format(name)
+    opth = f"{name}.csub.obs"
+    ibcsv = f"{name}.ib.strain.csv"
+    skcsv = f"{name}.sk.strain.csv"
+    copth = f"{name}.compaction.gridbin"
+    zopth = f"{name}.zdisplacement.gridbin"
     csub = flopy.mf6.ModflowGwfcsub(
         gwf,
         boundnames=True,
@@ -313,22 +283,20 @@ def get_model(idx, dir):
         packagedata=sub6,
     )
     orecarray = {}
-    tag = "{:02d}_{:02d}_{:02d}".format(3, wrp[0] + 1, wcp[0] + 1)
     oloc = (2, wrp[0], wcp[0])
+    ibloc = (449,)
     orecarray["csub_obs.csv"] = [
-        ("tcomp3", "interbed-compaction", tag),
+        ("tcomp3", "interbed-compaction", ibloc),
         ("sk-tcomp3", "coarse-compaction", oloc),
-        ("ibi-tcomp3", "inelastic-compaction", tag),
-        ("ibe-tcomp3", "elastic-compaction", tag),
+        ("ibi-tcomp3", "inelastic-compaction", ibloc),
+        ("ibe-tcomp3", "elastic-compaction", ibloc),
     ]
     csub_obs_package = csub.obs.initialize(
         filename=opth, digits=10, print_input=True, continuous=orecarray
     )
 
     # drain
-    drn = flopy.mf6.ModflowGwfdrn(
-        gwf, maxbound=maxdrd, stress_period_data=drd6
-    )
+    drn = flopy.mf6.ModflowGwfdrn(gwf, maxbound=maxdrd, stress_period_data=drd6)
 
     # wel file
     wel = flopy.mf6.ModflowGwfwel(
@@ -347,8 +315,8 @@ def get_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -356,8 +324,13 @@ def get_model(idx, dir):
 
     # build MODFLOW-NWT files
     cpth = cmppth
-    ws = os.path.join(dir, cpth)
-    mc = flopy.modflow.Modflow(name, model_ws=ws, version=cpth)
+    ws = os.path.join(test.workspace, cpth)
+    mc = flopy.modflow.Modflow(
+        name,
+        model_ws=ws,
+        version=cpth,
+        exe_name=try_get_target(test.targets, "mfnwt"),
+    )
     dis = flopy.modflow.ModflowDis(
         mc,
         nlay=nlay,
@@ -420,53 +393,42 @@ def get_model(idx, dir):
         backflag=0,
         idroptol=0,
     )
+
     return sim, mc
 
 
-def build_models():
-    for idx, dir in enumerate(exdirs):
-        sim, mc = get_model(idx, dir)
-        sim.write_simulation()
-        mc.write_input()
-    return
-
-
-def eval_zdisplacement(sim):
-    print("evaluating z-displacement...")
-
+def check_output(idx, test):
     # MODFLOW 6 total compaction results
-    fpth = os.path.join(sim.simpath, "csub_obs.csv")
+    fpth = os.path.join(test.workspace, "csub_obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # MODFLOW-2005 total compaction results
-    fn = "{}.total_comp.hds".format(os.path.basename(sim.name))
-    fpth = os.path.join(sim.simpath, "mfnwt", fn)
+    fn = f"{os.path.basename(test.name)}.total_comp.hds"
+    fpth = os.path.join(test.workspace, "mfnwt", fn)
     try:
-        sobj = flopy.utils.HeadFile(fpth, text="LAYER COMPACTION")
+        sobj = flopy.utils.HeadFile(fpth, text="LAYER COMPACTION", verbose=False)
         tc0 = sobj.get_ts((2, wrp[0], wcp[0]))
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # calculate maximum absolute error
     diff = tc["TCOMP3"] - tc0[:, 1]
     diffmax = np.abs(diff).max()
-    msg = "maximum absolute total-compaction difference ({}) ".format(diffmax)
+    msg = f"maximum absolute total-compaction difference ({diffmax}) "
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
     # get results from listing file
-    fpth = os.path.join(
-        sim.simpath, "{}.lst".format(os.path.basename(sim.name))
-    )
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.lst")
     budl = flopy.utils.Mf6ListBudget(fpth)
     names = list(bud_lst)
     d0 = budl.get_budget(names=names)[0]
@@ -485,13 +447,11 @@ def eval_zdisplacement(sim):
     d = np.recarray(nbud, dtype=dtype)
     for key in bud_lst:
         d[key] = 0.0
-    fpth = os.path.join(
-        sim.simpath, "{}.cbc".format(os.path.basename(sim.name))
-    )
-    cobj = flopy.utils.CellBudgetFile(fpth, precision="double")
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.cbc")
+    cobj = flopy.utils.CellBudgetFile(fpth, precision="double", verbose=False)
     kk = cobj.get_kstpkper()
     times = cobj.get_times()
-    for idx, (k, t) in enumerate(zip(kk, times)):
+    for i, (k, t) in enumerate(zip(kk, times)):
         for text in cbc_bud:
             qin = 0.0
             qout = 0.0
@@ -509,62 +469,59 @@ def eval_zdisplacement(sim):
                             qout -= vv
                         else:
                             qin += vv
-            d["totim"][idx] = t
-            d["time_step"][idx] = k[0]
+            d["totim"][i] = t
+            d["time_step"][i] = k[0]
             d["stress_period"] = k[1]
-            key = "{}_IN".format(text)
-            d[key][idx] = qin
-            key = "{}_OUT".format(text)
-            d[key][idx] = qout
+            key = f"{text}_IN"
+            d[key][i] = qin
+            key = f"{text}_OUT"
+            d[key][i] = qout
 
     diff = np.zeros((nbud, len(bud_lst)), dtype=float)
-    for idx, key in enumerate(bud_lst):
-        diff[:, idx] = d0[key] - d[key]
+    for i, key in enumerate(bud_lst):
+        diff[:, i] = d0[key] - d[key]
     diffmax = np.abs(diff).max()
-    msg = "maximum absolute total-budget difference ({}) ".format(diffmax)
+    msg = f"maximum absolute total-budget difference ({diffmax}) "
 
     # write summary
-    fpth = os.path.join(
-        sim.simpath, "{}.bud.cmp.out".format(os.path.basename(sim.name))
-    )
-    f = open(fpth, "w")
-    for i in range(diff.shape[0]):
-        if i == 0:
-            line = "{:>10s}".format("TIME")
-            for idx, key in enumerate(bud_lst):
-                line += "{:>25s}".format(key + "_LST")
-                line += "{:>25s}".format(key + "_CBC")
-                line += "{:>25s}".format(key + "_DIF")
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.bud.cmp.out")
+    with open(fpth, "w") as f:
+        for i in range(diff.shape[0]):
+            if i == 0:
+                line = f"{'TIME':>10s}"
+                for key in bud_lst:
+                    line += f"{key + '_LST':>25s}"
+                    line += f"{key + '_CBC':>25s}"
+                    line += f"{key + '_DIF':>25s}"
+                f.write(line + "\n")
+            line = f"{d['totim'][i]:10g}"
+            for ii, key in enumerate(bud_lst):
+                line += f"{d0[key][i]:25g}"
+                line += f"{d[key][i]:25g}"
+                line += f"{diff[i, ii]:25g}"
             f.write(line + "\n")
-        line = "{:10g}".format(d["totim"][i])
-        for idx, key in enumerate(bud_lst):
-            line += "{:25g}".format(d0[key][i])
-            line += "{:25g}".format(d[key][i])
-            line += "{:25g}".format(diff[i, idx])
-        f.write(line + "\n")
-    f.close()
 
     if diffmax > budtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
     # compare z-displacement data
     fpth1 = os.path.join(
-        sim.simpath,
-        "{}.zdisplacement.gridbin".format(os.path.basename(sim.name)),
+        test.workspace,
+        f"{os.path.basename(test.name)}.zdisplacement.gridbin",
     )
-    fpth2 = os.path.join(sim.simpath, cmppth, "csub_zdisp01.vert_disp.hds")
+    fpth2 = os.path.join(test.workspace, cmppth, "csub_zdisp01.vert_disp.hds")
     text1 = "CSUB-ZDISPLACE"
     text2 = "Z DISPLACEMENT"
     fout = os.path.join(
-        sim.simpath,
-        "{}.z-displacement.bin.out".format(os.path.basename(sim.name)),
+        test.workspace,
+        f"{os.path.basename(test.name)}.z-displacement.bin.out",
     )
-    success_tst = pymake.compare_heads(
+    success_tst = compare_heads(
         None,
         None,
         text=text1,
@@ -576,74 +533,24 @@ def eval_zdisplacement(sim):
         verbose=True,
         exarr=iex,
     )
-    msg = "z-displacement comparison success = {}".format(success_tst)
+    msg = f"z-displacement comparison success = {success_tst}"
     if success_tst:
-        sim.success = True
+        test.success = True
         print(msg)
     else:
-        sim.success = False
+        test.success = False
         assert success_tst, msg
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-    r_exe = None
-    if not is_CI:
-        if replace_exe is not None:
-            r_exe = replace_exe
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    build_models()
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(
-        Simulation(
-            dir,
-            exfunc=eval_zdisplacement,
-            exe_dict=r_exe,
-            htol=htol[idx],
-            idxsim=idx,
-        )
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        htol=htol[idx],
     )
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    build_models()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        sim = Simulation(
-            dir,
-            exfunc=eval_zdisplacement,
-            exe_dict=replace_exe,
-            htol=htol[idx],
-            idxsim=idx,
-        )
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

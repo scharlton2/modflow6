@@ -1,38 +1,17 @@
 """
-MODFLOW 6 Autotest
-Test the bmi which is used update the calculate a head-based pumping rate that
-is equivalent to use of the evapotranspiration package in the
-non-bmi simulation.
+Test bmi with a head-based pumping rate equivalent to
+the evapotranspiration package in a non-bmi simulation.
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
-from modflowapi import ModflowApi
+import pytest
+from framework import TestFramework
+from modflow_devtools.markers import requires_pkg
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation, api_return
-
-ex = ["libgwf_evt01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["libgwf_evt01"]
 
 # et variables
 et_max = 0.1
@@ -78,9 +57,7 @@ def get_model(ws, name, bmi=False):
         memory_print_option="all",
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -130,15 +107,13 @@ def get_model(ws, name, bmi=False):
 
     # evapotranspiration
     if not bmi:
-        evt = flopy.mf6.ModflowGwfevta(
-            gwf, surface=top, rate=et_max, depth=et_depth
-        )
+        evt = flopy.mf6.ModflowGwfevta(gwf, surface=top, rate=et_max, depth=et_depth)
     wel = flopy.mf6.ModflowGwfwel(gwf, stress_period_data=[[(0, 0, 0), 0.0]])
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(name),
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -146,14 +121,14 @@ def get_model(ws, name, bmi=False):
     return sim
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     # build MODFLOW 6 files
-    ws = dir
-    name = ex[idx]
+    ws = test.workspace
+    name = cases[idx]
     sim = get_model(ws, name)
 
     # build comparison model
-    ws = os.path.join(dir, "libmf6")
+    ws = os.path.join(test.workspace, "libmf6")
     mc = get_model(ws, name, bmi=True)
 
     return sim, mc
@@ -171,24 +146,25 @@ def head2et_wellrate(h):
 
 
 def api_func(exe, idx, model_ws=None):
-    success = False
+    from modflowapi import ModflowApi
 
-    name = ex[idx].upper()
+    name = cases[idx].upper()
     if model_ws is None:
         model_ws = "."
+    output_file_path = os.path.join(model_ws, "mfsim.stdout")
 
     try:
         mf6 = ModflowApi(exe, working_directory=model_ws)
     except Exception as e:
-        print("Failed to load " + exe)
+        print("Failed to load " + str(exe))
         print("with message: " + str(e))
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # initialize the model
     try:
         mf6.initialize()
     except:
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # time loop
     current_time = mf6.get_current_time()
@@ -203,15 +179,24 @@ def api_func(exe, idx, model_ws=None):
     max_iter = mf6.get_value(mxit_tag)
 
     # get copy of well data
-    well_tag = mf6.get_var_address("BOUND", name, "WEL_0")
+    well_tag = mf6.get_var_address("Q", name, "WEL_0")
     well = mf6.get_value(well_tag)
+
+    # check NPF type
+    package_type_tag = mf6.get_var_address("PACKAGE_TYPE", name, "NPF")
+    package_type = mf6.get_value(package_type_tag)[0]
+    assert package_type == "NPF", f"{package_type} /= NPF"
+
+    # check wel type
+    package_type_tag = mf6.get_var_address("PACKAGE_TYPE", name, "WEL_0")
+    package_type = mf6.get_value(package_type_tag)[0]
+    assert package_type == "WEL", f"{package_type} /= WEL"
 
     twell = np.zeros(ncol, dtype=np.float64)
 
     # model time loop
     idx = 0
     while current_time < end_time:
-
         # get dt and prepare for non-linear iterations
         dt = mf6.get_time_step()
         mf6.prepare_time_step(dt)
@@ -221,10 +206,9 @@ def api_func(exe, idx, model_ws=None):
         mf6.prepare_solve()
 
         while kiter < max_iter:
-
             # update well rate
             twell[:] = head2et_wellrate(head[0])
-            well[:, 0] = twell[:]
+            well[:] = twell[:]
             mf6.set_value(well_tag, well)
 
             # solve with updated well rate
@@ -232,16 +216,13 @@ def api_func(exe, idx, model_ws=None):
             kiter += 1
 
             if has_converged:
-                msg = (
-                    "Component {}".format(1)
-                    + " converged in {}".format(kiter)
-                    + " outer iterations"
-                )
+                msg = f"Component {1}" + f" converged in {kiter}" + " outer iterations"
                 print(msg)
                 break
 
         if not has_converged:
-            return api_return(success, model_ws)
+            print("model did not converge")
+            return False, open(output_file_path).readlines()
 
         # finalize time step
         mf6.finalize_solve()
@@ -252,50 +233,24 @@ def api_func(exe, idx, model_ws=None):
 
         # increment counter
         idx += 1
+
     # cleanup
     try:
         mf6.finalize()
-        success = True
     except:
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
-    # cleanup and return
-    return api_return(success, model_ws)
-
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, idxsim=idx, api_func=api_func))
+    return True, open(output_file_path).readlines()
 
 
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, idxsim=idx, api_func=api_func)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@requires_pkg("modflowapi")
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        api_func=lambda exe, ws: api_func(exe, idx, ws),
+    )
+    test.run()

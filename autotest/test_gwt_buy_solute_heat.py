@@ -1,27 +1,14 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["gwtbuy"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["gwtbuy"]
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     lx = 2000.0
     lz = 1000.0
 
@@ -46,17 +33,15 @@ def build_model(idx, dir):
     nouter, ninner = 100, 300
     hclose, rclose, relax = 1e-10, 1e-6, 0.97
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "flow"
@@ -78,7 +63,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwfname])
 
@@ -114,7 +99,7 @@ def build_model(idx, dir):
         (0, 0.7, 0.0, gwtsname, "SALINITY"),
         (1, -0.375, 25.0, gwthname, "TEMPERATURE"),
     ]
-    fname = "{}.buy.bin".format(gwfname)
+    fname = f"{gwfname}.buy.bin"
     buy = flopy.mf6.ModflowGwfbuy(
         gwf, density_filerecord=fname, nrhospecies=len(pd), packagedata=pd
     )
@@ -140,9 +125,7 @@ def build_model(idx, dir):
     ghb_cond = 10.0 * (1.0 * 10.0) / 5.0
     ghb_salinity = 35.0
     ghb_temperature = 5.0
-    ghb_density = (
-        1000.0 + 0.7 * ghb_salinity - 0.375 * (ghb_temperature - 25.0)
-    )
+    ghb_density = 1000.0 + 0.7 * ghb_salinity - 0.375 * (ghb_temperature - 25.0)
     ghblist1 = []
     for k in range(nlay):
         ghblist1.append(
@@ -168,8 +151,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "LAST")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -193,7 +176,7 @@ def build_model(idx, dir):
             scaling_method="NONE",
             reordering_method="NONE",
             relaxation_factor=relax,
-            filename="{}.ims".format(gwtsname),
+            filename=f"{gwtsname}.ims",
         )
         sim.register_ims_package(imsgwt, [gwts.name])
 
@@ -231,8 +214,8 @@ def build_model(idx, dir):
         # output control
         oc = flopy.mf6.ModflowGwtoc(
             gwts,
-            budget_filerecord="{}.cbc".format(gwtsname),
-            concentration_filerecord="{}.ucn".format(gwtsname),
+            budget_filerecord=f"{gwtsname}.cbc",
+            concentration_filerecord=f"{gwtsname}.ucn",
             concentrationprintrecord=[
                 ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
             ],
@@ -246,7 +229,7 @@ def build_model(idx, dir):
             exgtype="GWF6-GWT6",
             exgmnamea=gwfname,
             exgmnameb=gwtsname,
-            filename="{}-s.gwfgwt".format(name),
+            filename=f"{name}-s.gwfgwt",
         )
 
     # create gwt model
@@ -267,7 +250,7 @@ def build_model(idx, dir):
             scaling_method="NONE",
             reordering_method="NONE",
             relaxation_factor=relax,
-            filename="{}.ims".format(gwthname),
+            filename=f"{gwthname}.ims",
         )
         sim.register_ims_package(imsgwt, [gwth.name])
 
@@ -318,8 +301,8 @@ def build_model(idx, dir):
         # output control
         oc = flopy.mf6.ModflowGwtoc(
             gwth,
-            budget_filerecord="{}.cbc".format(gwthname),
-            concentration_filerecord="{}.ucn".format(gwthname),
+            budget_filerecord=f"{gwthname}.cbc",
+            concentration_filerecord=f"{gwthname}.ucn",
             concentrationprintrecord=[
                 ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
             ],
@@ -333,46 +316,29 @@ def build_model(idx, dir):
             exgtype="GWF6-GWT6",
             exgmnamea=gwfname,
             exgmnameb=gwthname,
-            filename="{}-h.gwfgwt".format(name),
+            filename=f"{name}-h.gwfgwt",
         )
 
     return sim, None
 
 
-def make_plot(sim):
-    print("making plots...")
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
-    sim = flopy.mf6.MFSimulation.load(sim_ws=ws)
+def plot_output(idx, test):
+    import matplotlib.pyplot as plt
+
+    ws = test.workspace
+    sim = test.sims[0]
     gwfname = "flow"
     gwtsname = "salinity"
     gwthname = "temperature"
     gwf = sim.get_model(gwfname)
     gwts = sim.get_model(gwtsname)
     gwth = sim.get_model(gwthname)
-
-    fname = gwtsname + ".ucn"
-    fname = os.path.join(ws, fname)
-    cobj = flopy.utils.HeadFile(
-        fname, text="CONCENTRATION"
-    )  # , precision='double')
-    conc = cobj.get_alldata()
-
-    fname = gwthname + ".ucn"
-    fname = os.path.join(ws, fname)
-    tobj = flopy.utils.HeadFile(
-        fname, text="CONCENTRATION"
-    )  # , precision='double')
-    temperature = tobj.get_alldata()
-
-    fname = gwfname + ".buy.bin"
-    fname = os.path.join(ws, fname)
-    dobj = flopy.utils.HeadFile(fname, text="DENSITY")  # , precision='double')
-    dense = dobj.get_alldata()
+    conc = gwts.output.concentration().get_alldata()
+    temperature = gwth.output.concentration().get_alldata()
+    dense = gwf.buy.output.density().get_alldata()
 
     idxtime = -1
-
-    import matplotlib.pyplot as plt
+    alpha = 1.0
 
     fig = plt.figure(figsize=(10, 10))
     nplotrows = 3
@@ -382,10 +348,8 @@ def make_plot(sim):
     pxs.plot_bc(ftype="WEL")
     pxs.plot_bc(ftype="GHB")
     a = conc[idxtime]
-    pa = pxs.plot_array(a, cmap="jet", alpha=0.25)
-    cs = pxs.contour_array(
-        a, levels=35.0 * np.array([0.01, 0.5, 0.99]), colors="y"
-    )
+    pa = pxs.plot_array(a, cmap="jet", alpha=alpha)
+    cs = pxs.contour_array(a, levels=35.0 * np.array([0.01, 0.5, 0.99]), colors="y")
     plt.colorbar(pa, shrink=0.5)
     ax.set_title("SALINITY")
 
@@ -395,10 +359,8 @@ def make_plot(sim):
     pxs.plot_bc(ftype="WEL")
     pxs.plot_bc(ftype="GHB")
     a = temperature[idxtime]
-    pa = pxs.plot_array(a, cmap="jet", alpha=0.25)
-    cs = pxs.contour_array(
-        a, levels=5 + 20.0 * np.array([0.01, 0.5, 0.99]), colors="y"
-    )
+    pa = pxs.plot_array(a, cmap="jet", alpha=alpha)
+    cs = pxs.contour_array(a, levels=5 + 20.0 * np.array([0.01, 0.5, 0.99]), colors="y")
     plt.colorbar(pa, shrink=0.5)
     ax.set_title("TEMPERATURE")
 
@@ -408,50 +370,31 @@ def make_plot(sim):
     pxs.plot_bc(ftype="WEL")
     pxs.plot_bc(ftype="GHB")
     a = dense[idxtime]
-    pa = pxs.plot_array(a, cmap="jet", alpha=0.25)
+    pa = pxs.plot_array(a, cmap="jet", alpha=alpha)
     # cs = pxs.contour_array(a, levels=5+20.*np.array([0.01, .5, 0.99]),
     #                       colors='y')
     plt.colorbar(pa, shrink=0.5)
     ax.set_title("DENSITY")
 
     plt.draw()
-    fname = os.path.join(ws, gwtsname + ".png")
+    fname = os.path.join(ws, "results.png")
     plt.savefig(fname)
 
     return
 
 
-def eval_transport(sim):
-    print("evaluating transport...")
-
-    makeplot = False
-    if makeplot:
-        make_plot(sim)
-
-    name = ex[sim.idxsim]
-    ws = sim.simpath
+def check_output(idx, test):
+    ws = test.workspace
+    sim = test.sims[0]
     gwfname = "flow"
     gwtsname = "salinity"
     gwthname = "temperature"
-
-    fname = gwfname + ".buy.bin"
-    fname = os.path.join(ws, fname)
-    dobj = flopy.utils.HeadFile(fname, text="DENSITY")  # , precision='double')
-    dense = dobj.get_alldata()
-
-    fname = gwtsname + ".ucn"
-    fname = os.path.join(ws, fname)
-    cobj = flopy.utils.HeadFile(
-        fname, text="CONCENTRATION"
-    )  # , precision='double')
-    conc = cobj.get_alldata()
-
-    fname = gwthname + ".ucn"
-    fname = os.path.join(ws, fname)
-    tobj = flopy.utils.HeadFile(
-        fname, text="CONCENTRATION"
-    )  # , precision='double')
-    temperature = tobj.get_alldata()
+    gwf = sim.get_model(gwfname)
+    gwts = sim.get_model(gwtsname)
+    gwth = sim.get_model(gwthname)
+    conc = gwts.output.concentration().get_alldata()
+    temperature = gwth.output.concentration().get_alldata()
+    dense = gwf.buy.output.density().get_alldata()
 
     # density is lagged, so use c and t from previous timestep
     c = conc[-2]
@@ -460,7 +403,6 @@ def eval_transport(sim):
     densecalculated = 1000.0 + 0.7 * c - 0.375 * (t - 25.0)
 
     if not np.allclose(d, densecalculated):
-
         print("density is not correct")
         fname = os.path.join(ws, "a-dense.txt")
         np.savetxt(fname, d.reshape(200, 100))
@@ -472,44 +414,15 @@ def eval_transport(sim):
         np.savetxt(fname, densecalculated.reshape(200, 100))
         assert False, "density is not correct"
 
-    # assert False
 
-    return
-
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_transport, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_transport, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets, plot):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        plot=lambda t: plot_output(idx, t) if plot else None,
+    )
+    test.run()

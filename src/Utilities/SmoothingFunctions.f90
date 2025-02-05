@@ -1,19 +1,17 @@
 module SmoothingModule
   use KindModule, only: DP, I4B
-  use ConstantsModule, only: DZERO, DHALF, DONE, DTWO, DTHREE, DFOUR,            &
- &                           DSIX, DPREC, DEM2, DEM4, DEM5, DEM6, DEM8, DEM14 
+  use ConstantsModule, only: DZERO, DHALF, DONE, DTWO, DTHREE, DFOUR, &
+                             DSIX, DPREC, DEM2, DEM4, DEM5, DEM6, DEM8, DEM14
   implicit none
-  
-  contains
-    
-  subroutine sSCurve(x,range,dydx,y)
-! ******************************************************************************
-! COMPUTES THE S CURVE FOR SMOOTH DERIVATIVES BETWEEN X=0 AND X=1
-! FROM mfusg smooth SUBROUTINE in gwf2wel7u1.f
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+
+contains
+
+  !> @ brief SCurve
+  !!
+  !! Computes the S curve for smooth derivatives between x=0 and x=1
+  !! from mfusg smooth subroutine in gwf2wel7u1.f
+  !<
+  subroutine sSCurve(x, range, dydx, y)
     real(DP), intent(in) :: x
     real(DP), intent(in) :: range
     real(DP), intent(inout) :: dydx
@@ -21,34 +19,30 @@ module SmoothingModule
     !--local variables
     real(DP) :: s
     real(DP) :: xs
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     s = range
-    if ( s < DPREC ) s = DPREC
+    if (s < DPREC) s = DPREC
     xs = x / s
     if (xs < DZERO) xs = DZERO
     if (xs <= DZERO) then
       y = DZERO
       dydx = DZERO
-    elseif(xs < DONE)then
+    elseif (xs < DONE) then
       y = -DTWO * xs**DTHREE + DTHREE * xs**DTWO
       dydx = -DSIX * xs**DTWO + DSIX * xs
     else
       y = DONE
       dydx = DZERO
-    endif
-    return
+    end if
   end subroutine sSCurve
-  
-  subroutine sCubicLinear(x,range,dydx,y)
-! ******************************************************************************
-! COMPUTES THE S CURVE WHERE DY/DX = 0 at X=0; AND DY/DX = 1 AT X=1.
-! Smooths from zero to a slope of 1.
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+
+  !> @ brief sCubicLinear
+  !!
+  !! Computes the s curve where dy/dx = 0 at x=0; and dy/dx = 1 at x=1.
+  !! Smooths from zero to a slope of 1.
+  !<
+  subroutine sCubicLinear(x, range, dydx, y)
     real(DP), intent(in) :: x
     real(DP), intent(in) :: range
     real(DP), intent(inout) :: dydx
@@ -56,33 +50,29 @@ module SmoothingModule
     !--local variables
     real(DP) :: s
     real(DP) :: xs
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     s = range
-    if ( s < DPREC ) s = DPREC
+    if (s < DPREC) s = DPREC
     xs = x / s
     if (xs < DZERO) xs = DZERO
     if (xs <= DZERO) then
       y = DZERO
       dydx = DZERO
-    elseif(xs < DONE)then
+    elseif (xs < DONE) then
       y = -DONE * xs**DTHREE + DTWO * xs**DTWO
       dydx = -DTHREE * xs**DTWO + DFOUR * xs
     else
       y = DONE
       dydx = DZERO
-    endif
-    return
+    end if
   end subroutine sCubicLinear
 
-  subroutine sCubic(x,range,dydx,y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1; cubic function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+  !> @ brief sCubic
+  !!
+  !! Nonlinear smoothing function returns value between 0-1; cubic function
+  !<
+  subroutine sCubic(x, range, dydx, y)
     real(DP), intent(inout) :: x
     real(DP), intent(inout) :: range
     real(DP), intent(inout) :: dydx
@@ -90,98 +80,86 @@ module SmoothingModule
     !--local variables
     real(DP) :: s, aa, bb
     real(DP) :: cof1, cof2, cof3
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     dydx = DZERO
     y = DZERO
-    if ( range < DPREC ) range = DPREC
-    if ( x < DPREC ) x = DPREC
+    if (range < DPREC) range = DPREC
+    if (x < DPREC) x = DPREC
     s = range
-    aa = -DSIX/(s**DTHREE)
-    bb = -DSIX/(s**DTWO)
+    aa = -DSIX / (s**DTHREE)
+    bb = -DSIX / (s**DTWO)
     cof1 = x**DTWO
-    cof2 = -(DTWO*x)/(s**DTHREE)
-    cof3 = DTHREE/(s**DTWO)
+    cof2 = -(DTWO * x) / (s**DTHREE)
+    cof3 = DTHREE / (s**DTWO)
     y = cof1 * (cof2 + cof3)
-    dydx = (aa*x**DTWO - bb*x)
-    if ( x <= DZERO ) then
+    dydx = (aa * x**DTWO - bb * x)
+    if (x <= DZERO) then
       y = DZERO
       dydx = DZERO
-    else if ( (x - s) > -DPREC ) then
+    else if ((x - s) > -DPREC) then
       y = DONE
       dydx = DZERO
     end if
-    return
   end subroutine sCubic
-  
-  subroutine sLinear(x,range,dydx,y)
-! ******************************************************************************
-! Linear smoothing function returns value between 0-1
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+
+  !> @ brief sLinear
+  !!
+  !! Linear smoothing function returns value between 0-1
+  !<
+  subroutine sLinear(x, range, dydx, y)
     real(DP), intent(inout) :: x
     real(DP), intent(inout) :: range
     real(DP), intent(inout) :: dydx
     real(DP), intent(inout) :: y
     !--local variables
     real(DP) :: s
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     dydx = DZERO
     y = DZERO
-    if ( range < DPREC ) range = DPREC
-    if ( x < DPREC ) x = DPREC
+    if (range < DPREC) range = DPREC
+    if (x < DPREC) x = DPREC
     s = range
-    y = DONE - (s - x)/s
-    dydx = DONE/s
-    if ( y > DONE ) then
+    y = DONE - (s - x) / s
+    dydx = DONE / s
+    if (y > DONE) then
       y = DONE
       dydx = DZERO
     end if
-    return
   end subroutine sLinear
-    
-  subroutine sQuadratic(x,range,dydx,y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1; quadratic function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+
+  !> @ brief sQuadratic
+  !!
+  !! Nonlinear quadratic smoothing function returns value between 0-1
+  !<
+  subroutine sQuadratic(x, range, dydx, y)
     real(DP), intent(inout) :: x
     real(DP), intent(inout) :: range
     real(DP), intent(inout) :: dydx
     real(DP), intent(inout) :: y
     !--local variables
     real(DP) :: s
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     dydx = DZERO
     y = DZERO
-    if ( range < DPREC ) range = DPREC
-    if ( x < DPREC ) x = DPREC
+    if (range < DPREC) range = DPREC
+    if (x < DPREC) x = DPREC
     s = range
     y = (x**DTWO) / (s**DTWO)
-    dydx = DTWO*x/(s**DTWO)
-    if ( y > DONE ) then
+    dydx = DTWO * x / (s**DTWO)
+    if (y > DONE) then
       y = DONE
       dydx = DZERO
     end if
-    return
   end subroutine sQuadratic
 
+  !> @ brief sChSmooth
+  !!
+  !! Function to smooth channel variables during channel drying
+  !<
   subroutine sChSmooth(d, smooth, dwdh)
-! ******************************************************************************
-! Function to smooth channel variables during channel drying
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     real(DP), intent(in) :: d
     real(DP), intent(inout) :: smooth
     real(DP), intent(inout) :: dwdh
@@ -194,42 +172,37 @@ module SmoothingModule
     real(DP) :: b
     real(DP) :: x
     real(DP) :: y
-! ------------------------------------------------------------------------------
-!   code
-!    
+    ! -- code
+    !
     smooth = DZERO
     s = DEM5
     x = d
     diff = x - s
-    if ( diff > DZERO ) then
+    if (diff > DZERO) then
       smooth = DONE
       dwdh = DZERO
     else
       aa = -DONE / (s**DTWO)
       ad = -DTWO / (s**DTWO)
       b = DTWO / s
-      y = aa * x**DTWO + b*x
-      dwdh = (ad*x + b)
-      if ( x <= DZERO ) then
+      y = aa * x**DTWO + b * x
+      dwdh = (ad * x + b)
+      if (x <= DZERO) then
         y = DZERO
         dwdh = DZERO
-      else if ( diff > -DEM14 ) then
+      else if (diff > -DEM14) then
         y = DONE
         dwdh = DZERO
       end if
       smooth = y
     end if
-    return
-end subroutine sChSmooth
- 
+  end subroutine sChSmooth
+
+  !> @ brief sLinearSaturation
+  !!
+  !! Linear saturation function returns value between 0-1
+  !<
   function sLinearSaturation(top, bot, x) result(y)
-! ******************************************************************************
-! Linear smoothing function returns value between 0-1;
-! Linear saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -238,9 +211,8 @@ end subroutine sChSmooth
     real(DP), intent(in) :: x
     ! -- local
     real(DP) :: b
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     b = top - bot
     if (x < bot) then
       y = DZERO
@@ -249,18 +221,13 @@ end subroutine sChSmooth
     else
       y = (x - bot) / b
     end if
-    return
   end function sLinearSaturation
 
-
+  !> @ brief sCubicSaturation
+  !!
+  !! Nonlinear cubic saturation function returns value between 0-1
+  !<
   function sCubicSaturation(top, bot, x, eps) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1;
-! Quadratic saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -275,9 +242,8 @@ end subroutine sChSmooth
     real(DP) :: s
     real(DP) :: cof1
     real(DP) :: cof2
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     if (present(eps)) then
       teps = eps
     else
@@ -292,26 +258,21 @@ end subroutine sChSmooth
       y = DZERO
     else if (w < s) then
       y = -cof1 * (w**DTHREE) + cof2 * (w**DTWO)
-    else if (w < (b-s)) then
+    else if (w < (b - s)) then
       y = w / b
     else if (w < b) then
       y = DONE + cof1 * ((b - w)**DTHREE) - cof2 * ((b - w)**DTWO)
     else
       y = DONE
     end if
-    
-    return
+
   end function sCubicSaturation
 
-  
-  function sQuadraticSaturation(top, bot, x, eps, bmin) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1;
-! Quadratic saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+  !> @ brief sQuadraticSaturation
+  !!
+  !! Nonlinear quadratic saturation function returns value between 0-1
+  !<
+  function sQuadraticSaturation(top, bot, x, eps) result(y)
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -319,26 +280,18 @@ end subroutine sChSmooth
     real(DP), intent(in) :: bot
     real(DP), intent(in) :: x
     real(DP), optional, intent(in) :: eps
-    real(DP), optional, intent(in) :: bmin
     ! -- local
     real(DP) :: teps
-    real(DP) :: tbmin
     real(DP) :: b
     real(DP) :: br
     real(DP) :: bri
     real(DP) :: av
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     if (present(eps)) then
       teps = eps
     else
       teps = DEM6
-    end if
-    if (present(bmin)) then
-      tbmin = bmin
-    else
-      tbmin = DZERO
     end if
     b = top - bot
     if (b > DZERO) then
@@ -349,14 +302,11 @@ end subroutine sChSmooth
       else
         br = (x - bot) / b
       end if
-      av = DONE / (DONE - teps) 
+      av = DONE / (DONE - teps)
       bri = DONE - br
-      if (br < tbmin) then
-        br = tbmin
-      end if
       if (br < teps) then
-        y = av * DHALF * (br*br) / teps
-      elseif (br < (DONE-teps)) then
+        y = av * DHALF * (br * br) / teps
+      elseif (br < (DONE - teps)) then
         y = av * br + DHALF * (DONE - av)
       elseif (br < DONE) then
         y = DONE - ((av * DHALF * (bri * bri)) / teps)
@@ -370,18 +320,14 @@ end subroutine sChSmooth
         y = DONE
       end if
     end if
-    
-    return
+
   end function sQuadraticSaturation
-  
+
+  !> @ brief sQuadraticSaturation
+  !!
+  !! van Genuchten saturation function returns value between 0-1
+  !<
   function svanGenuchtenSaturation(top, bot, x, alpha, beta, sr) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1;
-! van Genuchten saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -396,9 +342,8 @@ end subroutine sChSmooth
     real(DP) :: pc
     real(DP) :: gamma
     real(DP) :: seff
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     b = top - bot
     pc = (DHALF * b) - x
     if (pc <= DZERO) then
@@ -410,18 +355,13 @@ end subroutine sChSmooth
       y = seff * (DONE - sr) + sr
     end if
 
-    return
   end function svanGenuchtenSaturation
- 
-  
-  function sQuadraticSaturationDerivative(top, bot, x, eps, bmin) result(y)
-! ******************************************************************************
-! Derivative of nonlinear smoothing function returns value between 0-1;
-! Derivative of the quadratic saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
+
+  !> @ brief Derivative of the quadratic saturation function
+  !!
+  !! Derivative of nonlinear smoothing function returns value between 0-1;
+  !<
+  function sQuadraticSaturationDerivative(top, bot, x, eps) result(y)
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -429,26 +369,18 @@ end subroutine sChSmooth
     real(DP), intent(in) :: bot
     real(DP), intent(in) :: x
     real(DP), optional, intent(in) :: eps
-    real(DP), optional, intent(in) :: bmin
     ! -- local
     real(DP) :: teps
-    real(DP) :: tbmin
     real(DP) :: b
     real(DP) :: br
     real(DP) :: bri
     real(DP) :: av
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     if (present(eps)) then
       teps = eps
     else
       teps = DEM6
-    end if
-    if (present(bmin)) then
-      tbmin = bmin
-    else
-      tbmin = DZERO
     end if
     b = top - bot
     if (x < bot) then
@@ -458,14 +390,11 @@ end subroutine sChSmooth
     else
       br = (x - bot) / b
     end if
-    av = DONE / (DONE - teps) 
+    av = DONE / (DONE - teps)
     bri = DONE - br
-    if (br < tbmin) then
-      br = tbmin
-    end if
     if (br < teps) then
       y = av * br / teps
-    elseif (br < (DONE-teps)) then
+    elseif (br < (DONE - teps)) then
       y = av
     elseif (br < DONE) then
       y = av * bri / teps
@@ -473,20 +402,14 @@ end subroutine sChSmooth
       y = DZERO
     end if
     y = y / b
-    
-    return
+
   end function sQuadraticSaturationDerivative
 
-
-
+  !> @ brief sQSaturation
+  !!
+  !! Nonlinear smoothing function returns value between 0-1
+  !<
   function sQSaturation(top, bot, x, c1, c2) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1;
-! Cubic saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -501,9 +424,7 @@ end subroutine sChSmooth
     real(DP) :: s
     real(DP) :: cof1
     real(DP) :: cof2
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
     !
     ! -- process optional variables
     if (present(c1)) then
@@ -517,7 +438,7 @@ end subroutine sChSmooth
       cof2 = DTHREE
     end if
     !
-    ! -- calculate head diference from bottom (w),
+    ! -- calculate head difference from bottom (w),
     !    calculate range (b), and
     !    calculate normalized head difference from bottom (s)
     w = x - bot
@@ -531,24 +452,18 @@ end subroutine sChSmooth
     ! -- calculate fraction
     if (s < DZERO) then
       y = DZERO
-    else if(s < DONE) then
+    else if (s < DONE) then
       y = cof1 * w**DTHREE + cof2 * w**DTWO
     else
       y = DONE
     end if
-    !
-    ! -- return
-    return
   end function sQSaturation
-  
+
+  !> @ brief sQSaturationDerivative
+  !!
+  !! Nonlinear smoothing function returns value between 0-1
+  !<
   function sQSaturationDerivative(top, bot, x, c1, c2) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns value between 0-1;
-! Cubic saturation function
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -563,13 +478,12 @@ end subroutine sChSmooth
     real(DP) :: s
     real(DP) :: cof1
     real(DP) :: cof2
-! ------------------------------------------------------------------------------
-!   code
-!
+    ! -- code
+    !
     !
     ! -- process optional variables
     if (present(c1)) then
-      cof1 = c1 
+      cof1 = c1
     else
       cof1 = -DTWO
     end if
@@ -579,14 +493,14 @@ end subroutine sChSmooth
       cof2 = DTHREE
     end if
     !
-    ! -- calculate head diference from bottom (w),
+    ! -- calculate head difference from bottom (w),
     !    calculate range (b), and
     !    calculate normalized head difference from bottom (s)
     w = x - bot
     b = top - bot
     s = w / b
     !
-    ! -- multiply cof1 and cof2 by 3 and 2, respectively, and then 
+    ! -- multiply cof1 and cof2 by 3 and 2, respectively, and then
     !    divide by range to the power 3 and 2, respectively
     cof1 = cof1 * DTHREE / b**DTHREE
     cof2 = cof2 * DTWO / b**DTWO
@@ -594,25 +508,20 @@ end subroutine sChSmooth
     ! -- calculate derivative of fraction with respect to x
     if (s < DZERO) then
       y = DZERO
-    else if(s < DONE) then
+    else if (s < DONE) then
       y = cof1 * w**DTWO + cof2 * w
     else
       y = DZERO
     end if
-    !
-    ! -- return
-    return
   end function sQSaturationDerivative
-  
+
+  !> @ brief sSlope
+  !!
+  !! Nonlinear smoothing function returns a smoothed value of y that has the value
+  !! yi at xi and yi + (sm * dx) for x-values less than xi and yi + (sp * dx) for
+  !! x-values greater than xi, where dx = x - xi.
+  !<
   function sSlope(x, xi, yi, sm, sp, ta) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns a smoothed value of y that has the value
-! yi at xi and yi + (sm * dx) for x-values less than xi and yi + (sp * dx) for
-! x-values greater than xi, where dx = x - xi.
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -630,7 +539,6 @@ end subroutine sChSmooth
     real(DP) :: xp
     real(DP) :: ym
     real(DP) :: yp
-! ------------------------------------------------------------------------------
     !
     ! -- set smoothing variable a
     if (present(ta)) then
@@ -651,20 +559,15 @@ end subroutine sChSmooth
     !
     ! -- calculate y from ym and yp contributions
     y = yi + ym + yp
-    !
-    ! -- return
-    return
-  end function sSlope  
-    
+  end function sSlope
+
+  !> @ brief sSlopeDerivative
+  !!
+  !! Derivative of nonlinear smoothing function that has the value yi at xi and
+  !! yi + (sm * dx) for x-values less than xi and yi + (sp * dx) for x-values
+  !! greater than xi, where dx = x - xi.
+  !<
   function sSlopeDerivative(x, xi, sm, sp, ta) result(y)
-! ******************************************************************************
-! Derivative of nonlinear smoothing function that has the value yi at xi and 
-! yi + (sm * dx) for x-values less than xi and yi + (sp * dx) for x-values 
-! greater than xi, where dx = x - xi.
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -679,7 +582,6 @@ end subroutine sChSmooth
     real(DP) :: dx
     real(DP) :: mu
     real(DP) :: rho
-! ------------------------------------------------------------------------------
     !
     ! -- set smoothing variable a
     if (present(ta)) then
@@ -697,22 +599,17 @@ end subroutine sChSmooth
     rho = dx / mu
     !
     ! -- calculate derivative from individual contributions
-    y = DHALF * (sm + sp) - DHALF * rho * (sm - sp)                     
-    !
-    ! -- return
-    return
-  end function sSlopeDerivative  
-  
+    y = DHALF * (sm + sp) - DHALF * rho * (sm - sp)
+  end function sSlopeDerivative
+
+  !> @ brief sQuadratic0sp
+  !!
+  !! Nonlinear smoothing function returns a smoothed value of y that uses a
+  !! quadratic to smooth x over range of xi - epsilon to xi + epsilon.
+  !! Simplification of sQuadraticSlope with sm = 0, sp = 1, and yi = 0.
+  !! From Panday et al. (2013) - eq. 35 - https://dx.doi.org/10.5066/F7R20ZFJ
+  !<
   function sQuadratic0sp(x, xi, tomega) result(y)
-! ******************************************************************************
-! Nonlinear smoothing function returns a smoothed value of y that uses a 
-! quadratic to smooth x over range of xi - epsilon to xi + epsilon.
-! Simplification of sQuadraticSlope with sm = 0, sp = 1, and yi = 0.
-! From Panday et al. (2013) - eq. 35 - https://dx.doi.org/10.5066/F7R20ZFJ
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -723,7 +620,6 @@ end subroutine sChSmooth
     real(DP) :: omega
     real(DP) :: epsilon
     real(DP) :: dx
-! ------------------------------------------------------------------------------
     !
     ! -- set smoothing interval
     if (present(tomega)) then
@@ -746,21 +642,16 @@ end subroutine sChSmooth
     else
       y = x
     end if
-    !
-    ! -- return
-    return
-  end function sQuadratic0sp  
-  
+  end function sQuadratic0sp
+
+  !> @ brief sQuadratic0spDerivative
+  !!
+  !! Derivative of nonlinear smoothing function returns a smoothed value of y
+  !! that uses a quadratic to smooth x over range of xi - epsilon to xi + epsilon.
+  !! Simplification of sQuadraticSlope with sm = 0, sp = 1, and yi = 0.
+  !! From Panday et al. (2013) - eq. 35 - https://dx.doi.org/10.5066/F7R20ZFJ
+  !<
   function sQuadratic0spDerivative(x, xi, tomega) result(y)
-! ******************************************************************************
-! Derivative of nonlinear smoothing function returns a smoothed value of y  
-! that uses a quadratic to smooth x over range of xi - epsilon to xi + epsilon.
-! Simplification of sQuadraticSlope with sm = 0, sp = 1, and yi = 0.
-! From Panday et al. (2013) - eq. 35 - https://dx.doi.org/10.5066/F7R20ZFJ
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -771,7 +662,6 @@ end subroutine sChSmooth
     real(DP) :: omega
     real(DP) :: epsilon
     real(DP) :: dx
-! ------------------------------------------------------------------------------
     !
     ! -- set smoothing interval
     if (present(tomega)) then
@@ -794,20 +684,15 @@ end subroutine sChSmooth
     else
       y = 1
     end if
-    !
-    ! -- return
-    return
-  end function sQuadratic0spDerivative  
-  
+  end function sQuadratic0spDerivative
+
+  !> @ brief sQuadraticSlope
+  !!
+  !! Quadratic smoothing function returns a smoothed value of y that has the value
+  !! yi at xi and yi + (sm * dx) for x-values less than xi and yi + (sp * dx) for
+  !! x-values greater than xi, where dx = x - xi.
+  !<
   function sQuadraticSlope(x, xi, yi, sm, sp, tomega) result(y)
-! ******************************************************************************
-! Quadratic smoothing function returns a smoothed value of y that has the value
-! yi at xi and yi + (sm * dx) for x-values less than xi and yi + (sp * dx) for
-! x-values greater than xi, where dx = x - xi.
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -822,7 +707,6 @@ end subroutine sChSmooth
     real(DP) :: epsilon
     real(DP) :: dx
     real(DP) :: c
-! ------------------------------------------------------------------------------
     !
     ! -- set smoothing interval
     if (present(tomega)) then
@@ -849,21 +733,15 @@ end subroutine sChSmooth
     !
     ! -- add value at xi
     y = y + yi
-    !
-    ! -- return
-    return
-  end function sQuadraticSlope  
-  
-  
+  end function sQuadraticSlope
+
+  !> @ brief sQuadraticSlopeDerivative
+  !!
+  !! Derivative of quadratic smoothing function returns a smoothed value of y
+  !! that has the value yi at xi and yi + (sm * dx) for x-values less than xi and
+  !! yi + (sp * dx) for x-values greater than xi, where dx = x - xi.
+  !<
   function sQuadraticSlopeDerivative(x, xi, sm, sp, tomega) result(y)
-! ******************************************************************************
-! Derivative of quadratic smoothing function returns a smoothed value of y 
-! that has the value yi at xi and yi + (sm * dx) for x-values less than xi and 
-! yi + (sp * dx) for x-values greater than xi, where dx = x - xi.
-! ******************************************************************************
-! 
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- return
     real(DP) :: y
     ! -- dummy variables
@@ -877,7 +755,6 @@ end subroutine sChSmooth
     real(DP) :: epsilon
     real(DP) :: dx
     real(DP) :: c
-! ------------------------------------------------------------------------------
     !
     ! -- set smoothing interval
     if (present(tomega)) then
@@ -901,9 +778,6 @@ end subroutine sChSmooth
     else
       y = sp
     end if
-    !
-    ! -- return
-    return
-  end function sQuadraticSlopeDerivative 
-  
+  end function sQuadraticSlopeDerivative
+
 end module SmoothingModule

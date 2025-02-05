@@ -1,45 +1,20 @@
-# Test for checking maw observation input.  The following observation types:
-# 'maw' and 'conductance,' require that ID2 be provided when
-# ID is an integer corresponding to a well number and not BOUNDNAME.
-# See table in MAW Package section of mf6io.pdf for an explanation of ID,
-# ID2, and Observation Type.
-
+"""
+Test for checking maw observation input.  The following observation types:
+'maw' and 'conductance,' require that ID2 be provided when
+ID is an integer corresponding to a well number and not BOUNDNAME.
+See table in MAW Package section of mf6io.pdf for an explanation of ID,
+ID2, and Observation Type.
+"""
 
 import os
-import shutil
 
-import pytest
-import numpy as np
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-import targets
-
-mf6_exe = os.path.abspath(targets.target_dict["mf6"])
+import flopy
 
 newtonoptions = [None, "NEWTON", "NEWTON UNDER_RELAXATION"]
-ex = "maw_obs"
-exdir = os.path.join("temp", ex)
-
-ddir = "data"
+cases = "maw_obs"
 
 
-def build_model():
-
+def build_model(dir, exe):
     nlay, nrow, ncol = 1, 1, 3
     nper = 3
     perlen = [1.0, 1.0, 1.0]
@@ -60,24 +35,20 @@ def build_model():
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex
+    name = cases
 
     # build MODFLOW 6 files
-    ws = exdir
-    sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name=mf6_exe, sim_ws=ws
-    )
+    ws = dir
+    sim = flopy.mf6.MFSimulation(sim_name=name, version="mf6", exe_name=exe, sim_ws=ws)
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.MFModel(
         sim,
         model_type="gwf6",
         modelname=name,
-        model_nam_file="{}.nam".format(name),
+        model_nam_file=f"{name}.nam",
     )
     gwf.name_file.newtonoptions = newtonoptions[0]
 
@@ -108,11 +79,11 @@ def build_model():
         top=100.0,
         botm=0.0,
         idomain=1,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{name}.ic")
 
     # node property flow
     npf = flopy.mf6.ModflowGwfnpf(
@@ -121,7 +92,7 @@ def build_model():
         icelltype=1,
         k=hk,
         k33=hk,
-        filename="{}.npf".format(name),
+        filename=f"{name}.npf",
     )
     # storage
     sto = flopy.mf6.ModflowGwfsto(
@@ -132,7 +103,7 @@ def build_model():
         sy=0.1,
         steady_state={0: True},
         # transient={1: False},
-        filename="{}.sto".format(name),
+        filename=f"{name}.sto",
     )
 
     # chd files
@@ -149,7 +120,7 @@ def build_model():
         gwf,
         stress_period_data=chdspdict,
         save_flows=False,
-        filename="{}.chd".format(name),
+        filename=f"{name}.chd",
     )
 
     # wel files
@@ -158,7 +129,7 @@ def build_model():
     #                              periodrecarray=wd6,
     #                              save_flows=False)
     # MAW
-    opth = "{}.maw.obs".format(name)
+    opth = f"{name}.maw.obs"
     wellbottom = 50.0
     wellrecarray = [[0, 0.1, wellbottom, 100.0, "THIEM", 1]]
     wellconnectionsrecarray = [[0, 0, (0, 0, 1), 100.0, wellbottom, 1.0, 0.1]]
@@ -167,7 +138,7 @@ def build_model():
     mawo_dict["maw_obs.csv"] = [("mh1", "head", 1), ("mawgw", "maw", 1)]
     maw = flopy.mf6.ModflowGwfmaw(
         gwf,
-        filename="{}.maw".format(name),
+        filename=f"{name}.maw",
         print_input=True,
         print_head=True,
         print_flows=True,
@@ -181,29 +152,25 @@ def build_model():
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim
 
 
-def test_mf6model():
-    # build the models
-    sim = build_model()
-
-    # write model input
+def test_mf6model(function_tmpdir, targets):
+    mf6 = targets["mf6"]
+    sim = build_model(str(function_tmpdir), mf6)
     sim.write_simulation()
-
-    # attempt to run model should fail
     sim.run_simulation()
 
     # ensure that the error msg is contained in the mfsim.lst file
-    f = open(os.path.join(exdir, "mfsim.lst"), "r")
+    f = open(str(function_tmpdir / "mfsim.lst"), "r")
     lines = f.readlines()
     error_count = 0
     expected_msg = False
@@ -217,8 +184,8 @@ def test_mf6model():
     )
 
     # fix the error and attempt to rerun model
-    orig_fl = os.path.join(exdir, ex + ".maw.obs")
-    new_fl = os.path.join(exdir, ex + ".maw.obs.new")
+    orig_fl = str(function_tmpdir / (cases + ".maw.obs"))
+    new_fl = str(function_tmpdir / (cases + ".maw.obs.new"))
     sr = open(orig_fl, "r")
     sw = open(new_fl, "w")
 
@@ -239,21 +206,4 @@ def test_mf6model():
 
     # rerun the model, should be no errors
     success, buff = sim.run_simulation()
-
-    assert success, "model rerun failed"
-
-    shutil.rmtree(exdir, ignore_errors=True)
-
-
-def main():
-    test_mf6model()
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    assert success, buff

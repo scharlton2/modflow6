@@ -1,8 +1,8 @@
 module TimeSeriesFileListModule
 
   use KindModule, only: DP, I4B
-  use ConstantsModule,  only: LINELENGTH
-  use ListModule,       only: ListType
+  use ConstantsModule, only: LINELENGTH
+  use ListModule, only: ListType
   use TimeSeriesModule, only: TimeSeriesFileType, &
                               ConstructTimeSeriesFile, &
                               GetTimeSeriesFileFromList, &
@@ -17,15 +17,17 @@ module TimeSeriesFileListModule
     ! -- Public members
     integer(I4B), public :: numtsfiles = 0
     type(ListType), public :: tsfileList
+
   contains
+
     ! -- Public procedures
-    procedure, public  :: Add
-    procedure, public  :: Counttsfiles
-    procedure, public  :: CountTimeSeries
-    procedure, public  :: Gettsfile
-    procedure, public  :: Clear
-    procedure, public  :: da => tsfl_da
-    procedure, public  :: add_time_series_tsfile
+    procedure, public :: Add
+    procedure, public :: Counttsfiles
+    procedure, public :: CountTimeSeries
+    procedure, public :: Gettsfile
+    procedure, public :: Clear
+    procedure, public :: da => tsfl_da
+    procedure, public :: add_time_series_tsfile
   end type TimeSeriesFileListType
 
 contains
@@ -46,21 +48,17 @@ contains
     call ConstructTimeSeriesFile(tsf)
     tsfile => tsf
     call tsfile%Initializetsfile(filename, iout, .true.)
-
     !
     ! -- Add the time-series tsfile to the list
     call this%add_time_series_tsfile(tsfile)
-    return
   end subroutine Add
 
   subroutine Clear(this)
     implicit none
     ! -- dummy
     class(TimeSeriesFileListType), intent(inout) :: this
-    ! -- local
     !
     call this%tsfileList%Clear()
-    return
   end subroutine Clear
 
   function Counttsfiles(this)
@@ -72,7 +70,6 @@ contains
     !
     Counttsfiles = this%tsfileList%Count()
     !
-    return
   end function Counttsfiles
 
   function CountTimeSeries(this)
@@ -87,27 +84,23 @@ contains
     !
     numtsfiles = this%Counttsfiles()
     CountTimeSeries = 0
-    do i=1,numtsfiles
+    do i = 1, numtsfiles
       tsfile => this%Gettsfile(i)
       if (associated(tsfile)) then
         CountTimeSeries = CountTimeSeries + tsfile%Count()
-      endif
-    enddo
-    !
-    return
+      end if
+    end do
   end function CountTimeSeries
 
-  function Gettsfile(this, indx) result (res)
+  function Gettsfile(this, indx) result(res)
     implicit none
     ! -- dummy
     class(TimeSeriesFileListType) :: this
     integer(I4B), intent(in) :: indx
-    ! result
+    ! -- return
     type(TimeSeriesFileType), pointer :: res
-    ! -- local
     !
     res => GetTimeSeriesFileFromList(this%tsfileList, indx)
-    return
   end function Gettsfile
 
   ! -- Private procedures
@@ -115,13 +108,11 @@ contains
   subroutine add_time_series_tsfile(this, tsfile)
     implicit none
     ! -- dummy
-    class(TimeSeriesFileListType),      intent(inout) :: this
+    class(TimeSeriesFileListType), intent(inout) :: this
     class(TimeSeriesFileType), pointer, intent(inout) :: tsfile
-    ! -- local
     !
     call AddTimeSeriesFileToList(this%tsfileList, tsfile)
     this%numtsfiles = this%numtsfiles + 1
-    return
   end subroutine add_time_series_tsfile
 
   subroutine tsfl_da(this)
@@ -132,14 +123,13 @@ contains
     type(TimeSeriesFileType), pointer :: tsf => null()
     !
     n = this%Counttsfiles()
-    do i=1,n
+    do i = 1, n
       tsf => this%Gettsfile(i)
       call tsf%da()
-    enddo
+    end do
     !
     call this%tsfileList%Clear(.true.)
     !
-    return
   end subroutine tsfl_da
 
 end module TimeSeriesFileListModule

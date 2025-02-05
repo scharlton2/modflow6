@@ -1,4 +1,7 @@
 # --------------------- gwf ts attributes ---------------------
+# flopy multi-package
+# flopy subpackage ts_filerecord ts timeseries timeseries
+# flopy parent_name_type parent_package MFPackage
 
 block attributes
 name time_series_namerecord
@@ -17,6 +20,7 @@ type keyword
 shape
 reader urword
 optional false
+in_record true
 longname
 description xxx
 
@@ -27,6 +31,7 @@ shape any1d
 tagged false
 reader urword
 optional false
+in_record true
 longname
 description Name by which a package references a particular time-array series. The name must be unique among all time-array series used in a package.
 
@@ -46,6 +51,7 @@ type keyword
 shape
 reader urword
 optional false
+in_record true
 longname
 description  xxx
 
@@ -57,6 +63,7 @@ shape time_series_names
 tagged false
 reader urword
 optional false
+in_record true
 longname
 description Interpolation method, which is either STEPWISE or LINEAR.
 
@@ -106,6 +113,7 @@ type keyword
 shape
 reader urword
 optional false
+in_record true
 longname
 description  xxx
 
@@ -116,6 +124,7 @@ shape <time_series_name
 tagged false
 reader urword
 optional false
+in_record true
 longname
 description Scale factor, which will multiply all array values in time series. SFAC is an optional attribute; if omitted, SFAC = 1.0.
 
@@ -159,6 +168,7 @@ tagged false
 reader urword
 optional false
 repeating false
+in_record true
 longname
 description A numeric time relative to the start of the simulation, in the time unit used in the simulation. Times must be strictly increasing.
 
@@ -169,5 +179,6 @@ shape time_series_names
 tagged false
 reader urword
 optional false
+in_record true
 longname
 description A 2-D array of numeric, floating-point values, or a constant value, readable by the U2DREL array-reading utility.

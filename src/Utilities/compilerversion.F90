@@ -1,92 +1,91 @@
 module CompilerVersion
   ! -- modules
+  use iso_fortran_env, only: compiler_options, compiler_version
+  use ConstantsModule, only: LENBIGLINE, &
+                             CUNKNOWN, CGFORTRAN, CINTEL, CCRAYFTN
   use KindModule, only: I4B
   implicit none
   private
   ! -- compiler version
-  character(len=10) :: ccompiler  !< compiler string
-  character(len=10) :: cversion   !< compiler version string
-  character(len=20) :: cdate      !< compilation date
-  integer(I4B) :: icompiler = 0   !< compiler enum
-  integer(I4B) :: iversion = 0    !< compiler version number
-  integer(I4B) :: imajor = 0      !< compiler major version number
-  integer(I4B) :: iminor = 0      !< compiler minor version number
-  integer(I4B) :: imicro = 0      !< compiler micro version number
-  public :: get_compiler, get_compile_date
+  character(len=10) :: c_compiler !< compiler string
+  character(len=10) :: c_version !< compiler version string
+  character(len=20) :: c_date !< compilation date
+  integer(I4B) :: icompiler = CUNKNOWN !< compiler enum
+  public :: get_compiler, get_compile_date, get_compile_options
 contains
 
   !> @ brief Get compiler information
   !!
   !!  Subroutine returns a string with compilation date and compiler.
   !!
-  !!  @param[in,out]  txt   string with compiler information
-  !!
   !<
   subroutine get_compiler(txt)
     ! -- dummy variables
-    character(len=80), intent(inout) :: txt !< compiler information
+    character(len=LENBIGLINE), intent(inout) :: txt !< compiler information
     !
     ! -- set variables
 #ifdef __GFORTRAN__
-    icompiler = 1
-    cversion = __VERSION__
-    cdate = __DATE__//' '//__TIME__
+    icompiler = CGFORTRAN
+    c_date = __DATE__//' '//__TIME__
 #endif
 #ifdef __INTEL_COMPILER
-    icompiler = 2
-    iversion = __INTEL_COMPILER
-    cdate = __DATE__//' '//__TIME__
-    imicro = __INTEL_COMPILER_UPDATE
+    icompiler = CINTEL
+    c_date = __DATE__//' '//__TIME__
+#endif
+#ifdef _CRAYFTN
+    icompiler = CCRAYFTN
+    c_date = __DATE__//' '//__TIME__
 #endif
     !
     ! -- set compiler strings
-    if (icompiler < 1) then
-      ccompiler = 'UNKNOWN'
-      cversion = '??.??'
-      cdate = '??? ?? ???? ??:??:??'
-    else if (icompiler == 1) then
-      ccompiler = 'GFORTRAN'
-    else if (icompiler == 2) then
-      ccompiler = 'IFORT'
-      write (cversion, '(i4)') iversion
-      read (cversion(1:2), '(i2)') imajor
-      read (cversion(3:4), '(i2)') iminor
-      write (cversion, '(i0,2(".",i0))') imajor, iminor, imicro
+    if (icompiler == CUNKNOWN) then
+      c_compiler = 'UNKNOWN'
+      c_version = '??.??'
+      c_date = '??? ?? ???? ??:??:??'
     end if
     !
     ! -- write string with compiler information
-    write (txt, '(a,5(1x,a),a)') &
-      'MODFLOW 6 compiled', trim(adjustl(cdate)), &
-      'with', trim(adjustl(ccompiler)), &
-      'compiler (ver.', trim(adjustl(cversion)), ')'
-    !
-    ! -- return
-    return
+    write (txt, '(a,3(1x,a))') &
+      'MODFLOW 6 compiled', trim(adjustl(c_date)), &
+      'with', trim(adjustl(compiler_version()))
   end subroutine get_compiler
 
   !> @ brief Get compilation date
   !!
   !!  Subroutine returns a string with compilation date
   !!
-  !!  @param[in,out]  txt   string with compilation date
-  !!
   !<
   subroutine get_compile_date(txt)
     ! -- dummy variables
-    character(len=20), intent(inout) :: txt  !< compilation date
+    character(len=20), intent(inout) :: txt !< compilation date
     ! -- set variables
 #ifdef __GFORTRAN__
-    cdate = __DATE__//' '//__TIME__
+    c_date = __DATE__//' '//__TIME__
 #endif
 #ifdef __INTEL_COMPILER
-    cdate = __DATE__//' '//__TIME__
+    c_date = __DATE__//' '//__TIME__
+#endif
+#ifdef _CRAYFTN
+    c_date = __DATE__//' '//__TIME__
 #endif
     !
     ! -- write compilation date string
-    write (txt, '(a)') trim(adjustl(cdate))
-    !
-    ! -- return
-    return
+    write (txt, '(a)') trim(adjustl(c_date))
   end subroutine get_compile_date
+
+  !> @ brief Get compilation options
+  !!
+  !!  Subroutine returns a string with compilation options
+  !!
+  !<
+  subroutine get_compile_options(txt)
+    ! -- dummy variables
+    character(len=LENBIGLINE), intent(inout) :: txt !< compilation options
+    ! -- set variables
+    !
+    ! -- set txt string
+    write (txt, '(a)') &
+      'MODFLOW 6 compiler options:'//' '//trim(adjustl(compiler_options()))
+  end subroutine get_compile_options
 
 end module CompilerVersion

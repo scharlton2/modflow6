@@ -1,25 +1,11 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["newton01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
+cases = ["newton01"]
 nlay = 2
 nrow, ncol = 3, 3
 top = 20
@@ -30,15 +16,12 @@ delr = delc = 1.0
 chdloc = [(1, i, j) for i in range(nrow) for j in range(ncol)]
 chd = 7.0
 strt = chd
-
-# recharge data
 rch = 1.0
-
 oname = "head_obs.csv"
 obs_recarray = {oname: [("h1", "HEAD", (0, 1, 1)), ("h2", "HEAD", (1, 1, 1))]}
 
 
-def build_model(idx, ws):
+def build_models(idx, test):
     c6 = []
     for loc in chdloc:
         c6.append([loc, chd])
@@ -47,16 +30,14 @@ def build_model(idx, ws):
     nper = 1
     tdis_rc = [(1.0, 1, 1.0)]
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
     sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
+        sim_name=name, version="mf6", exe_name="mf6", sim_ws=test.workspace
     )
     # create tdis package
-    flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     flopy.mf6.ModflowIms(
@@ -90,9 +71,7 @@ def build_model(idx, ws):
     flopy.mf6.ModflowGwfnpf(gwf, icelltype=1, k=hk)
 
     # gwf observation
-    flopy.mf6.ModflowUtlobs(
-        gwf, digits=10, print_input=True, continuous=obs_recarray
-    )
+    flopy.mf6.ModflowUtlobs(gwf, digits=10, print_input=True, continuous=obs_recarray)
 
     # chd files
     flopy.mf6.modflow.ModflowGwfchd(gwf, stress_period_data=cd6)
@@ -103,8 +82,8 @@ def build_model(idx, ws):
     # output control
     flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -113,51 +92,24 @@ def build_model(idx, ws):
     return sim, None
 
 
-def eval_head(sim):
-    print("evaluating heads...")
-    fpth = os.path.join(sim.simpath, oname)
+def check_output(idx, test):
+    fpth = os.path.join(test.workspace, oname)
     v = np.genfromtxt(fpth, delimiter=",", names=True)
 
-    msg = "head in layer 1 != 8. ({})".format(v["H1"])
+    msg = f"head in layer 1 != 8. ({v['H1']})"
     assert np.allclose(v["H1"], 8.0), msg
 
-    msg = "head in layer 2 != 7. ({})".format(v["H2"])
+    msg = f"head in layer 2 != 7. ({v['H2']})"
     assert np.allclose(v["H2"], 7.0), msg
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_head))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_head)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

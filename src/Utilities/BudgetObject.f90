@@ -1,25 +1,25 @@
-! Comprehensive budget object that stores all of the 
-! intercell flows, and the inflows and the outflows for 
+! Comprehensive budget object that stores all of the
+! intercell flows, and the inflows and the outflows for
 ! an advanced package.
 module BudgetObjectModule
-  
+
   use KindModule, only: I4B, DP
-  use ConstantsModule, only: LENBUDTXT, LINELENGTH,                              &      
-                             TABLEFT, TABCENTER, TABRIGHT,                       &
-                             TABSTRING, TABUCSTRING, TABINTEGER, TABREAL,        &
+  use ConstantsModule, only: LENBUDTXT, LINELENGTH, &
+                             TABLEFT, TABCENTER, TABRIGHT, &
+                             TABSTRING, TABUCSTRING, TABINTEGER, TABREAL, &
                              DZERO, DHALF, DHUNDRED
-  use BudgetModule, only : BudgetType, budget_cr
+  use BudgetModule, only: BudgetType, budget_cr
   use BudgetTermModule, only: BudgetTermType
   use TableModule, only: TableType, table_cr
   use BaseDisModule, only: DisBaseType
   use BudgetFileReaderModule, only: BudgetFileReaderType
-  
+
   implicit none
-  
+
   public :: BudgetObjectType
   public :: budgetobject_cr
   public :: budgetobject_cr_bfr
-  
+
   type :: BudgetObjectType
     !
     ! -- name, number of control volumes, and number of budget terms
@@ -47,20 +47,20 @@ module BudgetObjectModule
     ! -- budget table object, for writing the typical MODFLOW budget
     type(BudgetType), pointer :: budtable => null()
     !
-    ! -- flow table object, for writing the flow budget for 
+    ! -- flow table object, for writing the flow budget for
     !    each control volume
     logical, pointer :: add_cellids => null()
     integer(I4B), pointer :: icellid => null()
     integer(I4B), pointer :: nflowterms => null()
     integer(I4B), dimension(:), pointer :: istart => null()
     integer(I4B), dimension(:), pointer :: iflowterms => null()
-    type(TableType), pointer :: flowtab => null()    
+    type(TableType), pointer :: flowtab => null()
     !
     ! -- budget file reader, for reading flows from a binary file
     type(BudgetFileReaderType), pointer :: bfr => null()
-    
+
   contains
-  
+
     procedure :: budgetobject_df
     procedure :: flowtable_df
     procedure :: accumulate_terms
@@ -72,28 +72,22 @@ module BudgetObjectModule
     procedure :: bfr_init
     procedure :: bfr_advance
     procedure :: fill_from_bfr
-    
-  end type BudgetObjectType
-  
-  contains
 
+  end type BudgetObjectType
+
+contains
+
+  !> @brief Create a new budget object
+  !<
   subroutine budgetobject_cr(this, name)
-! ******************************************************************************
-! budgetobject_cr -- Create a new budget object
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     type(BudgetObjectType), pointer :: this
     character(len=*), intent(in) :: name
-! ------------------------------------------------------------------------------
     !
     ! -- Create the object
-    allocate(this)
+    allocate (this)
     !
-    ! -- initialize variables
+    ! -- Initialize variables
     this%name = name
     this%ncv = 0
     this%nbudterm = 0
@@ -101,23 +95,15 @@ module BudgetObjectModule
     this%nsto = 0
     this%iterm = 0
     !
-    ! -- initialize budget table
+    ! -- Initialize budget table
     call budget_cr(this%budtable, name)
-    !
-    ! -- Return
-    return
   end subroutine budgetobject_cr
 
+  !> @brief Define the new budget object
+  !<
   subroutine budgetobject_df(this, ncv, nbudterm, iflowja, nsto, &
                              bddim_opt, labeltitle_opt, bdzone_opt, &
                              ibudcsv)
-! ******************************************************************************
-! budgetobject_df -- Define the new budget object
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     integer(I4B), intent(in) :: ncv
@@ -133,61 +119,52 @@ module BudgetObjectModule
     character(len=5) :: bddim
     character(len=16) :: labeltitle
     character(len=20) :: bdzone
-! ------------------------------------------------------------------------------
     !
-    ! -- set values
+    ! -- Set values
     this%ncv = ncv
     this%nbudterm = nbudterm
     this%iflowja = iflowja
     this%nsto = nsto
     !
-    ! -- allocate space for budterm
-    allocate(this%budterm(nbudterm))
+    ! -- Allocate space for budterm
+    allocate (this%budterm(nbudterm))
     !
     ! -- Set the budget type to name
     bdtype = this%name
     !
     ! -- Set the budget dimension
-    if(present(bddim_opt)) then
+    if (present(bddim_opt)) then
       bddim = bddim_opt
     else
       bddim = 'L**3'
-    endif
+    end if
     !
     ! -- Set the budget zone
-    if(present(bdzone_opt)) then
+    if (present(bdzone_opt)) then
       bdzone = bdzone_opt
     else
       bdzone = 'ENTIRE MODEL'
-    endif
+    end if
     !
     ! -- Set the label title
-    if(present(labeltitle_opt)) then
+    if (present(labeltitle_opt)) then
       labeltitle = labeltitle_opt
     else
       labeltitle = 'PACKAGE NAME'
-    endif
+    end if
     !
-    ! -- setup the budget table object
+    ! -- Setup the budget table object
     call this%budtable%budget_df(nbudterm, bdtype, bddim, labeltitle, bdzone)
     !
     ! -- Trigger csv output
     if (present(ibudcsv)) then
       call this%budtable%set_ibudcsv(ibudcsv)
     end if
-    !
-    ! -- Return
-    return
   end subroutine budgetobject_df
- 
+
+  !> @brief Define the new flow table object
+  !<
   subroutine flowtable_df(this, iout, cellids)
-! ******************************************************************************
-! flowtable_df -- Define the new flow table object
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     integer(I4B), intent(in) :: iout
@@ -204,9 +181,8 @@ module BudgetObjectModule
     integer(I4B) :: idx
     integer(I4B) :: ipos
     integer(I4B) :: i
-! ------------------------------------------------------------------------------
     !
-    ! -- process optional variables
+    ! -- Process optional variables
     if (present(cellids)) then
       add_cellids = .TRUE.
       coupletype = cellids
@@ -214,17 +190,17 @@ module BudgetObjectModule
       add_cellids = .FALSE.
     end if
     !
-    ! -- allocate scalars
-    allocate(this%add_cellids)
-    allocate(this%icellid)
-    allocate(this%nflowterms)
+    ! -- Allocate scalars
+    allocate (this%add_cellids)
+    allocate (this%icellid)
+    allocate (this%nflowterms)
     !
-    ! -- initialize scalars
+    ! -- Initialize scalars
     this%add_cellids = add_cellids
     this%nflowterms = 0
     this%icellid = 0
     !
-    ! -- determine the number of columns in the table
+    ! -- Determine the number of columns in the table
     maxcol = 3
     if (add_cellids) then
       maxcol = maxcol + 1
@@ -249,12 +225,12 @@ module BudgetObjectModule
       end if
     end do
     !
-    ! -- allocate arrays
-    allocate(this%istart(this%nflowterms))
-    allocate(this%iflowterms(this%nflowterms))
+    ! -- Allocate arrays
+    allocate (this%istart(this%nflowterms))
+    allocate (this%iflowterms(this%nflowterms))
     !
-    ! -- set up flow tableobj
-    title = trim(this%name) // ' PACKAGE - SUMMARY OF FLOWS FOR ' //             &
+    ! -- Set up flow tableobj
+    title = trim(this%name)//' PACKAGE - SUMMARY OF FLOWS FOR '// &
             'EACH CONTROL VOLUME'
     call table_cr(this%flowtab, this%name, title)
     call this%flowtab%table_df(this%ncv, maxcol, iout, transient=.TRUE.)
@@ -294,69 +270,52 @@ module BudgetObjectModule
     call this%flowtab%initialize_column(text, 12, alignment=TABCENTER)
     text = 'PERCENT DIFFERENCE'
     call this%flowtab%initialize_column(text, 12, alignment=TABCENTER)
-    !
-    ! -- Return
-    return
   end subroutine flowtable_df
-  
+
+  !> @brief Add up accumulators and submit to budget table
+  !<
   subroutine accumulate_terms(this)
-! ******************************************************************************
-! accumulate_terms -- add up accumulators and submit to budget table
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- modules
     use TdisModule, only: delt
     ! -- dummy
     class(BudgetObjectType) :: this
-    ! -- dummy
-    character(len=LENBUDTXT) :: flowtype    
+    ! -- local
+    character(len=LENBUDTXT) :: flowtype
     integer(I4B) :: i
     real(DP) :: ratin, ratout
-! ------------------------------------------------------------------------------
     !
-    ! -- reset the budget table
+    ! -- Reset the budget table
     call this%budtable%reset()
     !
-    ! -- calculate the budget table terms
+    ! -- Calculate the budget table terms
     do i = 1, this%nbudterm
       !
-      ! -- accumulate positive and negative flows for each budget term
+      ! -- Accumulate positive and negative flows for each budget term
       flowtype = this%budterm(i)%flowtype
       select case (trim(adjustl(flowtype)))
       case ('FLOW-JA-FACE')
-        ! skip
+        ! -- Skip
       case default
         !
-        ! -- calculate sum of positive and negative flows
+        ! -- Calculate sum of positive and negative flows
         call this%budterm(i)%accumulate_flow(ratin, ratout)
         !
-        ! -- pass accumulators into the budget table
+        ! -- Pass accumulators into the budget table
         call this%budtable%addentry(ratin, ratout, delt, flowtype)
       end select
     end do
-    !
-    ! -- return
-    return
   end subroutine accumulate_terms
 
+  !> @brief Write the flow table for each advanced package control volume
+  !<
   subroutine write_flowtable(this, dis, kstp, kper, cellidstr)
-! ******************************************************************************
-! write_flowtable -- Write the flow table for each advanced package control
-!                    volume
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     class(DisBaseType), intent(in) :: dis
     integer(I4B), intent(in) :: kstp
     integer(I4B), intent(in) :: kper
     character(len=20), dimension(:), optional :: cellidstr
-    ! -- dummy
+    ! -- local
     character(len=LENBUDTXT) :: flowtype
     character(len=20) :: cellid
     integer(I4B) :: nlist
@@ -375,25 +334,24 @@ module BudgetObjectModule
     real(DP) :: qerr
     real(DP) :: qavg
     real(DP) :: qpd
-! ------------------------------------------------------------------------------
     !
-    ! -- reset starting position
+    ! -- Reset starting position
     do j = 1, this%nflowterms
       this%istart(j) = 1
     end do
     !
-    ! -- set table kstp and kper
+    ! -- Set table kstp and kper
     call this%flowtab%set_kstpkper(kstp, kper)
     !
-    ! -- write the table
+    ! -- Write the table
     do icv = 1, this%ncv
       call this%flowtab%add_term(icv)
       !
-      ! -- initialize flow terms for the control volume
+      ! -- Initialize flow terms for the control volume
       qin = DZERO
       qout = DZERO
       !
-      ! -- add cellid if required
+      ! -- Add cellid if required
       if (this%add_cellids) then
         if (present(cellidstr)) then
           !
@@ -404,9 +362,9 @@ module BudgetObjectModule
           cellid = cellidstr(icv)
         else
           !
-          ! -- Determine the cellid for this entry.  The cellid, such as 
+          ! -- Determine the cellid for this entry.  The cellid, such as
           !    (1, 10, 10), is assumed to be in the id2 column of this budterm.
-          j = this%icellid 
+          j = this%icellid
           idx = this%iflowterms(j)
           i = this%istart(j)
           id2 = this%budterm(idx)%get_id2(i)
@@ -419,33 +377,39 @@ module BudgetObjectModule
         call this%flowtab%add_term(cellid)
       end if
       !
-      ! -- iterate over the flow terms
+      ! -- Iterate over the flow terms
       do j = 1, this%nflowterms
         !
-        ! -- initialize flow terms for the row
+        ! -- Initialize flow terms for the row
         q = DZERO
         qinflow = DZERO
         qoutflow = DZERO
         !
-        ! -- determine the index, flowtype and length of  
+        ! -- Determine the index, flowtype and length of
         !    the flowterm
         idx = this%iflowterms(j)
         flowtype = this%budterm(idx)%get_flowtype()
         nlist = this%budterm(idx)%get_nlist()
         !
-        ! -- iterate over the entries in the flowtype.  If id1 is not ordered
+        ! -- Iterate over the entries in the flowtype.  If id1 is not ordered
         !    then need to look through the entire list each time
         colterm: do i = this%istart(j), nlist
           id1 = this%budterm(idx)%get_id1(i)
           if (this%budterm(idx)%ordered_id1) then
-            if(id1 > icv) then
+            if (id1 > icv) then
               this%istart(j) = i
               exit colterm
             end if
           else
-            if (id1 /= icv) cycle colterm
+            if (id1 /= icv) then
+              cycle colterm
+            end if
           end if
-          v = this%budterm(idx)%get_flow(i)
+          if (id1 /= icv) then
+            v = DZERO
+          else
+            v = this%budterm(idx)%get_flow(i)
+          end if
           if (trim(adjustl(flowtype)) == 'FLOW-JA-FACE') then
             if (v < DZERO) then
               qoutflow = qoutflow + v
@@ -454,7 +418,7 @@ module BudgetObjectModule
             end if
           end if
           !
-          ! -- accumulators
+          ! -- Accumulators
           q = q + v
           if (v < DZERO) then
             qout = qout + v
@@ -463,7 +427,7 @@ module BudgetObjectModule
           end if
         end do colterm
         !
-        ! -- add entry to table
+        ! -- Add entry to table
         if (trim(adjustl(flowtype)) == 'FLOW-JA-FACE') then
           call this%flowtab%add_term(qinflow)
           call this%flowtab%add_term(qoutflow)
@@ -472,7 +436,7 @@ module BudgetObjectModule
         end if
       end do
       !
-      ! -- calculate in-out and percent difference
+      ! -- Calculate in-out and percent difference
       qerr = qin + qout
       qavg = DHALF * (qin - qout)
       qpd = DZERO
@@ -482,48 +446,32 @@ module BudgetObjectModule
       call this%flowtab%add_term(qerr)
       call this%flowtab%add_term(qpd)
     end do
-    !
-    ! -- return
-    return
   end subroutine write_flowtable
 
-  subroutine write_budtable(this, kstp, kper, iout, ibudfl, totim)
-! ******************************************************************************
-! write_budtable -- Write the budget table
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
+  !> @brief Write the budget table
+  !<
+  subroutine write_budtable(this, kstp, kper, iout, ibudfl, totim, delt)
     ! -- dummy
     class(BudgetObjectType) :: this
-    integer(I4B),intent(in) :: kstp
-    integer(I4B),intent(in) :: kper
-    integer(I4B),intent(in) :: iout
-    integer(I4B),intent(in) :: ibudfl
-    real(DP),intent(in) :: totim
-    ! -- dummy
-! ------------------------------------------------------------------------------
+    integer(I4B), intent(in) :: kstp
+    integer(I4B), intent(in) :: kper
+    integer(I4B), intent(in) :: iout
+    integer(I4B), intent(in) :: ibudfl
+    real(DP), intent(in) :: totim
+    real(DP), intent(in) :: delt
     !
-    ! -- write the table
+    ! -- Write the table
+    call this%budtable%finalize_step(delt)
     if (ibudfl /= 0) then
       call this%budtable%budget_ot(kstp, kper, iout)
     end if
     call this%budtable%writecsv(totim)
-    !
-    ! -- return
-    return
   end subroutine write_budtable
-  
+
+  !> @brief Write the budget table
+  !<
   subroutine save_flows(this, dis, ibinun, kstp, kper, delt, &
                         pertim, totim, iout)
-! ******************************************************************************
-! write_budtable -- Write the budget table
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     class(DisBaseType), intent(in) :: dis
@@ -536,26 +484,17 @@ module BudgetObjectModule
     integer(I4B), intent(in) :: iout
     ! -- dummy
     integer(I4B) :: i
-! ------------------------------------------------------------------------------
     !
-    ! -- save flows for each budget term
+    ! -- Save flows for each budget term
     do i = 1, this%nbudterm
       call this%budterm(i)%save_flows(dis, ibinun, kstp, kper, delt, &
                                       pertim, totim, iout)
     end do
-    !
-    ! -- return
-    return
   end subroutine save_flows
-  
+
+  !> @brief Read from a binary file into this BudgetObjectType
+  !<
   subroutine read_flows(this, dis, ibinun)
-! ******************************************************************************
-! read_flows -- Read froms from a binary file into this BudgetObjectType
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     class(DisBaseType), intent(in) :: dis
@@ -566,70 +505,51 @@ module BudgetObjectModule
     real(DP) :: delt
     real(DP) :: pertim
     real(DP) :: totim
-    ! -- dummy
     integer(I4B) :: i
-! ------------------------------------------------------------------------------
     !
-    ! -- read flows for each budget term
+    ! -- Read flows for each budget term
     do i = 1, this%nbudterm
       call this%budterm(i)%read_flows(dis, ibinun, kstp, kper, delt, &
                                       pertim, totim)
     end do
-    !
-    ! -- return
-    return
   end subroutine read_flows
-  
+
+  !> @brief Deallocate
+  !<
   subroutine budgetobject_da(this)
-! ******************************************************************************
-! budgetobject_da -- deallocate
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
-    ! -- dummy
+    ! -- local
     integer(I4B) :: i
-! ------------------------------------------------------------------------------
     !
-    ! -- save flows for each budget term
+    ! -- Save flows for each budget term
     do i = 1, this%nbudterm
       call this%budterm(i)%deallocate_arrays()
     end do
     !
-    ! -- destroy the flow table
+    ! -- Destroy the flow table
     if (associated(this%flowtab)) then
-      deallocate(this%add_cellids)
-      deallocate(this%icellid)
-      deallocate(this%nflowterms)
-      deallocate(this%istart)
-      deallocate(this%iflowterms)
+      deallocate (this%add_cellids)
+      deallocate (this%icellid)
+      deallocate (this%nflowterms)
+      deallocate (this%istart)
+      deallocate (this%iflowterms)
       call this%flowtab%table_da()
-      deallocate(this%flowtab)
-      nullify(this%flowtab)
+      deallocate (this%flowtab)
+      nullify (this%flowtab)
     end if
     !
-    ! -- destroy the budget object table
+    ! -- Destroy the budget object table
     if (associated(this%budtable)) then
       call this%budtable%budget_da()
-      deallocate(this%budtable)
-      nullify(this%budtable)
+      deallocate (this%budtable)
+      nullify (this%budtable)
     end if
-    !
-    ! -- Return
-    return
   end subroutine budgetobject_da
-  
+
+  !> @brief Create a new budget object from a binary flow file
+  !<
   subroutine budgetobject_cr_bfr(this, name, ibinun, iout, colconv1, colconv2)
-! ******************************************************************************
-! budgetobject_cr_bfr -- Create a new budget object from a binary flow file
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     type(BudgetObjectType), pointer :: this
     character(len=*), intent(in) :: name
@@ -641,7 +561,6 @@ module BudgetObjectModule
     integer(I4B) :: ncv, nbudterm
     integer(I4B) :: iflowja, nsto
     integer(I4B) :: i, j
-! ------------------------------------------------------------------------------
     !
     ! -- Create the object
     call budgetobject_cr(this, name)
@@ -677,58 +596,42 @@ module BudgetObjectModule
         end do
       end do
     end if
-    !
-    ! -- Return
-    return
   end subroutine budgetobject_cr_bfr
-  
+
+  !> @brief Initialize the budget file reader
+  !<
   subroutine bfr_init(this, ibinun, ncv, nbudterm, iout)
-! ******************************************************************************
-! bfr_init -- initialize the budget file reader
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     integer(I4B), intent(in) :: ibinun
     integer(I4B), intent(inout) :: ncv
     integer(I4B), intent(inout) :: nbudterm
     integer(I4B), intent(in) :: iout
-    ! -- local
-! ------------------------------------------------------------------------------
     !
-    ! -- initialize budget file reader
-    allocate(this%bfr)
+    ! -- Initialize budget file reader
+    allocate (this%bfr)
     call this%bfr%initialize(ibinun, iout, ncv)
     nbudterm = this%bfr%nbudterms
-    !
-    ! -- Return
-    return
   end subroutine bfr_init
-  
+
+  !> @brief Advance the binary file readers for setting the budget terms of
+  !! the next time step
+  !<
   subroutine bfr_advance(this, dis, iout)
-! ******************************************************************************
-! bfr_advance -- copy the information from the binary file into budterms
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
     ! -- modules
     use TdisModule, only: kstp, kper
     ! -- dummy
     class(BudgetObjectType) :: this
     class(DisBaseType), intent(in) :: dis
     integer(I4B), intent(in) :: iout
-    ! -- dummy
+    ! -- local
     logical :: readnext
-    character(len=*), parameter :: fmtkstpkper =                               &
-      "(1x,/1x, a, ' READING BUDGET TERMS FOR KSTP ', i0, ' KPER ', i0)"
+    ! -- formats
+    character(len=*), parameter :: fmtkstpkper = &
+      &"(1x,/1x, a, ' READING BUDGET TERMS FOR KSTP ', i0, ' KPER ', i0)"
     character(len=*), parameter :: fmtbudkstpkper = &
-      "(1x,/1x, a, ' SETTING BUDGET TERMS FOR KSTP ', i0, ' AND KPER ',     &
+      "(1x,/1x, a, ' SETTING BUDGET TERMS FOR KSTP ', i0, ' AND KPER ', &
       &i0, ' TO BUDGET FILE TERMS FROM KSTP ', i0, ' AND KPER ', i0)"
-! ------------------------------------------------------------------------------
     !
     ! -- Do not read the budget if the budget is at end of file or if the next
     !    record in the budget file is the first timestep of the next stress
@@ -743,53 +646,41 @@ module BudgetObjectModule
       else
         if (this%bfr%kpernext == kper + 1 .and. this%bfr%kstpnext == 1) &
           readnext = .false.
-      endif
-    endif
+      end if
+    end if
     !
     ! -- Read the next record
     if (readnext) then
       !
       ! -- Write the current time step and stress period
       if (iout > 0) &
-        write(iout, fmtkstpkper) this%name, kstp, kper
+        write (iout, fmtkstpkper) this%name, kstp, kper
       !
-      ! -- read flows from the binary file and copy them into this%budterm(:)
+      ! -- Read flows from the binary file and copy them into this%budterm(:)
       call this%fill_from_bfr(dis, iout)
     else
       if (iout > 0) &
-        write(iout, fmtbudkstpkper) trim(this%name), kstp, kper,               &
-         this%bfr%kstp, this%bfr%kper
-    endif
-    !
-    ! -- Return
-    return
+        write (iout, fmtbudkstpkper) trim(this%name), kstp, kper, &
+        this%bfr%kstp, this%bfr%kper
+    end if
   end subroutine bfr_advance
-  
+
+  !> @brief Copy the information from the binary file into budterms
+  !<
   subroutine fill_from_bfr(this, dis, iout)
-! ******************************************************************************
-! fill_from_bfr -- copy the information from the binary file into budterms
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-    ! -- modules
     ! -- dummy
     class(BudgetObjectType) :: this
     class(DisBaseType), intent(in) :: dis
     integer(I4B), intent(in) :: iout
-    ! -- dummy
+    ! -- local
     integer(I4B) :: i
     logical :: success
-! ------------------------------------------------------------------------------
     !
-    ! -- read flows from the binary file and copy them into this%budterm(:)
+    ! -- Read flows from the binary file and copy them into this%budterm(:)
     do i = 1, this%nbudterm
       call this%bfr%read_record(success, iout)
       call this%budterm(i)%fill_from_bfr(this%bfr, dis)
     end do
-    !
-    ! -- Return
-    return
   end subroutine fill_from_bfr
-  
+
 end module BudgetObjectModule

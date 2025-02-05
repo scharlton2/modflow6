@@ -1,31 +1,20 @@
-# test reading of binary initial heads (float) and also binary icelltype (int).
-# 1. Have binary data in a separate record for each layer
-# 2. Have binary data in a single record for all layers
+"""
+Test reading of binary initial heads (float) and also binary icelltype (int).
+1. Have binary data in a separate record for each layer
+2. Have binary data in a single record for all layers
+"""
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["binary01", "binary02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["binary01", "binary02"]
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     nlay, nrow, ncol = 5, 6, 7
     nper = 1
     perlen = 1.0
@@ -43,27 +32,25 @@ def build_model(idx, dir):
     hclose, rclose, relax = 1e-6, 1e-3, 1.0
 
     tdis_rc = []
-    for i in range(nper):
+    for _ in range(nper):
         tdis_rc.append((perlen, nstp, tsmult))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.MFModel(
         sim,
         model_type="gwf6",
         modelname=name,
-        model_nam_file="{}.nam".format(name),
+        model_nam_file=f"{name}.nam",
     )
 
     # create iterative model solution and register the gwf model with it
@@ -87,7 +74,7 @@ def build_model(idx, dir):
     # write top to a binary file
     text = "TOP"
     fname = "top.bin"
-    pth = os.path.join(exdirs[idx], fname)
+    pth = os.path.join(test.workspace, fname)
     f = open(pth, "wb")
     header = flopy.utils.BinaryHeader.create(
         bintype="HEAD",
@@ -120,9 +107,9 @@ def build_model(idx, dir):
     if idx == 0:
         botarr = []
         for k in range(nlay):
-            text = "BOTM_L{}".format(k + 1)
-            fname = "botm.l{:02d}.bin".format(k + 1)
-            pth = os.path.join(exdirs[idx], fname)
+            text = f"BOTM_L{k + 1}"
+            fname = f"botm.l{k + 1:02d}.bin"
+            pth = os.path.join(test.workspace, fname)
             f = open(pth, "wb")
             header = flopy.utils.BinaryHeader.create(
                 bintype="HEAD",
@@ -154,7 +141,7 @@ def build_model(idx, dir):
             )
     elif idx == 1:
         fname = "botm.bin"
-        pth = os.path.join(exdirs[idx], fname)
+        pth = os.path.join(test.workspace, fname)
         f = open(pth, "wb")
         tarr = np.ones((nlay, nrow, ncol), dtype=np.float64)
         for k in range(nlay):
@@ -186,9 +173,9 @@ def build_model(idx, dir):
     if idx == 0:
         idomain = []
         for k in range(nlay):
-            text = "IDOMAIN_L{}".format(k + 1)
-            fname = "idomain.l{:02d}.bin".format(k + 1)
-            pth = os.path.join(exdirs[idx], fname)
+            text = f"IDOMAIN_L{k + 1}"
+            fname = f"idomain.l{k + 1:02d}.bin"
+            pth = os.path.join(test.workspace, fname)
             f = open(pth, "wb")
             header = flopy.utils.BinaryHeader.create(
                 bintype="HEAD",
@@ -220,7 +207,7 @@ def build_model(idx, dir):
             )
     elif idx == 1:
         fname = "idomain.bin"
-        pth = os.path.join(exdirs[idx], fname)
+        pth = os.path.join(test.workspace, fname)
         f = open(pth, "wb")
         header = flopy.utils.BinaryHeader.create(
             bintype="HEAD",
@@ -259,7 +246,7 @@ def build_model(idx, dir):
         top=top,
         botm=botarr,
         idomain=idomain,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
@@ -267,9 +254,9 @@ def build_model(idx, dir):
     if idx == 0:
         strt = []
         for k in range(nlay):
-            text = "IC_L{}".format(k + 1)
-            fname = "ic.strt_l{:02d}.bin".format(k + 1)
-            pth = os.path.join(exdirs[idx], fname)
+            text = f"IC_L{k + 1}"
+            fname = f"ic.strt_l{k + 1:02d}.bin"
+            pth = os.path.join(test.workspace, fname)
             f = open(pth, "wb")
             header = flopy.utils.BinaryHeader.create(
                 bintype="HEAD",
@@ -301,7 +288,7 @@ def build_model(idx, dir):
             )
     elif idx == 1:
         fname = "ic.strt.bin"
-        pth = os.path.join(exdirs[idx], fname)
+        pth = os.path.join(test.workspace, fname)
         f = open(pth, "wb")
         header = flopy.utils.BinaryHeader.create(
             bintype="HEAD",
@@ -330,15 +317,15 @@ def build_model(idx, dir):
             "iprn": 1,
         }
 
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{name}.ic")
 
     # node property flow
     # write icelltype to binary file
     if idx == 0:
         icelltype = []
         for k in range(nlay):
-            fname = "npf.icelltype.l{}.bin".format(k + 1)
-            pth = os.path.join(exdirs[idx], fname)
+            fname = f"npf.icelltype.l{k + 1}.bin"
+            pth = os.path.join(test.workspace, fname)
             f = open(pth, "wb")
             header = flopy.utils.BinaryHeader.create(
                 bintype="head",
@@ -352,7 +339,6 @@ def build_model(idx, dir):
                 kstp=1,
                 kper=1,
             )
-            header.tofile(f)
             flopy.utils.Util2d.write_bin(
                 (nrow, ncol),
                 f,
@@ -371,7 +357,7 @@ def build_model(idx, dir):
             )
     elif idx == 1:
         fname = "npf.icelltype.bin"
-        pth = os.path.join(exdirs[idx], fname)
+        pth = os.path.join(test.workspace, fname)
         f = open(pth, "wb")
         header = flopy.utils.BinaryHeader.create(
             bintype="head",
@@ -385,7 +371,6 @@ def build_model(idx, dir):
             kstp=1,
             kper=1,
         )
-        header.tofile(f)
         flopy.utils.Util2d.write_bin(
             (nrow, ncol),
             f,
@@ -408,7 +393,7 @@ def build_model(idx, dir):
         icelltype=icelltype,
         k=hk,
         k33=hk,
-        filename="{}.npf".format(name),
+        filename=f"{name}.npf",
     )
 
     # chd files
@@ -421,56 +406,29 @@ def build_model(idx, dir):
         gwf,
         stress_period_data=chdspdict,
         save_flows=False,
-        filename="{}.chd".format(name),
+        filename=f"{name}.chd",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim, None
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        targets=targets,
+    )
+    test.run()

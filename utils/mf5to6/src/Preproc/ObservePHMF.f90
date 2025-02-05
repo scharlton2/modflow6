@@ -15,9 +15,9 @@ module ObserveModule
   use ConstantsModule,        only: DONE, DZERO, LENOBSNAME,  &
                                     LENOBSTYPE, MAXCHARLEN
   use ConstantsPHMFModule,    only: LENOBSNAMENEW, HUGEDBL, HDRYDEFAULT
-  use GenericUtilitiesModule, only: is_same
+  use MathUtilModule,         only: is_close
   use ListModule,             only: ListType
-  use SimModule,              only: store_warning, store_error, &
+  use SimPHMFModule,          only: store_warning, store_error, &
                                     store_error_unit, ustop
 
   implicit none
@@ -206,7 +206,7 @@ contains
       sumweights = DZERO
       k = 0
       do i=1,nsrc
-        if (is_same(this%srcvals(itime, i), this%hdry)) then
+        if (is_close(this%srcvals(itime, i), this%hdry)) then
           k = k + 1
           weights(i) = DZERO
         else
@@ -263,7 +263,7 @@ contains
 !    SPECIFICATIONS:
 ! --------------------------------------------------------------------------
     use InputOutputModule, only: urword
-    use SimModule, only: store_error, ustop
+    use SimPHMFModule, only: store_error, ustop
     implicit none
     ! -- dummy variables
     type(ObserveType), pointer :: newObservation
@@ -329,7 +329,7 @@ contains
 !    SPECIFICATIONS:
 ! --------------------------------------------------------------------------
     use InputOutputModule, only: urword
-    use SimModule, only: store_error, ustop
+    use SimPHMFModule, only: store_error, ustop
     implicit none
     ! -- dummy variables
     type(ObserveType), pointer :: newObservation

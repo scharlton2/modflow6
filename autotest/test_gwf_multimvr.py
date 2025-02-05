@@ -1,28 +1,13 @@
-import os
-import pytest
-import numpy as np
-import shutil
 import math
-import targets
+import os
 
-try:
-    import flopy
-    from flopy.utils.lgrutil import Lgr
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
+import flopy
+import numpy as np
+import pytest
+from flopy.utils.lgrutil import Lgr
+from framework import TestFramework
 
-from framework import testing_framework
-from simulation import Simulation
-
-mf6exe = os.path.abspath(targets.target_dict["mf6"])
-
-name = "gwf"
-mvr_scens = ["mltmvr", "mltmvr5050", "mltmvr7525"]
-ws = os.path.join("temp", name)
-exdirs = [f"{ws}-{s}" for s in mvr_scens]
+cases = ["mltmvr", "mltmvr5050", "mltmvr7525"]
 sim_workspaces = []
 gwf_names = []
 
@@ -499,9 +484,7 @@ def get_parent_mvr_info(frac):
     # return the appropriate mvr info for the current scenario
     mvrperioddata = [("WEL-1", 0, "SFR-parent", 10, "FACTOR", 1.0)]
     if frac is not None:
-        mvrperioddata.append(
-            ("SFR-parent", 15, "SFR-parent", 16, "FACTOR", frac)
-        )
+        mvrperioddata.append(("SFR-parent", 15, "SFR-parent", 16, "FACTOR", frac))
 
     mvrspd = {0: mvrperioddata}
 
@@ -581,9 +564,9 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
     sim_workspaces.append(sim_ws)
     gwf_names.append(gwfname)
     sim = flopy.mf6.MFSimulation(
-        sim_name=name,
+        sim_name="gwf",
         version="mf6",
-        exe_name=mf6exe,
+        exe_name="mf6",
         sim_ws=sim_ws,
         continue_=False,
     )
@@ -593,9 +576,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
     for i in range(len(perlen)):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # Instantiate the gwf model (parent model)
     gwf = flopy.mf6.ModflowGwf(
@@ -603,7 +584,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         modelname=gwfname,
         save_flows=True,
         newtonoptions="NEWTON",
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
 
     # Create iterative model solution and register the gwf model with it
@@ -620,7 +601,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -635,14 +616,12 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         top=topp,
         botm=botmp,
         idomain=idomainp,
-        filename="{}.dis".format(gwfname),
+        filename=f"{gwfname}.dis",
     )
 
     # Instantiate initial conditions package
     strt = [topp - 0.25, topp - 0.25, topp - 0.25]
-    ic = flopy.mf6.ModflowGwfic(
-        gwf, strt=strt, filename="{}.ic".format(gwfname)
-    )
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{gwfname}.ic")
 
     # Instantiate node property flow package
     npf = flopy.mf6.ModflowGwfnpf(
@@ -653,7 +632,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         k=hk,
         k33=k33,
         save_specific_discharge=False,
-        filename="{}.npf".format(gwfname),
+        filename=f"{gwfname}.npf",
     )
 
     # output control
@@ -687,7 +666,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         stress_period_data=chdspd,
         save_flows=False,
         pname="CHD-1",
-        filename="{}.chd1.chd".format(gwfname),
+        filename=f"{gwfname}.chd1.chd",
     )
     chdspd = {0: chdspd_right}
     chd2 = flopy.mf6.modflow.mfgwfchd.ModflowGwfchd(
@@ -696,7 +675,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         stress_period_data=chdspd,
         save_flows=False,
         pname="CHD-2",
-        filename="{}.chd2.chd".format(gwfname),
+        filename=f"{gwfname}.chd2.chd",
     )
 
     welspd_mf6 = []
@@ -715,7 +694,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         boundnames=False,
         save_flows=True,
         pname="WEL-1",
-        filename="{}.wel".format(gwfname),
+        filename=f"{gwfname}.wel",
     )
 
     # ---------------------------
@@ -750,7 +729,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         modelname=gwfnamec,
         save_flows=True,
         newtonoptions="NEWTON",
-        model_nam_file="{}.nam".format(gwfnamec),
+        model_nam_file=f"{gwfnamec}.nam",
     )
 
     # Instantiate the discretization package
@@ -770,7 +749,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         idomain=idomainc,
         xorigin=xorigin,
         yorigin=yorigin,
-        filename="{}.dis".format(gwfnamec),
+        filename=f"{gwfnamec}.dis",
     )
 
     # Instantiate initial conditions package
@@ -782,9 +761,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         topc - 0.25,
         topc - 0.25,
     ]
-    icc = flopy.mf6.ModflowGwfic(
-        gwfc, strt=strtc, filename="{}.ic".format(gwfnamec)
-    )
+    icc = flopy.mf6.ModflowGwfic(gwfc, strt=strtc, filename=f"{gwfnamec}.ic")
 
     # Instantiate node property flow package
     icelltypec = [1, 0, 0, 0, 0, 0]
@@ -796,7 +773,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         k=hk,
         k33=k33,
         save_specific_discharge=False,
-        filename="{}.npf".format(gwfnamec),
+        filename=f"{gwfnamec}.npf",
     )
 
     # output control
@@ -822,7 +799,7 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         boundnames=False,
         save_flows=True,
         pname="WEL-2",
-        filename="{}.wel".format(gwfnamec),
+        filename=f"{gwfnamec}.wel",
     )
 
     # exchange data
@@ -838,16 +815,15 @@ def instantiate_base_simulation(sim_ws, gwfname, gwfnamec):
         exgmnameb=gwfnamec,
         nexg=len(exchange_data),
         exchangedata=exchange_data,
-        mvr_filerecord="{}.mvr".format(name),
         pname="EXG-1",
-        filename="{}.exg".format(name),
+        filename="gwf.exg",
     )
 
     return sim, gwf, gwfc
 
 
 def add_parent_sfr(gwf, gwfname, conns):
-    # Instatiate a scenario-specific sfr package
+    # Instantiate a scenario-specific sfr package
     pkdat = generate_parentmod_sfr_input(conns)
     sfrspd = {0: [[0, "INFLOW", 40.0]]}
     sfr = flopy.mf6.ModflowGwfsfr(
@@ -856,13 +832,14 @@ def add_parent_sfr(gwf, gwfname, conns):
         print_flows=True,
         mover=True,
         pname="SFR-parent",
-        unit_conversion=86400.00,
+        length_conversion=1.0,
+        time_conversion=86400.0,
         boundnames=False,
         nreaches=len(conns),
         packagedata=pkdat,
         connectiondata=conns,
         perioddata=sfrspd,
-        filename="{}.sfr".format(gwfname),
+        filename=f"{gwfname}.sfr",
     )
 
 
@@ -876,13 +853,14 @@ def add_child_sfr(gwfc, gwfnamec):
         print_flows=True,
         mover=True,
         pname="SFR-child",
-        unit_conversion=86400.00,
+        length_conversion=1.0,
+        time_conversion=86400.0,
         boundnames=False,
         nreaches=len(connsc),
         packagedata=pkdatc,
         connectiondata=connsc,
         perioddata=sfrspd,
-        filename="{}.sfr".format(gwfnamec),
+        filename=f"{gwfnamec}.sfr",
     )
 
 
@@ -896,7 +874,7 @@ def add_parent_mvr(gwf, gwfname, frac):
         maxpackages=maxpackages,
         packages=mvrpack,
         perioddata=mvrspd,
-        filename="{}.mvr".format(gwfname),
+        filename=f"{gwfname}.mvr",
     )
 
 
@@ -908,7 +886,7 @@ def add_child_mvr(gwfc, gwfnamec):
         maxpackages=maxpackagesc,
         packages=mvrpackc,
         perioddata=mvrspdc,
-        filename="{}.mvr".format(gwfnamec),
+        filename=f"{gwfnamec}.mvr",
     )
 
 
@@ -977,29 +955,24 @@ def add_sim_mvr(sim, gwfname, gwfnamec, remaining_frac=None):
 
     mvrspd = {0: sim_mvr_perioddata}
     maxmvr = 3
-    mvr = flopy.mf6.ModflowMvr(
-        sim,
+    gwfgwf = sim.get_exchange_file("gwf.exg")
+    gwfgwf.mvr.initialize(
         modelnames=True,
         maxmvr=maxmvr,
         print_flows=True,
         maxpackages=maxpackages,
         packages=mvrpack_sim,
         perioddata=mvrspd,
-        filename="{}.mvr".format(name),
+        filename="gwf.mvr",
     )
 
 
-def build_model(idx, sim_ws):
-
-    scen_nm, conns, frac = (
-        mvr_scens[idx],
-        scen_conns[idx],
-        parent_mvr_frac[idx],
-    )
-    scen_nm_parent = name + "_" + scen_nm + "_p"
-    scen_nm_child = name + "_" + scen_nm + "_c"
+def build_models(idx, test):
+    scen_nm, conns, frac = (cases[idx], scen_conns[idx], parent_mvr_frac[idx])
+    scen_nm_parent = "gwf_" + scen_nm + "_p"
+    scen_nm_child = "gwf_" + scen_nm + "_c"
     sim, gwf, gwfc = instantiate_base_simulation(
-        sim_ws, scen_nm_parent, scen_nm_child
+        test.workspace, scen_nm_parent, scen_nm_child
     )
     # add the sfr packages
     add_parent_sfr(gwf, scen_nm_parent, conns)
@@ -1015,21 +988,18 @@ def build_model(idx, sim_ws):
     return sim, None
 
 
-def check_simulation_output(sim):
-    idx = sim.idxsim
-
-    gwf_srch_str1 = (
-        " SFR-PARENT PACKAGE - SUMMARY OF FLOWS FOR EACH CONTROL VOLUME"
-    )
+def check_output(idx, test):
+    gwf_srch_str1 = " SFR-PARENT PACKAGE - SUMMARY OF FLOWS FOR EACH CONTROL VOLUME"
     gwf_srch_str2 = " WATER MOVER PACKAGE (MVR) FLOW RATES   "
     sim_srch_str = " WATER MOVER PACKAGE (MVR) FLOW RATES "
 
-    # cur_ws, gwfparent = exdirs[idx], gwf_names[idx]
-    cur_ws = exdirs[idx]
-    gwfparent = name + "_" + mvr_scens[idx] + "_p"
-    with open(os.path.join(cur_ws, gwfparent + ".lst"), "r") as gwf_lst, open(
-        os.path.join(cur_ws, "mfsim.lst"), "r"
-    ) as sim_lst:
+    # cur_ws, gwfparent = ex[idx], gwf_names[idx]
+    cur_ws = test.workspace
+    gwfparent = "gwf_" + cases[idx] + "_p"
+    with (
+        open(os.path.join(cur_ws, gwfparent + ".lst"), "r") as gwf_lst,
+        open(os.path.join(cur_ws, "mfsim.lst"), "r") as sim_lst,
+    ):
         gwf_lst_lines = gwf_lst.readlines()
         sim_lst_lines = sim_lst.readlines()
 
@@ -1047,7 +1017,8 @@ def check_simulation_output(sim):
                 line = next(gwf_lst)
                 m_arr = line.strip().split()
                 if m_arr[0] == "18":
-                    # store the 3rd value on the line (it should be the same across all scenarios
+                    # store the 3rd value on the line
+                    # (it should be the same across all scenarios)
                     parent_sfr_last_reach_flow = float(m_arr[2])
                     break
 
@@ -1087,9 +1058,13 @@ def check_simulation_output(sim):
     #    - 50/50: ~107 units of flow in each
     #    - 75/25: 75% goes through the gwf mvr, 25% through the simulation mvr
     q_target = 214.25
-    assert math.isclose(parent_sfr_last_reach_flow, q_target, rel_tol=0.1,), (
+    assert math.isclose(
+        parent_sfr_last_reach_flow,
+        q_target,
+        rel_tol=0.1,
+    ), (
         "Flow in the last reach of scenario "
-        + mvr_scens[idx]
+        + cases[idx]
         + " = "
         + str(parent_sfr_last_reach_flow)
         + ", whereas the target flow "
@@ -1103,9 +1078,7 @@ def check_simulation_output(sim):
         gwf_transferred_50 = parent_sfr_mvr_amount / (
             parent_sfr_mvr_amount + sim_mvr_amount
         )
-        sim_transferred_50 = sim_mvr_amount / (
-            parent_sfr_mvr_amount + sim_mvr_amount
-        )
+        sim_transferred_50 = sim_mvr_amount / (parent_sfr_mvr_amount + sim_mvr_amount)
         assert np.allclose(
             np.array([gwf_transferred_50, sim_transferred_50]),
             np.array([0.5, 0.5]),
@@ -1120,9 +1093,7 @@ def check_simulation_output(sim):
         gwf_transferred_75 = parent_sfr_mvr_amount / (
             parent_sfr_mvr_amount + sim_mvr_amount
         )
-        sim_transferred_75 = sim_mvr_amount / (
-            parent_sfr_mvr_amount + sim_mvr_amount
-        )
+        sim_transferred_75 = sim_mvr_amount / (parent_sfr_mvr_amount + sim_mvr_amount)
         assert np.allclose(
             np.array([gwf_transferred_75, sim_transferred_75]),
             np.array([0.75, 0.25]),
@@ -1133,48 +1104,13 @@ def check_simulation_output(sim):
         )
 
 
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, exdir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, exdir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, exdir)
-
-    test.run_mf6(
-        Simulation(
-            exdir,
-            exfunc=check_simulation_output,
-            idxsim=idx,
-        )
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
     )
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    for idx, exdir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, exdir)
-        sim = Simulation(
-            exdir,
-            exfunc=check_simulation_output,
-            idxsim=idx,
-        )
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+    test.run()

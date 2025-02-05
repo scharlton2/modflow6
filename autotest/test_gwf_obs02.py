@@ -2,41 +2,21 @@
 Test obs package to make sure that the header in output csv files  is
 correct.
 """
+
 import os
-import pytest
+
+import flopy
 import numpy as np
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
+import pytest
+from framework import TestFramework
 
 cell_dimensions = (300,)
-ex = ["gwf_obs02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
+cases = ["gwf_obs02"]
 h0, h1 = 1.0, 0.0
 nlay, nrow, ncol = 1, 10, 10
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     nper = 1
     perlen = [5.0]
     nstp = [1]
@@ -55,17 +35,15 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     flopy.mf6.ModflowIms(
@@ -87,7 +65,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwf6",
         modelname=gwfname,
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
     gwf.name_file.save_flows = True
 
@@ -106,15 +84,11 @@ def build_model(idx, dir):
     # build list of obs csv files to create
     obsdict = {}
     for i in range(nrow):
-        obslst = [
-            ("h_{}_{}".format(i, j), "head", (0, i, j)) for j in range(ncol)
-        ]
-        fname = "{}.{}.obs.csv".format(name, i)
+        obslst = [(f"h_{i}_{j}", "head", (0, i, j)) for j in range(ncol)]
+        fname = f"{name}.{i}.obs.csv"
         obsdict[fname] = obslst
 
-    flopy.mf6.ModflowUtlobs(
-        gwf, pname="head_obs", digits=20, continuous=obsdict
-    )
+    flopy.mf6.ModflowUtlobs(gwf, pname="head_obs", digits=20, continuous=obsdict)
 
     # initial conditions
     flopy.mf6.ModflowGwfic(gwf, strt=1.0)
@@ -138,7 +112,7 @@ def build_model(idx, dir):
     # output control
     flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(name),
+        head_filerecord=f"{name}.hds",
         printrecord=[("BUDGET", "LAST"), ("HEAD", "LAST")],
         saverecord=[("HEAD", "LAST")],
     )
@@ -146,69 +120,35 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model observations...")
-    name = ex[sim.idxsim]
+def check_output(idx, test):
     headcsv = np.empty((nlay, nrow, ncol), dtype=float)
     for i in range(nrow):
-        fname = "{}.{}.obs.csv".format(name, i)
-        print("Loading and testing {}".format(fname))
-        fname = os.path.join(sim.simpath, fname)
+        fname = f"{test.name}.{i}.obs.csv"
+        print(f"Loading and testing {fname}")
+        fname = os.path.join(test.workspace, fname)
         rec = np.genfromtxt(fname, names=True, delimiter=",", deletechars="")
         for j in range(ncol):
-            obsname_true = "h_{}_{}".format(i, j).upper()
+            obsname_true = f"h_{i}_{j}".upper()
             obsname_found = rec.dtype.names[j + 1].upper()
-            errmsg = (
-                'obsname in {} is incorrect.  Looking for "{}" but found "{}"'
-            )
+            errmsg = 'obsname in {} is incorrect.  Looking for "{}" but found "{}"'
             errmsg = errmsg.format(fname, obsname_true, obsname_found)
             assert obsname_true == obsname_found, errmsg
         headcsv[0, i, :] = np.array(rec.tolist()[1:])
 
-    fn = os.path.join(sim.simpath, "{}.hds".format(name))
+    fn = os.path.join(test.workspace, f"{test.name}.hds")
     hobj = flopy.utils.HeadFile(fn)
     headbin = hobj.get_data()
 
-    assert np.allclose(
-        headcsv, headbin
-    ), "headcsv not equal head from binary file"
-
-    return
+    assert np.allclose(headcsv, headbin), "headcsv not equal head from binary file"
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build all of the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build all of the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

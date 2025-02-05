@@ -1,38 +1,16 @@
-# tests to ability to run flow model first followed by transport model
+"""Tests to ability to run flow model first followed by transport model"""
 
 import os
-import pytest
-import shutil
+from os.path import join
+
+import flopy
 import numpy as np
+import pytest
+from conftest import project_root_path
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-
-import targets
-
-exe_name_mf6 = targets.target_dict["mf6"]
-exe_name_mf6 = os.path.abspath(exe_name_mf6)
-
-data_ws = os.path.abspath("./data/prudic2004test2/")
-testdir = "./temp"
+data_path = project_root_path / "autotest" / "data"
+model_path = str(data_path / "prudic2004test2")
 testgroup = "prudic2004t2fmi"
-d = os.path.join(testdir, testgroup)
-if os.path.isdir(d):
-    shutil.rmtree(d)
 
 nlay = 8
 nrow = 36
@@ -40,27 +18,23 @@ ncol = 23
 delr = 405.665
 delc = 403.717
 top = 100.0
-fname = os.path.join(data_ws, "bot1.dat")
+fname = os.path.join(model_path, "bot1.dat")
 bot0 = np.loadtxt(fname)
 botm = [bot0] + [bot0 - (15.0 * k) for k in range(1, nlay)]
-fname = os.path.join(data_ws, "idomain1.dat")
+fname = os.path.join(model_path, "idomain1.dat")
 idomain0 = np.loadtxt(fname, dtype=int)
 idomain = nlay * [idomain0]
 
 
-def run_flow_model():
+def run_flow_model(dir, exe):
     global idomain
     name = "flow"
     gwfname = name
-    wsf = os.path.join(testdir, testgroup, name)
-    sim = flopy.mf6.MFSimulation(
-        sim_name=name, sim_ws=wsf, exe_name=exe_name_mf6
-    )
+    wsf = join(dir, testgroup, name)
+    sim = flopy.mf6.MFSimulation(sim_name=name, sim_ws=wsf, exe_name=exe)
     tdis_rc = [(1.0, 1, 1.0), (365.25 * 25, 1, 1.0)]
     nper = len(tdis_rc)
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     gwf = flopy.mf6.ModflowGwf(sim, modelname=gwfname, save_flows=True)
 
@@ -83,7 +57,7 @@ def run_flow_model():
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
 
     dis = flopy.mf6.ModflowGwfdis(
@@ -126,54 +100,35 @@ def run_flow_model():
 
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.bud".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
-        headprintrecord=[
-            ("COLUMNS", ncol, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwfname}.bud",
+        head_filerecord=f"{gwfname}.hds",
+        headprintrecord=[("COLUMNS", ncol, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
     )
 
     rch_on = True
     if rch_on:
-        rch = flopy.mf6.ModflowGwfrcha(
-            gwf, recharge={0: 4.79e-3}, pname="RCH-1"
-        )
+        rch = flopy.mf6.ModflowGwfrcha(gwf, recharge={0: 4.79e-3}, pname="RCH-1")
 
     chdlist = []
-    fname = os.path.join(data_ws, "chd.dat")
+    fname = os.path.join(model_path, "chd.dat")
     for line in open(fname, "r").readlines():
         ll = line.strip().split()
         if len(ll) == 4:
             k, i, j, hd = ll
-            chdlist.append(
-                [
-                    (
-                        int(k) - 1,
-                        int(i) - 1,
-                        int(j) - 1,
-                    ),
-                    float(hd),
-                ]
-            )
-    chd = flopy.mf6.ModflowGwfchd(
-        gwf, stress_period_data=chdlist, pname="CHD-1"
-    )
+            chdlist.append([(int(k) - 1, int(i) - 1, int(j) - 1), float(hd)])
+    chd = flopy.mf6.ModflowGwfchd(gwf, stress_period_data=chdlist, pname="CHD-1")
 
     rivlist = []
-    fname = os.path.join(data_ws, "riv.dat")
+    fname = os.path.join(model_path, "riv.dat")
     for line in open(fname, "r").readlines():
         ll = line.strip().split()
         if len(ll) == 7:
             k, i, j, s, c, rb, bn = ll
             rivlist.append(
                 [
-                    (
-                        int(k) - 1,
-                        int(i) - 1,
-                        int(j) - 1,
-                    ),
+                    (int(k) - 1, int(i) - 1, int(j) - 1),
                     float(s),
                     float(c),
                     float(rb),
@@ -185,7 +140,7 @@ def run_flow_model():
     )[0]
     for i, t in enumerate(rivlist):
         rivra[i] = tuple(t)
-    fname = os.path.join(data_ws, "sfr-packagedata.dat")
+    fname = os.path.join(model_path, "sfr-packagedata.dat")
     sfrpd = np.genfromtxt(fname, names=True)
     sfrpackagedata = flopy.mf6.ModflowGwfsfr.packagedata.empty(
         gwf, boundnames=True, maxbound=sfrpd.shape[0]
@@ -197,7 +152,7 @@ def run_flow_model():
         if name in sfrpd.dtype.names:
             sfrpackagedata[name] = sfrpd[name]
     sfrpackagedata["boundname"] = rivra["boundname"]
-    fname = os.path.join(data_ws, "sfr-connectiondata.dat")
+    fname = os.path.join(model_path, "sfr-connectiondata.dat")
     with open(fname) as f:
         lines = f.readlines()
     sfrconnectiondata = []
@@ -232,7 +187,8 @@ def run_flow_model():
             budget_filerecord=gwfname + ".sfr.bud",
             mover=True,
             pname="SFR-1",
-            unit_conversion=128390.00,
+            length_conversion=3.28084,
+            time_conversion=86400.0,
             boundnames=True,
             nreaches=len(rivlist),
             packagedata=sfrpackagedata,
@@ -241,7 +197,7 @@ def run_flow_model():
             observations=sfr_obs,
         )
 
-    fname = os.path.join(data_ws, "lakibd.dat")
+    fname = os.path.join(model_path, "lakibd.dat")
     lakibd = np.loadtxt(fname, dtype=int)
     lakeconnectiondata = []
     nlakecon = [0, 0]
@@ -415,9 +371,7 @@ def run_flow_model():
         fname = os.path.join(wsf, fname)
         lkstage = None
         if os.path.isfile(fname):
-            lksobj = flopy.utils.HeadFile(
-                fname, precision="double", text="stage"
-            )
+            lksobj = flopy.utils.HeadFile(fname, precision="double", text="stage")
             lkstage = lksobj.get_data().flatten()
             lksobj.file.close()
 
@@ -426,9 +380,7 @@ def run_flow_model():
         fname = os.path.join(wsf, fname)
         sfstage = None
         if os.path.isfile(fname):
-            bobj = flopy.utils.HeadFile(
-                fname, precision="double", text="stage"
-            )
+            bobj = flopy.utils.HeadFile(fname, precision="double", text="stage")
             sfstage = bobj.get_data().flatten()
             bobj.file.close()
 
@@ -453,26 +405,22 @@ def run_flow_model():
                 for node, node2, q in d:
                     print(p1, node, p2, node2, q)
 
-    return
 
-
-def run_transport_model():
+def run_transport_model(dir, exe):
     name = "transport"
     gwtname = name
-    wst = os.path.join(testdir, testgroup, name)
+    wst = join(dir, testgroup, name)
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
-        exe_name=exe_name_mf6,
+        exe_name=exe,
         sim_ws=wst,
         continue_=False,
     )
 
     tdis_rc = [(1.0, 1, 1.0), (365.25 * 25, 25, 1.0)]
     nper = len(tdis_rc)
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     gwt = flopy.mf6.ModflowGwt(sim, modelname=gwtname)
 
@@ -496,7 +444,7 @@ def run_transport_model():
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwtname),
+        filename=f"{gwtname}.ims",
     )
     sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -578,15 +526,14 @@ def run_transport_model():
     nreach = 38
     sftpackagedata = []
     for irno in range(nreach):
-        t = (irno, 0.0, 99.0, 999.0, "myreach{}".format(irno + 1))
+        t = (irno, 0.0, 99.0, 999.0, f"myreach{irno + 1}")
         sftpackagedata.append(t)
 
     sftperioddata = [(0, "STATUS", "ACTIVE"), (0, "CONCENTRATION", 0.0)]
 
     sft_obs = {
         (gwtname + ".sft.obs.csv",): [
-            ("sft{}conc".format(i + 1), "CONCENTRATION", i + 1)
-            for i in range(nreach)
+            (f"sft{i + 1}conc", "CONCENTRATION", i + 1) for i in range(nreach)
         ]
     }
     # append additional obs attributes to obs dictionary
@@ -626,9 +573,9 @@ def run_transport_model():
 
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        budgetcsv_filerecord="{}.bud.csv".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
+        budget_filerecord=f"{gwtname}.cbc",
+        budgetcsv_filerecord=f"{gwtname}.bud.csv",
+        concentration_filerecord=f"{gwtname}.ucn",
         concentrationprintrecord=[
             ("COLUMNS", ncol, "WIDTH", 15, "DIGITS", 6, "GENERAL")
         ],
@@ -641,18 +588,14 @@ def run_transport_model():
 
     fname = gwtname + ".lkt.bin"
     fname = os.path.join(wst, fname)
-    bobj = flopy.utils.HeadFile(
-        fname, precision="double", text="concentration"
-    )
+    bobj = flopy.utils.HeadFile(fname, precision="double", text="concentration")
     lkaconc = bobj.get_alldata()[:, 0, 0, :]
     times = bobj.times
     bobj.file.close()
 
     fname = gwtname + ".sft.bin"
     fname = os.path.join(wst, fname)
-    bobj = flopy.utils.HeadFile(
-        fname, precision="double", text="concentration"
-    )
+    bobj = flopy.utils.HeadFile(fname, precision="double", text="concentration")
     sfaconc = bobj.get_alldata()[:, 0, 0, :]
     times = bobj.times
     bobj.file.close()
@@ -692,7 +635,7 @@ def run_transport_model():
     ]
     ans_lak1 = np.array(ans_lak1)
     d = res_lak1 - ans_lak1
-    msg = "{}\n{}\n{}".format(res_lak1, ans_lak1, d)
+    msg = f"{res_lak1}\n{ans_lak1}\n{d}"
     assert np.allclose(res_lak1, ans_lak1, atol=atol), msg
 
     res_sfr3 = sfaconc[:, 30]
@@ -726,7 +669,7 @@ def run_transport_model():
     ]
     ans_sfr3 = np.array(ans_sfr3)
     d = res_sfr3 - ans_sfr3
-    msg = "{}\n{}\n{}".format(res_sfr3, ans_sfr3, d)
+    msg = f"{res_sfr3}\n{ans_sfr3}\n{d}"
     assert np.allclose(res_sfr3, ans_sfr3, atol=atol), msg
 
     res_sfr4 = sfaconc[:, 37]
@@ -760,7 +703,7 @@ def run_transport_model():
     ]
     ans_sfr4 = np.array(ans_sfr4)
     d = res_sfr4 - ans_sfr4
-    msg = "{}\n{}\n{}".format(res_sfr4, ans_sfr4, d)
+    msg = f"{res_sfr4}\n{ans_sfr4}\n{d}"
     assert np.allclose(res_sfr4, ans_sfr4, atol=atol), msg
 
     # make some checks on lake obs csv file
@@ -769,24 +712,18 @@ def run_transport_model():
     try:
         tc = np.genfromtxt(fname, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fname)
-    errmsg = "to-mvr boundname and outlet number do not match for {}".format(
-        fname
-    )
+        assert False, f'could not load data from "{fname}"'
+    errmsg = f"to-mvr boundname and outlet number do not match for {fname}"
     assert np.allclose(tc["LKT1TOMVR"], tc["LKT1BNTOMVR"]), errmsg
 
     # Compare the budget terms from the list file and the budgetcsvfile
-    fname = "{}.bud.csv".format(gwtname)
+    fname = f"{gwtname}.bud.csv"
     fname = os.path.join(wst, fname)
-    csvra = np.genfromtxt(
-        fname, dtype=None, names=True, delimiter=",", deletechars=""
-    )
+    csvra = np.genfromtxt(fname, dtype=None, names=True, delimiter=",", deletechars="")
 
-    fname = "{}.lst".format(gwtname)
+    fname = f"{gwtname}.lst"
     fname = os.path.join(wst, fname)
-    lst = flopy.utils.Mf6ListBudget(
-        fname, budgetkey="MASS BUDGET FOR ENTIRE MODEL"
-    )
+    lst = flopy.utils.Mf6ListBudget(fname, budgetkey="MASS BUDGET FOR ENTIRE MODEL")
     lstra = lst.get_incremental()
 
     # list file has additional terms, so need to pluck out the following for
@@ -796,29 +733,21 @@ def run_transport_model():
     failed_list = []
     for name1, i in zip(csvra.dtype.names, imap):
         name2 = lstra.dtype.names[i]
-        success = np.allclose(csvra[name1], lstra[name2], rtol=0.01)
+        if i == 18:
+            # percent difference needs to compare small numbers
+            success = np.allclose(csvra[name1], lstra[name2], atol=1.0e-7)
+        else:
+            success = np.allclose(csvra[name1], lstra[name2], rtol=0.01)
         if not success:
             success_all = False
             failed_list.append(name1)
-            print(f"Records do not match for {name1}")
+            print(f"Records do not match for {name1} in position {i}")
             for rate1, rate2 in zip(csvra[name1], lstra[name2]):
                 print(rate1, rate2)
     assert success_all, f"Comparisons failed for {failed_list}"
-    return
 
 
-def test_prudic2004t2fmi():
-    run_flow_model()
-    run_transport_model()
-    d = os.path.join(testdir, testgroup)
-    #    if os.path.isdir(d):
-    #        shutil.rmtree(d)
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run tests
-    test_prudic2004t2fmi()
+@pytest.mark.slow
+def test_prudic2004t2fmi(function_tmpdir, targets):
+    run_flow_model(str(function_tmpdir), targets["mf6"])
+    run_transport_model(str(function_tmpdir), targets["mf6"])

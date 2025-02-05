@@ -1,11 +1,16 @@
 module ListModule
-  ! -- ListType implements a generic list.
   use KindModule, only: DP, I4B
+  use ErrorUtilModule, only: pstop
   use ConstantsModule, only: LINELENGTH
-  use GenericUtilitiesModule, only: sim_message, stop_with_error
-  private
-  public :: ListType, ListNodeType, isEqualIface, arePointersEqual
+  use IteratorModule, only: IteratorType
+  use ListIteratorModule, only: ListIteratorType
+  use ListNodeModule, only: ListNodeType
 
+  implicit none
+  private
+  public :: ListType, isEqualIface
+
+  !> @brief A generic heterogeneous doubly-linked list.
   type :: ListType
     ! -- Public members
     type(ListNodeType), pointer, public :: firstNode => null()
@@ -17,20 +22,22 @@ module ListModule
     integer(I4B), private :: nodeCount = 0
   contains
     ! -- Public procedures
+    procedure, public :: Iterator
     procedure, public :: Add
     procedure, public :: Clear
     procedure, public :: Count
     procedure, public :: ContainsObject
     procedure, public :: DeallocateBackward
+    procedure, public :: GetIndex
     procedure, public :: GetNextItem
     procedure, public :: GetPreviousItem
-    generic,   public :: GetItem => get_item_by_index, get_current_item
+    generic, public :: GetItem => get_item_by_index, get_current_item
     procedure, public :: InsertAfter
     procedure, public :: InsertBefore
-    procedure, public :: Next
-    procedure, public :: Previous
+    procedure, private :: Next
+    procedure, private :: Previous
     procedure, public :: Reset
-    generic,   public :: RemoveNode => remove_node_by_index, remove_this_node
+    generic, public :: RemoveNode => remove_node_by_index, remove_this_node
     ! -- Private procedures
     procedure, private :: get_current_item
     procedure, private :: get_item_by_index
@@ -41,60 +48,44 @@ module ListModule
     !final :: clear_list
   end type ListType
 
-  type :: ListNodeType
-    ! -- Public members
-    type(ListNodeType), pointer, public :: nextNode => null()
-    type(ListNodeType), pointer, public :: prevNode => null()
-    ! -- Private members
-    class(*),           pointer, private :: Value => null()
-  contains
-    ! -- Public procedure
-    procedure,  public :: GetItem
-    ! -- Private procedures
-    procedure, private :: DeallocValue
-  end type ListNodeType
-  
   interface
     function isEqualIface(obj1, obj2) result(isEqual)
       class(*), pointer :: obj1, obj2
       logical :: isEqual
     end function
   end interface
-  
+
 contains
 
-  ! -- Public type-bound procedures for ListType
+  function iterator(this) result(itr)
+    class(ListType) :: this
+    class(IteratorType), allocatable :: itr
 
+    itr = ListIteratorType(this%firstNode)
+  end function
+
+  !> @brief Append the given item to the list
   subroutine Add(this, objptr)
-    implicit none
     ! -- dummy variables
     class(ListType), intent(inout) :: this
     class(*), pointer, intent(inout) :: objptr
     !
     if (.not. associated(this%firstNode)) then
-      allocate(this%firstNode)
+      allocate (this%firstNode)
       this%firstNode%Value => objptr
       this%firstNode%prevNode => null()
       this%lastNode => this%firstNode
     else
-      allocate(this%lastNode%nextNode)
+      allocate (this%lastNode%nextNode)
       this%lastNode%nextNode%prevNode => this%lastNode
       this%lastNode%nextNode%value => objptr
       this%lastNode => this%lastNode%nextNode
-    endif
+    end if
     this%nodeCount = this%nodeCount + 1
-    return
   end subroutine Add
 
+  !> @brief Deallocate all items in list
   subroutine Clear(this, destroy)
-    ! **************************************************************************
-    ! clear_list (finalizer)
-    ! Deallocate all items in linked list
-    ! **************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! --------------------------------------------------------------------------
-    implicit none
     ! -- dummy variables
     class(ListType) :: this
     logical, intent(in), optional :: destroy
@@ -106,14 +97,14 @@ contains
     destroyLocal = .false.
     if (present(destroy)) then
       destroyLocal = destroy
-    endif
+    end if
     !
     if (.not. associated(this%firstNode)) return
     ! -- The last node will be deallocated in the loop below.
     !    Just nullify the pointer to the last node to avoid
     !    having a dangling pointer. Also nullify currentNode.
-    nullify(this%lastNode)
-    nullify(this%currentNode)
+    nullify (this%lastNode)
+    nullify (this%currentNode)
     !
     current => this%firstNode
     do while (associated(current))
@@ -122,76 +113,56 @@ contains
       ! -- Deallocate the object stored in the current node
       call current%DeallocValue(destroyLocal)
       ! -- Deallocate the current node
-      deallocate(current)
+      deallocate (current)
       this%firstNode => next
       this%nodeCount = this%nodeCount - 1
       ! -- Advance to the next node
       current => next
-    enddo
+    end do
     !
     call this%Reset()
-    !
-    return
+
   end subroutine Clear
 
+  !> @brief Return number of nodes in list
   function Count(this)
-    ! **************************************************************************
-    ! Count
-    ! Return number of nodes in linked list
-    ! **************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! --------------------------------------------------------------------------
-    implicit none
-    ! -- return
     integer(I4B) :: Count
-    ! -- dummy variables
     class(ListType) :: this
-    !
     Count = this%nodeCount
-    !
-    return
   end function Count
 
+  !> @brief Determine whether the list contains the given object.
   function ContainsObject(this, obj, isEqual) result(hasObj)
     class(ListType), intent(inout) :: this
     class(*), pointer :: obj
-    procedure(isEqualIface), pointer, intent(in) :: isEqual
+    procedure(isEqualIface), pointer, intent(in), optional :: isEqual
     logical :: hasObj
     ! local
     type(ListNodeType), pointer :: current => null()
-   
+
     hasObj = .false.
     current => this%firstNode
     do while (associated(current))
-      if (isEqual(current%Value, obj)) then
-        hasObj = .true.
-        return
+      if (present(isEqual)) then
+        if (isEqual(current%Value, obj)) then
+          hasObj = .true.
+          return
+        end if
+      else
+        if (associated(current%Value, obj)) then
+          hasObj = .true.
+          return
+        end if
       end if
-      
+
       ! -- Advance to the next node
       current => current%nextNode
-    enddo
-    
-    ! this means there is no match
-    return
-  end function  
-  
-  function arePointersEqual(obj1, obj2) result(areIdentical)
-    class(*), pointer :: obj1, obj2
-    logical :: areIdentical
-    areIdentical = associated(obj1, obj2) 
-  end function arePointersEqual
-  
+    end do
+
+  end function
+
+  !> @brief Deallocate fromNode and all previous nodes, and reassign firstNode.
   subroutine DeallocateBackward(this, fromNode)
-    ! **************************************************************************
-    ! DeallocateBackward
-    ! Deallocate fromNode and all previous nodes in list; reassign firstNode.
-    ! **************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! --------------------------------------------------------------------------
-    implicit none
     ! -- dummy
     class(ListType), target, intent(inout) :: this
     type(ListNodeType), pointer, intent(inout) :: fromNode
@@ -205,52 +176,64 @@ contains
         this%firstNode => fromNode%nextNode
       else
         this%firstNode => null()
-      endif
+      end if
       ! -- deallocate fromNode and all previous nodes
       current => fromNode
       do while (associated(current))
         prev => current%prevNode
         call current%DeallocValue(.true.)
-        deallocate(current)
+        deallocate (current)
         this%nodeCount = this%nodeCount - 1
         current => prev
-      enddo
+      end do
       fromNode => null()
-    endif
-    !
-    return
+    end if
+
   end subroutine DeallocateBackward
 
-  function GetNextItem(this) result(resultobj)
-    implicit none
+  !> @brief Get the index of the given item in the list.
+  function GetIndex(this, obj) result(idx)
     class(ListType), target, intent(inout) :: this
-    ! result
+    class(*), pointer :: obj
+    integer(I4B) :: idx
+    ! local
+    integer(I4B) :: i
+    class(*), pointer :: obj_in_list
+
+    idx = -1
+    do i = 1, this%Count()
+      obj_in_list => this%GetItem(i)
+      if (associated(obj, obj_in_list)) then
+        idx = i
+        exit
+      end if
+    end do
+
+  end function GetIndex
+
+  !> @brief Get the next item in the list
+  function GetNextItem(this) result(resultobj)
+    class(ListType), target, intent(inout) :: this
     class(*), pointer :: resultobj
-    !
     call this%Next()
     resultobj => this%get_current_item()
-    return
   end function GetNextItem
 
+  !> @brief Get the previous item in the list
   function GetPreviousItem(this) result(resultobj)
-    implicit none
     class(ListType), target, intent(inout) :: this
-    ! result
     class(*), pointer :: resultobj
-    !
     call this%Previous()
     resultobj => this%get_current_item()
-    return
   end function GetPreviousItem
 
+  !> @brief Insert the given item after the given index.
   subroutine InsertAfter(this, objptr, indx)
-    implicit none
     ! -- dummy
     class(ListType), intent(inout) :: this
     class(*), pointer, intent(inout) :: objptr
     integer(I4B), intent(in) :: indx
     ! -- local
-    character(len=LINELENGTH) :: line
     integer(I4B) :: numnodes
     type(ListNodeType), pointer :: precedingNode => null()
     type(ListNodeType), pointer :: followingNode => null()
@@ -263,7 +246,7 @@ contains
       precedingNode => this%get_node_by_index(indx)
       if (associated(precedingNode%nextNode)) then
         followingNode => precedingNode%nextNode
-        allocate(newNode)
+        allocate (newNode)
         newNode%Value => objptr
         newNode%nextNode => followingNode
         newNode%prevNode => precedingNode
@@ -271,18 +254,14 @@ contains
         followingNode%prevNode => newNode
         this%nodeCount = this%nodeCount + 1
       else
-        write(line,'(a)') 'Programming error in ListType%insert_after'
-        call sim_message(line)
-        call stop_with_error(1)
-      endif
-    endif
-    !
-    return
+        call pstop(1, 'Programming error in ListType%insert_after')
+      end if
+    end if
+
   end subroutine InsertAfter
 
+  !> @brief Insert the given item before the given node.
   subroutine InsertBefore(this, objptr, targetNode)
-    ! Insert an object into the list in front of a target node
-    implicit none
     ! -- dummy
     class(ListType), intent(inout) :: this
     class(*), pointer, intent(inout) :: objptr
@@ -290,12 +269,11 @@ contains
     ! -- local
     type(ListNodeType), pointer :: newNode => null()
     !
-    if (.not. associated(targetNode)) then
-      stop 'Programming error, likely in call to ListType%InsertBefore'
-    endif
+    if (.not. associated(targetNode)) &
+      call pstop(1, 'Programming error in ListType%InsertBefore')
     !
     ! Allocate a new list node and point its Value member to the object
-    allocate(newNode)
+    allocate (newNode)
     newNode%Value => objptr
     !
     ! Do the insertion
@@ -308,17 +286,16 @@ contains
       ! Insert before first node
       this%firstNode => newNode
       newNode%prevNode => null()
-    endif
+    end if
     targetNode%prevNode => newNode
     this%nodeCount = this%nodeCount + 1
-    !
-    return
+
   end subroutine InsertBefore
 
+  !> @brief Move the list's current node pointer and index one node forwards.
   subroutine Next(this)
-    implicit none
     class(ListType), target, intent(inout) :: this
-    !
+
     if (this%currentNodeIndex == 0) then
       if (associated(this%firstNode)) then
         this%currentNode => this%firstNode
@@ -326,7 +303,7 @@ contains
       else
         this%currentNode => null()
         this%currentNodeIndex = 0
-      endif
+      end if
     else
       if (associated(this%currentNode%nextNode)) then
         this%currentNode => this%currentNode%nextNode
@@ -334,39 +311,34 @@ contains
       else
         this%currentNode => null()
         this%currentNodeIndex = 0
-      endif
-    endif
-    return
+      end if
+    end if
   end subroutine Next
 
+  !> @brief Move the list's current node pointer and index one node backwards.
   subroutine Previous(this)
-    implicit none
     class(ListType), target, intent(inout) :: this
-    !
     if (this%currentNodeIndex <= 1) then
       call this%Reset()
     else
       this%currentNode => this%currentNode%prevNode
       this%currentNodeIndex = this%currentNodeIndex - 1
-    endif
-    return
+    end if
   end subroutine Previous
 
+  !> @brief Reset the list's current node pointer and index.
   subroutine Reset(this)
-    implicit none
     class(ListType), target, intent(inout) :: this
-    !
     this%currentNode => null()
     this%currentNodeIndex = 0
-    return
   end subroutine Reset
 
+  !> @brief Remove the node at the given index, optionally destroying its value.
   subroutine remove_node_by_index(this, i, destroyValue)
-    implicit none
     ! -- dummy
     class(ListType), intent(inout) :: this
-    integer(I4B),    intent(in)    :: i
-    logical,         intent(in)    :: destroyValue
+    integer(I4B), intent(in) :: i
+    logical, intent(in) :: destroyValue
     ! -- local
     type(ListNodeType), pointer :: node
     !
@@ -374,17 +346,16 @@ contains
     node => this%get_node_by_index(i)
     if (associated(node)) then
       call this%remove_this_node(node, destroyValue)
-    endif
-    !
-    return
+    end if
+
   end subroutine remove_node_by_index
 
+  !> @brief Remove the given node, optionally destroying its value.
   subroutine remove_this_node(this, node, destroyValue)
-    implicit none
     ! -- dummy
-    class(ListType),             intent(inout) :: this
+    class(ListType), intent(inout) :: this
     type(ListNodeType), pointer, intent(inout) :: node
-    logical,                     intent(in)    :: destroyValue
+    logical, intent(in) :: destroyValue
     ! -- local
     !
     logical :: first, last
@@ -398,40 +369,39 @@ contains
         else
           node%prevNode%nextNode => null()
           this%lastNode => node%prevNode
-        endif
+        end if
       else
         first = .true.
-      endif
+      end if
       if (associated(node%nextNode)) then
         if (associated(node%prevNode)) then
           node%prevNode%nextNode => node%nextNode
         else
           node%nextNode%prevNode => null()
           this%firstNode => node%nextNode
-        endif
+        end if
       else
         last = .true.
-      endif
+      end if
       if (destroyValue) then
         call node%DeallocValue(destroyValue)
-      endif
-      deallocate(node)
+      end if
+      deallocate (node)
       this%nodeCount = this%nodeCount - 1
       if (first .and. last) then
         this%firstNode => null()
         this%lastNode => null()
         this%currentNode => null()
-      endif
+      end if
       call this%Reset()
-    endif
-    !
-    return
+    end if
+
   end subroutine remove_this_node
 
   ! -- Private type-bound procedures for ListType
 
+  !> @brief Get a pointer to the item at the current node.
   function get_current_item(this) result(resultobj)
-    implicit none
     class(ListType), target, intent(inout) :: this
     ! result
     class(*), pointer :: resultobj
@@ -439,19 +409,11 @@ contains
     resultobj => null()
     if (associated(this%currentNode)) then
       resultobj => this%currentNode%Value
-    endif
-    return
+    end if
   end function get_current_item
 
+  !> @brief Get a pointer to the item at the given index.
   function get_item_by_index(this, indx) result(resultobj)
-    ! **************************************************************************
-    ! get_item_by_index (implements GetItem)
-    ! Return object stored in ListNodeType%Value by index in list
-    ! **************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! --------------------------------------------------------------------------
-    implicit none
     ! -- dummy
     class(ListType), intent(inout) :: this
     integer(I4B), intent(in) :: indx
@@ -466,13 +428,13 @@ contains
     ! -- Ensure that this%currentNode is associated
     if (.not. associated(this%currentNode)) then
       this%currentNodeIndex = 0
-    endif
+    end if
     if (this%currentNodeIndex == 0) then
       if (associated(this%firstNode)) then
         this%currentNode => this%firstNode
         this%currentNodeIndex = 1
-      endif
-    endif
+      end if
+    end if
     !
     ! -- Check indx position relative to current node index
     i = 0
@@ -483,40 +445,32 @@ contains
         this%currentNode => this%firstNode
         this%currentNodeIndex = 1
         i = 1
-      endif
+      end if
     else
       i = this%currentNodeIndex
-    endif
+    end if
     if (i == 0) return
     !
     ! -- If current node is requested node,
     !    assign pointer and return
-    if (i==indx) then
+    if (i == indx) then
       resultobj => this%currentNode%Value
       return
-    endif
+    end if
     !
     ! -- Iterate from current node to requested node
     do while (associated(this%currentNode%nextNode))
       this%currentNode => this%currentNode%nextNode
       this%currentNodeIndex = this%currentNodeIndex + 1
-      if (this%currentNodeIndex==indx) then
+      if (this%currentNodeIndex == indx) then
         resultobj => this%currentNode%Value
         return
-      endif
-    enddo
-    return
+      end if
+    end do
   end function get_item_by_index
 
+  !> @brief Get the node at the given index
   function get_node_by_index(this, indx) result(resultnode)
-    ! **************************************************************************
-    ! get_item_by_index (implements GetItem)
-    ! Return object stored in ListNodeType%Value by index in list
-    ! **************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! --------------------------------------------------------------------------
-    implicit none
     ! -- dummy
     class(ListType), intent(inout) :: this
     integer(I4B), intent(in) :: indx
@@ -533,8 +487,8 @@ contains
       if (associated(this%firstNode)) then
         this%currentNode => this%firstNode
         this%currentNodeIndex = 1
-      endif
-    endif
+      end if
+    end if
     !
     ! -- Check indx position relative to current node index
     i = 0
@@ -545,69 +499,28 @@ contains
         this%currentNode => this%firstNode
         this%currentNodeIndex = 1
         i = 1
-      endif
+      end if
     else
       i = this%currentNodeIndex
-    endif
+    end if
     if (i == 0) return
     !
     ! -- If current node is requested node,
     !    assign pointer and return
-    if (i==indx) then
+    if (i == indx) then
       resultnode => this%currentNode
       return
-    endif
+    end if
     !
     ! -- Iterate from current node to requested node
     do while (associated(this%currentNode%nextNode))
       this%currentNode => this%currentNode%nextNode
       this%currentNodeIndex = this%currentNodeIndex + 1
-      if (this%currentNodeIndex==indx) then
+      if (this%currentNodeIndex == indx) then
         resultnode => this%currentNode
         return
-      endif
-    enddo
-    return
+      end if
+    end do
   end function get_node_by_index
-
-  ! -- Type-bound procedures for ListNodeType
-
-  function GetItem(this) result(valueObject)
-    ! ************************************************************************
-    ! Perform a pointer assignment of valueObject to the contents of
-    ! this%Value
-    ! ************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! ------------------------------------------------------------------------
-    implicit none
-    class(ListNodeType), intent(inout) :: this
-    class(*), pointer :: valueObject
-    !
-    valueObject => this%Value
-    return
-  end function GetItem
-
-  subroutine DeallocValue(this, destroy)
-    ! ************************************************************************
-    ! Deallocate whatever is stored in the Value component of this node.
-    ! ************************************************************************
-    !
-    !    SPECIFICATIONS:
-    ! ------------------------------------------------------------------------
-    implicit none
-    class(ListNodeType), intent(inout) :: this
-    logical, intent(in), optional :: destroy
-    !
-    if (associated(this%Value)) then
-      if (present(destroy)) then
-        if (destroy) then
-          deallocate(this%Value)
-        endif
-      endif
-      nullify(this%Value)
-    endif
-    return
-  end subroutine DeallocValue
 
 end module ListModule

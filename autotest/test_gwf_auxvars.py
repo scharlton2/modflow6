@@ -1,36 +1,16 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import DNODATA, TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["aux01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["aux01"]
 auxvar1 = 101.0
 auxvar2 = 102.0
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     nlay, nrow, ncol = 1, 10, 10
     nper = 3
     perlen = [1.0, 1.0, 1.0]
@@ -48,17 +28,15 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(sim, modelname=name)
@@ -95,9 +73,7 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=True, icelltype=1, k=1.0, k33=0.01
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=True, icelltype=1, k=1.0, k33=0.01)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -119,7 +95,7 @@ def build_model(idx, dir):
         gwf,
         stress_period_data=chdspdict,
         save_flows=False,
-        filename="{}.chd".format(name),
+        filename=f"{name}.chd",
     )
 
     # MAW
@@ -129,7 +105,7 @@ def build_model(idx, dir):
     wellperiodrecarray = [[0, "rate", -0.1]]
     maw = flopy.mf6.ModflowGwfmaw(
         gwf,
-        filename="{}.maw".format(name),
+        filename=f"{name}.maw",
         print_input=True,
         print_head=True,
         print_flows=True,
@@ -142,7 +118,8 @@ def build_model(idx, dir):
     )
     # maw.remove()
 
-    # <rno> <cellid(ncelldim)> <rlen> <rwid> <rgrd> <rtp> <rbth> <rhk> <man> <ncon> <ustrf> <ndv> [<aux(naux)>] [<boundname>]
+    # <rno> <cellid(ncelldim)> <rlen> <rwid> <rgrd> <rtp> <rbth> <rhk> ...
+    #       <man> <ncon> <ustrf> <ndv> [<aux(naux)>] [<boundname>]
     packagedata = [
         [
             0,
@@ -185,7 +162,8 @@ def build_model(idx, dir):
         print_flows=True,
         save_flows=True,
         budget_filerecord="aux01.sfr.bud",
-        unit_conversion=128390.00,
+        length_conversion=3.281348587,
+        time_conversion=86400.0,
         nreaches=len(packagedata),
         packagedata=packagedata,
         auxiliary=["aux1", "aux2"],
@@ -193,15 +171,16 @@ def build_model(idx, dir):
     )
     # sfr.remove()
 
-    # <lakeno> <strt> <nlakeconn> [<aux(naux)>] [<boundname>]
+    # <ifno> <strt> <nlakeconn> [<aux(naux)>] [<boundname>]
     packagedata = [
         [0, 100.0, 1, auxvar1, auxvar2, "lake1"],
         [1, 100.0, 1, auxvar1, auxvar2, "lake2"],
     ]
-    # <lakeno> <iconn> <cellid(ncelldim)> <claktype> <bedleak> <belev> <telev> <connlen> <connwidth>
+    # <ifno> <iconn> <cellid(ncelldim)> <claktype> <bedleak> <belev> <telev> ...
+    #        <connlen> <connwidth>
     connectiondata = [
-        [0, 0, (0, 1, 1), "vertical", "none", 0.0, 0.0, 0.0, 0.0],
-        [1, 0, (0, 2, 2), "vertical", "none", 0.0, 0.0, 0.0, 0.0],
+        [0, 0, (0, 1, 1), "vertical", DNODATA, 0.0, 0.0, 0.0, 0.0],
+        [1, 0, (0, 2, 2), "vertical", DNODATA, 0.0, 0.0, 0.0, 0.0],
     ]
     lak = flopy.mf6.ModflowGwflak(
         gwf,
@@ -219,19 +198,18 @@ def build_model(idx, dir):
     )
     # lak.remove()
 
-    # <iuzno> <cellid(ncelldim)> <landflag> <ivertcon> <surfdep> <vks> <thtr> <thts> <thti> <eps> [<boundname>]
+    # <ifno> <cellid(ncelldim)> <landflag> <ivertcon> <surfdep> <vks> ...
+    #        <thtr> <thts> <thti> <eps> [<boundname>]
     packagedata = [
         [0, (0, nrow - 1, 5), 1, -1, 0.1, 0.01, 0.01, 0.1, 0.01, 3.5, "uz1"],
         [1, (0, nrow - 1, 6), 1, -1, 0.1, 0.01, 0.01, 0.1, 0.01, 3.5, "uz1"],
         [2, (0, nrow - 1, 7), 1, -1, 0.1, 0.01, 0.01, 0.1, 0.01, 3.5, "uz1"],
         [3, (0, nrow - 1, 8), 1, -1, 0.1, 0.01, 0.01, 0.1, 0.01, 3.5, "uz1"],
     ]
-    # <iuzno> <finf> <pet> <extdp> <extwc> <ha> <hroot> <rootact> [<aux(naux)>]
+    # <ifno> <finf> <pet> <extdp> <extwc> <ha> <hroot> <rootact> [<aux(naux)>]
     perioddata = []
     for p in packagedata:
-        perioddata.append(
-            (p[0], 0.001, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, auxvar1, auxvar2)
-        )
+        perioddata.append((p[0], 0.001, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, auxvar1, auxvar2))
     uzf = flopy.mf6.ModflowGwfuzf(
         gwf,
         boundnames=True,
@@ -250,22 +228,20 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model...")
-
+def check_output(idx, test):
     # maw budget aux variables
-    fpth = os.path.join(sim.simpath, "aux01.maw.bud")
+    fpth = os.path.join(test.workspace, "aux01.maw.bud")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     records = bobj.get_data(text="auxiliary")
     for r in records:
@@ -273,7 +249,7 @@ def eval_model(sim):
         assert np.allclose(r["AUX2"], auxvar2)
 
     # sfr budget aux variables
-    fpth = os.path.join(sim.simpath, "aux01.sfr.bud")
+    fpth = os.path.join(test.workspace, "aux01.sfr.bud")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     records = bobj.get_data(text="auxiliary")
     for r in records:
@@ -281,7 +257,7 @@ def eval_model(sim):
         assert np.allclose(r["AUX2"], auxvar2)
 
     # lak budget aux variables
-    fpth = os.path.join(sim.simpath, "aux01.maw.bud")
+    fpth = os.path.join(test.workspace, "aux01.maw.bud")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     records = bobj.get_data(text="auxiliary")
     for r in records:
@@ -289,7 +265,7 @@ def eval_model(sim):
         assert np.allclose(r["AUX2"], auxvar2)
 
     # uzf budget aux variables
-    fpth = os.path.join(sim.simpath, "aux01.uzf.bud")
+    fpth = os.path.join(test.workspace, "aux01.uzf.bud")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     records = bobj.get_data(text="auxiliary")
     for r in records:
@@ -297,7 +273,7 @@ def eval_model(sim):
         assert np.allclose(r["AUX2"], auxvar2)
 
     # gwf budget maw aux variables
-    fpth = os.path.join(sim.simpath, "aux01.cbc")
+    fpth = os.path.join(test.workspace, "aux01.cbc")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     records = bobj.get_data(text="maw")
     for r in records:
@@ -316,39 +292,14 @@ def eval_model(sim):
         assert np.allclose(r["AUX1"], auxvar1)
         assert np.allclose(r["AUX2"], auxvar2)
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

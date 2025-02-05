@@ -1,6 +1,4 @@
-# makefile created on 2021-07-30 14:36:28.583060
-# by pymake (version 1.2.1) for the 'zbud6' executable 
-# using the 'gfortran' fortran compiler(s).
+# makefile created by pymake for the 'zbud6' executable.
 
 
 include ./makedefaults
@@ -13,29 +11,35 @@ VPATH = \
 ${SOURCEDIR1} \
 ${SOURCEDIR2} 
 
-.SUFFIXES: .f90 .o
+.SUFFIXES: .f90 .F90 .o
 
 OBJECTS = \
 $(OBJDIR)/kind.o \
-$(OBJDIR)/compilerversion.o \
-$(OBJDIR)/OpenSpec.o \
 $(OBJDIR)/Constants.o \
-$(OBJDIR)/defmacro.o \
+$(OBJDIR)/ErrorUtil.o \
+$(OBJDIR)/CharString.o \
 $(OBJDIR)/SimVariables.o \
-$(OBJDIR)/genericutils.o \
 $(OBJDIR)/ArrayHandlers.o \
 $(OBJDIR)/Message.o \
+$(OBJDIR)/defmacro.o \
+$(OBJDIR)/compilerversion.o \
 $(OBJDIR)/version.o \
 $(OBJDIR)/Sim.o \
-$(OBJDIR)/sort.o \
+$(OBJDIR)/OpenSpec.o \
 $(OBJDIR)/InputOutput.o \
-$(OBJDIR)/grb.o \
-$(OBJDIR)/budgetdata.o \
-$(OBJDIR)/Budget.o \
+$(OBJDIR)/LongLineReader.o \
+$(OBJDIR)/DevFeature.o \
+$(OBJDIR)/sort.o \
 $(OBJDIR)/BlockParser.o \
 $(OBJDIR)/ArrayReaders.o \
 $(OBJDIR)/zone.o \
+$(OBJDIR)/Budget.o \
+$(OBJDIR)/HashTable.o \
 $(OBJDIR)/zoneoutput.o \
+$(OBJDIR)/GridFileReader.o \
+$(OBJDIR)/budgetdata.o \
+$(OBJDIR)/MathUtil.o \
+$(OBJDIR)/GeomUtil.o \
 $(OBJDIR)/zbud6.o
 
 # Define the objects that make up the program
@@ -43,6 +47,10 @@ $(PROGRAM) : $(OBJECTS)
 	-$(FC) $(OPTLEVEL) -o $@ $(OBJECTS) $(LDFLAGS)
 
 $(OBJDIR)/%.o : %.f90
+	@mkdir -p $(@D)
+	$(FC) $(OPTLEVEL) $(FFLAGS) -c $< -o $@ $(INCSWITCH) $(MODSWITCH)
+
+$(OBJDIR)/%.o : %.F90
 	@mkdir -p $(@D)
 	$(FC) $(OPTLEVEL) $(FFLAGS) -c $< -o $@ $(INCSWITCH) $(MODSWITCH)
 

@@ -4,9 +4,9 @@ import os
 try:
     import pymake
 except:
-    msg = 'Error. Pymake package is not available.\n'
-    msg += 'Try installing using the following command:\n'
-    msg += ' pip install https://github.com/modflowpy/pymake/zipball/master'
+    msg = "Error. Pymake package is not available.\n"
+    msg += "Try installing using the following command:\n"
+    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
     print(msg)
     raise Exception()
 
@@ -19,5 +19,7 @@ pmobj.subdirs = True
 pmobj.inplace = True
 pmobj.verbose = True
 pmobj.makeclean = True
+pmobj.excludefiles = "excludefiles.txt"
+pmobj.makefile = False
 
 pmobj.build()

@@ -1,5 +1,4 @@
 """
-MODFLOW 6 Autotest
 Test the SSM FILEINPUT option for specifying source and sink
 concentrations.
 
@@ -8,28 +7,16 @@ Four different recharge packages are tested with the SSM FILEINPUT
 2.  array-based recharge, no time array series
 3.  list-based recharge with time series
 4.  array-based recharge with time array series
-
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["ssm04"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
+cases = ["ssm04"]
 
 nlay, nrow, ncol = 3, 5, 5
 idomain_lay0 = [
@@ -43,10 +30,10 @@ idomain = np.ones((nlay, nrow, ncol), dtype=int)
 idomain[0, :, :] = np.array(idomain_lay0)
 
 
-def build_model(idx, dir):
-    perlen = [5.0]
-    nstp = [5]
-    tsmult = [1.0]
+def build_models(idx, test):
+    perlen = [5.0, 5.0, 5.0]
+    nstp = [5, 5, 5]
+    tsmult = [1.0, 1.0, 1.0]
     nper = len(perlen)
     delr = 1.0
     delc = 1.0
@@ -63,17 +50,15 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -97,7 +82,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -134,12 +119,15 @@ def build_model(idx, dir):
         pname="CHD-1",
     )
 
-    # list based recharge
+    # list based recharge, recharge is equal to one-based user node number
     idxrow, idxcol = np.where(idomain[0] == 1)
-    recharge_rate = np.arange(nrow * ncol).reshape((nrow, ncol))
-    spd = []
-    for i, j in zip(idxrow, idxcol):
-        spd.append([(0, i, j), recharge_rate[i, j]])
+    recharge_rate = np.arange(nrow * ncol).reshape((nrow, ncol)) + 1
+    spd = {}
+    for kper in range(nper):
+        rlist = []
+        for i, j in zip(idxrow, idxcol):
+            rlist.append([(0, i, j), recharge_rate[i, j]])
+        spd[kper] = rlist
     rch1 = flopy.mf6.modflow.ModflowGwfrch(
         gwf,
         print_flows=True,
@@ -150,10 +138,13 @@ def build_model(idx, dir):
     )
 
     # array-based rch files
+    rspd = {}
+    for kper in range(nper):
+        rspd[kper] = recharge_rate
     rch2 = flopy.mf6.ModflowGwfrcha(
         gwf,
         print_flows=True,
-        recharge=recharge_rate,
+        recharge=rspd,
         pname="RCH-2",
         filename=f"{gwfname}.rch2",
     )
@@ -162,16 +153,21 @@ def build_model(idx, dir):
     idxrow, idxcol = np.where(idomain[0] == 1)
     spd = []
     for i, j in zip(idxrow, idxcol):
-        tsname = f"rch-{i + 1}-{j + 1}"
+        nodeu = i * ncol + j
+        tsname = f"rch-{nodeu + 1}"
         spd.append([(0, i, j), tsname])
 
     tsnames = []
     for i in range(nrow):
         for j in range(ncol):
-            tsnames.append(f"rch-{i + 1}-{j + 1}")
+            nodeu = i * nrow + j
+            tsnames.append(f"rch-{nodeu + 1}")
     ts_data = []
-    for t in [0, perlen[0]]:
-        ts = tuple([float(t)] + list(range(0, nrow * ncol)))
+    totim = 0.0
+    for kper in range(nper):
+        totim += perlen[kper]
+    for t in [0, totim]:
+        ts = tuple([float(t)] + list(range(1, nrow * ncol + 1)))
         ts_data.append(ts)
     ts_dict = {
         "timeseries": ts_data,
@@ -203,7 +199,9 @@ def build_model(idx, dir):
     # is a bug in flopy that will not correctly write this array as internal
     tas_array = {
         0.0: f"{gwfname}.rch4.tas.dat",
-        perlen[0]: f"{gwfname}.rch4.tas.dat",
+        5.0: f"{gwfname}.rch4.tas.dat",
+        10.0: f"{gwfname}.rch4.tas.dat",
+        15.0: f"{gwfname}.rch4.tas.dat",
     }
     time_series_namerecord = "rcharray"
     interpolation_methodrecord = "linear"
@@ -213,15 +211,13 @@ def build_model(idx, dir):
         time_series_namerecord=time_series_namerecord,
         interpolation_methodrecord=interpolation_methodrecord,
     )
-    np.savetxt(
-        os.path.join(ws, f"{gwfname}.rch4.tas.dat"), recharge_rate, fmt="%7.1f"
-    )
+    np.savetxt(os.path.join(ws, f"{gwfname}.rch4.tas.dat"), recharge_rate, fmt="%7.1f")
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -233,7 +229,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwt6",
         modelname=gwtname,
-        model_nam_file="{}.nam".format(gwtname),
+        model_nam_file=f"{gwtname}.nam",
     )
     gwt.name_file.save_flows = True
 
@@ -251,7 +247,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwtname),
+        filename=f"{gwtname}.ims",
     )
     sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -290,7 +286,7 @@ def build_model(idx, dir):
 
     # spc package for RCH-1
     idxrow, idxcol = np.where(idomain[0] == 1)
-    recharge_concentration = np.arange(nrow * ncol).reshape((nrow, ncol))
+    recharge_concentration = np.arange(nrow * ncol).reshape((nrow, ncol)) + 1
     pd = []
     for ipos, (i, j) in enumerate(zip(idxrow, idxcol)):
         pd.append([ipos, "CONCENTRATION", recharge_concentration[i, j]])
@@ -303,13 +299,13 @@ def build_model(idx, dir):
 
     # spc package for RCH-2
     idxrow, idxcol = np.where(idomain[0] == 1)
-    recharge_concentration = np.arange(nrow * ncol).reshape((nrow, ncol))
-    pd = []
-    for ipos, (i, j) in enumerate(zip(idxrow, idxcol)):
-        pd.append([ipos, "CONCENTRATION", recharge_concentration[i, j]])
+    recharge_concentration = np.arange(nrow * ncol).reshape((nrow, ncol)) + 1
+    crchspd = {}
+    for kper in range(nper):
+        crchspd[kper] = recharge_concentration
     spc2 = flopy.mf6.ModflowUtlspca(
         gwt,
-        concentration=recharge_concentration,
+        concentration=crchspd,
         filename=f"{gwtname}.rch2.spc",
     )
 
@@ -317,16 +313,18 @@ def build_model(idx, dir):
     idxrow, idxcol = np.where(idomain[0] == 1)
     pd = []
     for ipos, (i, j) in enumerate(zip(idxrow, idxcol)):
-        tsname = f"rch-{i + 1}-{j + 1}"
+        nodeu = i * ncol + j
+        tsname = f"crch-{nodeu + 1}"
         pd.append([ipos, "CONCENTRATION", tsname])
 
     tsnames = []
     for i in range(nrow):
         for j in range(ncol):
-            tsnames.append(f"rch-{i + 1}-{j + 1}")
-    ts_data = [tuple([0.0] + nrow * ncol * [0.0])]
-    for t in perlen:
-        ts = tuple([float(t)] + list(range(0, nrow * ncol)))
+            nodeu = i * ncol + j
+            tsnames.append(f"crch-{nodeu + 1}")
+    ts_data = [tuple([0.0] + list(range(1, nrow * ncol + 1)))]
+    for t in [5.0, 10.0, 15.0]:
+        ts = tuple([float(t)] + list(range(1, nrow * ncol + 1)))
         ts_data.append(ts)
     ts_dict = {
         "timeseries": ts_data,
@@ -354,7 +352,12 @@ def build_model(idx, dir):
     filename = f"{gwtname}.rch4.spc.tas"
     # for now write the recharge concentration to a dat file because there
     # is a bug in flopy that will not correctly write this array as internal
-    tas_array = {0.0: 0.0, perlen[0]: f"{gwtname}.rch4.spc.tas.dat"}
+    tas_array = {
+        0.0: f"{gwtname}.rch4.spc.tas.dat",
+        5.0: f"{gwtname}.rch4.spc.tas.dat",
+        10.0: f"{gwtname}.rch4.spc.tas.dat",
+        15.0: f"{gwtname}.rch4.spc.tas.dat",
+    }
     time_series_namerecord = "carray"
     interpolation_methodrecord = "linear"
     spc4.tas.initialize(
@@ -363,7 +366,7 @@ def build_model(idx, dir):
         time_series_namerecord=time_series_namerecord,
         interpolation_methodrecord=interpolation_methodrecord,
     )
-    recharge_concentration = np.arange(nrow * ncol).reshape((nrow, ncol))
+    recharge_concentration = np.arange(nrow * ncol).reshape((nrow, ncol)) + 1
     np.savetxt(
         os.path.join(ws, f"{gwtname}.rch4.spc.tas.dat"),
         recharge_concentration,
@@ -373,11 +376,9 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
-        concentrationprintrecord=[
-            ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
+        concentrationprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("CONCENTRATION", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("CONCENTRATION", "LAST"), ("BUDGET", "LAST")],
     )
@@ -403,37 +404,24 @@ def build_model(idx, dir):
         exgtype="GWF6-GWT6",
         exgmnamea=gwfname,
         exgmnameb=gwtname,
-        filename="{}.gwfgwt".format(name),
+        filename=f"{name}.gwfgwt",
     )
 
     return sim, None
 
 
-def eval_transport(sim):
-    print("evaluating transport...")
-
-    name = ex[sim.idxsim]
+def check_output(idx, test):
+    name = test.name
     gwtname = "gwt_" + name
 
     # load concentration file
-    fpth = os.path.join(sim.simpath, "{}.ucn".format(gwtname))
-    try:
-        cobj = flopy.utils.HeadFile(
-            fpth, precision="double", text="CONCENTRATION"
-        )
-        conc = cobj.get_data()
-    except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+    fpth = os.path.join(test.workspace, f"{gwtname}.ucn")
+    cobj = flopy.utils.HeadFile(fpth, precision="double", text="CONCENTRATION")
+    conc = cobj.get_data()
 
     # load transport budget file
-    fpth = os.path.join(sim.simpath, "{}.cbc".format(gwtname))
-    try:
-        bobj = flopy.utils.CellBudgetFile(
-            fpth,
-            precision="double",
-        )
-    except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+    fpth = os.path.join(test.workspace, f"{gwtname}.cbc")
+    bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     ssmbudall = bobj.get_data(text="SOURCE-SINK MIX")
     times = cobj.get_times()
@@ -445,8 +433,8 @@ def eval_transport(sim):
         # Check records for each of the four recharge packages
         ssmbud = ssmbudall[itime]
         istart = 0
-        for irchpak in [0, 1, 2, 3]:
-            print(f"  Checking records for recharge package {irchpak + 1}")
+        for irchpak in [1, 2, 3, 4]:
+            print(f"  Checking records for recharge package {irchpak}")
             istop = istart + 23
 
             print(ssmbud[istart:istop])
@@ -482,59 +470,34 @@ def eval_transport(sim):
 
             print("    Checking id2")
             id2 = ssmbud[istart:istop]["node2"]
-            if irchpak in [0, 2]:
+            if irchpak in [1, 3]:
+                # recharge packages 1 and 3 are list-based with 23 entries
                 id2a = np.arange(23) + 1
-            elif irchpak in [1, 3]:
+            elif irchpak in [2, 4]:
+                # recharge packages 2 and 4 are array-based with 25 entries
                 id2a = id1a
-            assert np.allclose(id2, id2a), f"{id2} /= {id2a}"
+            assert np.allclose(id2, id2a), f"q: {id2} /= {id2a}"
 
-            print("    Checking q")
+            print(f"    Checking q for irchpak {irchpak}")
             q = ssmbud[istart:istop]["q"]
             if irchpak in [2, 3]:
-                frac = (totim - 0.5) / 5.0
-                qa = [float(a - 1) * frac * (a - 1) for a in id1a]
+                qa = [float(a) ** 2 for a in id1]
             else:
-                qa = [float(a - 1) ** 2 for a in id1a]
-            assert np.allclose(q, qa), f"{q} /=\n {qa}"
+                qa = [float(a) ** 2 for a in id1a]
+            for i in range(23):
+                print(f"{i + 1} {id1[i]} {id2[i]} {q[i]} {qa[i]}")
+            assert np.allclose(q, qa), f"q: {q} /=\n {qa}"
 
             istart = istop
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_transport, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_transport, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

@@ -1,216 +1,31 @@
-# Build targets
+import argparse
+from pathlib import Path
 
-# to use ifort on windows, run this
-# python build_exes.py -fc ifort
+import pytest
+from conftest import project_root_path
+from modflow_devtools.build import meson_build
 
-# can compile only mf6 directly using this command:
-#  python -c "import build_exes; build_exes.test_build_modflow6()"
-
-import os
-import sys
-import shutil
-import pymake
-
-from framework import running_on_CI
-
-if running_on_CI():
-    print("running on CI environment")
-    os.environ["PYMAKE_DOUBLE"] = "1"
+repository = "MODFLOW-USGS/modflow6"
+top_bin_path = project_root_path / "bin"
 
 
-# make sure exe extension is used on windows
-eext = ""
-soext = ".so"
-if sys.platform.lower() == "win32":
-    eext = ".exe"
-    soext = ".dll"
-elif sys.platform.lower() == "darwin":
-    soext = ".dylib"
-
-mfexe_pth = "temp/mfexes"
-
-# use the line below to set fortran compiler using environmental variables
-# os.environ["FC"] = "ifort"
-
-# some flags to check for errors in the code
-# add -Werror for compilation to terminate if errors are found
-strict_flags = (
-    "-Wtabs -Wline-truncation -Wunused-label "
-    "-Wunused-variable -pedantic -std=f2008 "
-    "-Wcharacter-truncation"
-)
+@pytest.fixture
+def bin_path():
+    return top_bin_path
 
 
-def relpath_fallback(pth):
-    try:
-        # throws ValueError on Windows if pth is on a different drive
-        return os.path.relpath(pth)
-    except ValueError:
-        return os.path.abspath(pth)
-
-
-def create_dir(pth):
-    # create pth directory
-    print(f"creating... {os.path.abspath(pth)}")
-    os.makedirs(pth, exist_ok=True)
-
-    msg = f"could not create... {os.path.abspath(pth)}"
-    assert os.path.exists(pth), msg
-
-
-def get_compiler_envvar(fc):
-    env_var = os.environ.get("FC")
-    if env_var is not None:
-        if env_var != fc:
-            fc = env_var
-    return fc
-
-
-def build_mf6(srcdir=None, appdir=None):
-    pm = pymake.Pymake()
-    pm.target = "mf6" + eext
-    if srcdir is None:
-        srcdir = os.path.join("..", "src")
-    pm.srcdir = srcdir
-    if appdir is None:
-        appdir = os.path.join("..", "bin")
-    pm.appdir = appdir
-    pm.include_subdirs = True
-    pm.inplace = True
-    pm.makeclean = True
-
-    # reset compiler based on environmental variable, if defined
-    pm.fc = get_compiler_envvar(pm.fc)
-
-    # add strict flags if gfortran is being used
-    if pm.fc == "gfortran":
-        pm.fflags = strict_flags
-
-    # build the application
-    pm.build()
-
-    msg = "{} does not exist.".format(pm.target)
-    assert pm.returncode == 0, msg
-
-
-def build_mf6_so():
-    pm = pymake.Pymake(verbose=True)
-    pm.target = "libmf6" + soext
-    pm.srcdir = os.path.join("..", "srcbmi")
-    pm.srcdir2 = os.path.join("..", "src")
-    pm.appdir = os.path.join("..", "bin")
-    pm.excludefiles = [os.path.join(pm.srcdir2, "mf6.f90")]
-    pm.include_subdirs = True
-    pm.inplace = True
-    pm.makeclean = True
-
-    # reset compiler based on environmental variable, if defined
-    pm.fc = get_compiler_envvar(pm.fc)
-
-    # add strict flags if gfortran is being used
-    if pm.fc == "gfortran":
-        pm.fflags = strict_flags
-
-    # build the application
-    pm.build()
-
-    msg = "{} does not exist.".format(pm.target)
-    assert pm.returncode == 0, msg
-
-
-def build_mf5to6():
-    # define default compilers
-    fc = "gfortran"
-    cc = None
-    fflags = None
-
-    # reset compiler based on environmental variable, if defined
-    fc = get_compiler_envvar(fc)
-
-    # determine if fortran compiler specified on the command line
-    for idx, arg in enumerate(sys.argv):
-        if arg == "-fc":
-            fc = sys.argv[idx + 1]
-        elif arg in ("-ff", "--fflags"):
-            fflags = sys.argv[idx + 1]
-
-    # set source and target paths
-    srcdir = os.path.join("..", "utils", "mf5to6", "src")
-    target = os.path.join("..", "bin", "mf5to6")
-    target += eext
-    extrafiles = os.path.join(
-        "..", "utils", "mf5to6", "pymake", "extrafiles.txt"
+def test_meson_build(bin_path):
+    meson_build(
+        project_path=project_root_path,
+        build_path=project_root_path / "builddir",
+        bin_path=bin_path,
     )
-
-    # build modflow 5 to 6 converter
-    pymake.main(
-        srcdir,
-        target,
-        fc=fc,
-        cc=cc,
-        fflags=fflags,
-        include_subdirs=True,
-        extrafiles=extrafiles,
-        inplace=True,
-    )
-
-    msg = "{} does not exist.".format(relpath_fallback(target))
-    assert os.path.isfile(target), msg
-
-
-def build_zbud6():
-    pm = pymake.Pymake()
-    pm.target = "zbud6" + eext
-    pm.srcdir = os.path.join("..", "utils", "zonebudget", "src")
-    pm.appdir = os.path.join("..", "bin")
-    pm.extrafiles = os.path.join(
-        "..", "utils", "zonebudget", "pymake", "extrafiles.txt"
-    )
-    pm.inplace = True
-    pm.makeclean = True
-
-    # reset compiler based on environmental variable, if defined
-    pm.fc = get_compiler_envvar(pm.fc)
-
-    # add strict flags if gfortran is being used
-    if pm.fc == "gfortran":
-        pm.fflags = strict_flags
-
-    # build the application
-    pm.build()
-
-    msg = "{} does not exist.".format(pm.target)
-    assert pm.returncode == 0, msg
-
-
-def test_create_dirs():
-    pths = [os.path.join("..", "bin"), os.path.join("temp")]
-
-    for pth in pths:
-        create_dir(pth)
-
-    return
-
-
-def test_build_modflow6():
-    build_mf6()
-
-
-def test_build_modflow6_so():
-    build_mf6_so()
-
-
-def test_build_mf5to6():
-    build_mf5to6()
-
-
-def test_build_zbud6():
-    build_zbud6()
 
 
 if __name__ == "__main__":
-    test_create_dirs()
-    test_build_modflow6()
-    test_build_modflow6_so()
-    test_build_mf5to6()
-    test_build_zbud6()
+    parser = argparse.ArgumentParser("Rebuild local development version of MODFLOW 6")
+    parser.add_argument(
+        "-p", "--path", help="path to bin directory", default=top_bin_path
+    )
+    args = parser.parse_args()
+    test_meson_build(Path(args.path).expanduser().resolve())

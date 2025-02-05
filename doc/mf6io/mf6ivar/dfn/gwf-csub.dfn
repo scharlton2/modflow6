@@ -224,17 +224,6 @@ longname compaction keyword
 description keyword to specify that record corresponds to the compaction.
 
 block options
-name fileout
-type keyword
-shape
-in_record true
-reader urword
-tagged true
-optional false
-longname file keyword
-description keyword to specify that an output filename is expected next.
-
-block options
 name compaction_filename
 type string
 shape
@@ -424,7 +413,7 @@ reader urword
 tagged true
 optional false
 longname package_convergence keyword
-description keyword to specify that record corresponds to the package convergence comma spaced values file.
+description keyword to specify that record corresponds to the package convergence comma spaced values file. Package convergence data is for delay interbeds. A warning message will be issued if package convergence data is requested but delay interbeds are not included in the package.
 
 block options
 name package_convergence_filename

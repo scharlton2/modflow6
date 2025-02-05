@@ -1,34 +1,19 @@
-# This autotest is based on the MOC3D problem 1 autotest except that it
-# tests the zero-order decay for a simple one-dimensional flow problem.
-# The test ensures that concentrations do not go below zero (they do go
-# slightly negative but, it does ensure that the decay rate shuts off as
-# where concentrations are zero.
+"""
+This autotest is based on the MOC3D problem 1 autotest except that it
+tests the zero-order decay for a simple one-dimensional flow problem.
+The test ensures that concentrations do not go below zero (they do go
+slightly negative but, it does ensure that the decay rate shuts off
+where concentrations are zero.
+"""
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = [
+cases = [
     "moc3d01zoda",
     "moc3d01zodb",
     "moc3d01zodc",
@@ -37,13 +22,9 @@ ex = [
 retardation = [None, 40, None, 40]
 decay = [0.01, 0.01, 0.1, 0.1]
 ist_package = [False, False, True, True]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     nlay, nrow, ncol = 1, 122, 1
     nper = 1
     perlen = [120]
@@ -71,10 +52,10 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         version="mf6",
@@ -83,9 +64,7 @@ def build_model(idx, dir):
         # continue_=True,
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -93,7 +72,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwf6",
         modelname=gwfname,
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
 
     # create iterative model solution and register the gwf model with it
@@ -110,7 +89,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -124,13 +103,11 @@ def build_model(idx, dir):
         top=top,
         botm=botm,
         idomain=np.ones((nlay, nrow, ncol), dtype=int),
-        filename="{}.dis".format(gwfname),
+        filename=f"{gwfname}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(
-        gwf, strt=strt, filename="{}.ic".format(gwfname)
-    )
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{gwfname}.ic")
 
     # node property flow
     npf = flopy.mf6.ModflowGwfnpf(
@@ -169,8 +146,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -182,7 +159,7 @@ def build_model(idx, dir):
         sim,
         modelname=gwtname,
         save_flows=True,
-        model_nam_file="{}.nam".format(gwtname),
+        model_nam_file=f"{gwtname}.nam",
     )
 
     # create iterative model solution and register the gwt model with it
@@ -199,7 +176,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwtname),
+        filename=f"{gwtname}.ims",
     )
     sim.register_ims_package(imsgwt, [gwt.name])
 
@@ -213,20 +190,16 @@ def build_model(idx, dir):
         top=top,
         botm=botm,
         idomain=1,
-        filename="{}.dis".format(gwtname),
+        filename=f"{gwtname}.dis",
     )
 
     # initial conditions
     strt = np.zeros((nlay, nrow, ncol))
     strt[0, 0, 0] = 0.0
-    ic = flopy.mf6.ModflowGwtic(
-        gwt, strt=strt, filename="{}.ic".format(gwtname)
-    )
+    ic = flopy.mf6.ModflowGwtic(gwt, strt=strt, filename=f"{gwtname}.ic")
 
     # advection
-    adv = flopy.mf6.ModflowGwtadv(
-        gwt, scheme="tvd", filename="{}.adv".format(gwtname)
-    )
+    adv = flopy.mf6.ModflowGwtadv(gwt, scheme="tvd", filename=f"{gwtname}.adv")
 
     # dispersion
     dsp = flopy.mf6.ModflowGwtdsp(
@@ -236,11 +209,20 @@ def build_model(idx, dir):
         alv=alphal,
         ath1=0.0,
         atv=0.0,
-        filename="{}.dsp".format(gwtname),
+        filename=f"{gwtname}.dsp",
     )
 
     # storage
-    porosity = 0.1
+    theta_mobile = 0.1  # vol mobile voids per cell volume
+    volfrac_immobile = 0.0
+    theta_immobile = 0.0
+    if ist_package[idx]:
+        # if dual domain, then assume half of cell is mobile and other half is immobile
+        volfrac_immobile = 0.5
+        theta_immobile = theta_mobile
+        porosity_immobile = theta_immobile / volfrac_immobile
+    volfrac_mobile = 1.0 - volfrac_immobile
+    porosity_mobile = theta_mobile / volfrac_mobile
 
     rtd = retardation[idx]
     sorption = None
@@ -248,7 +230,8 @@ def build_model(idx, dir):
     rhob = None
     if rtd is not None:
         rhob = 1.0
-        kd = (rtd - 1.0) * porosity / rhob
+        kd = (rtd - 1.0) * theta_mobile / rhob
+        rhobm = rhob
         sorption = "linear"
 
     decay_rate = decay[idx]
@@ -259,7 +242,7 @@ def build_model(idx, dir):
     # mass storage and transfer
     mst = flopy.mf6.ModflowGwtmst(
         gwt,
-        porosity=porosity,
+        porosity=porosity_mobile,
         zero_order_decay=zero_order_decay,
         decay=decay_rate,
         decay_sorbed=decay_rate,
@@ -271,11 +254,12 @@ def build_model(idx, dir):
     if ist_package[idx]:
         ist = flopy.mf6.ModflowGwtist(
             gwt,
-            cim_filerecord="{}.ist.ucn".format(gwtname),
+            cim_filerecord=f"{gwtname}.ist.ucn",
             sorption=sorption,
             zero_order_decay=True,
             cim=0.0,
-            thetaim=porosity,
+            volfrac=volfrac_immobile,
+            porosity=porosity_immobile,
             zetaim=1.0,
             decay=decay_rate,
             bulk_density=rhob,
@@ -286,17 +270,15 @@ def build_model(idx, dir):
     # sources
     sourcerecarray = [("WEL-1", "AUX", "CONCENTRATION")]
     ssm = flopy.mf6.ModflowGwtssm(
-        gwt, sources=sourcerecarray, filename="{}.ssm".format(gwtname)
+        gwt, sources=sourcerecarray, filename=f"{gwtname}.ssm"
     )
 
     # output control
     oc = flopy.mf6.ModflowGwtoc(
         gwt,
-        budget_filerecord="{}.cbc".format(gwtname),
-        concentration_filerecord="{}.ucn".format(gwtname),
-        concentrationprintrecord=[
-            ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-        ],
+        budget_filerecord=f"{gwtname}.cbc",
+        concentration_filerecord=f"{gwtname}.ucn",
+        concentrationprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("CONCENTRATION", "ALL"), ("BUDGET", "LAST")],
         printrecord=[("CONCENTRATION", "LAST"), ("BUDGET", "LAST")],
     )
@@ -307,7 +289,7 @@ def build_model(idx, dir):
         exgtype="GWF6-GWT6",
         exgmnamea=gwfname,
         exgmnameb=gwtname,
-        filename="{}.gwfgwt".format(name),
+        filename=f"{name}.gwfgwt",
     )
 
     return sim, None
@@ -344,7 +326,7 @@ def make_plot_ct(tssim, fname=None):
 
 
 def make_plot_cd(cobj, fname=None):
-    """Concentration versus time plot"""
+    """Concentration versus distance plot"""
     import matplotlib.pyplot as plt
 
     fig = plt.figure(figsize=(6, 3))
@@ -365,7 +347,7 @@ def make_plot_cd(cobj, fname=None):
             mec=mec[i],
             mfc="none",
             markersize="4",
-            label="t={} s".format(t),
+            label=f"t={t} s",
         )
 
     ax.set_xlabel("Distance (cm)")
@@ -377,26 +359,33 @@ def make_plot_cd(cobj, fname=None):
     return
 
 
-def eval_transport(sim):
-    print("evaluating transport...")
-
-    name = ex[sim.idxsim]
+def plot_output(idx, test):
+    name = cases[idx]
     gwtname = "gwt_" + name
+    sim = test.sims[0]
+    gwt = sim.get_model(gwtname)
+    cobj = gwt.output.concentration()
+    station = [(0, 0, 0), (0, 40, 0), (0, 110, 0)]
+    tssim = cobj.get_ts(station)
 
-    # get mobile domain concentration object
-    fpth = os.path.join(sim.simpath, "{}.ucn".format(gwtname))
-    try:
-        cobj = flopy.utils.HeadFile(
-            fpth, precision="double", text="CONCENTRATION"
-        )
-        station = [(0, 0, 0), (0, 40, 0), (0, 110, 0)]
-        tssim = cobj.get_ts(station)
-    except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+    # concentration versus time
+    fname = test.workspace / "fig-ct.pdf"
+    make_plot_ct(tssim, fname)
 
-    # get mobile domain budget object
-    fpth = os.path.join(sim.simpath, "{}.cbc".format(gwtname))
-    bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
+    # concentration versus distance
+    fname = test.workspace / "fig-cd.pdf"
+    make_plot_cd(cobj, fname)
+
+
+def check_output(idx, test):
+    name = cases[idx]
+    gwtname = "gwt_" + name
+    sim = test.sims[0]
+    gwt = sim.get_model(gwtname)
+    cobj = gwt.output.concentration()
+    bobj = gwt.output.budget()
+    station = [(0, 0, 0), (0, 40, 0), (0, 110, 0)]
+    tssim = cobj.get_ts(station)
 
     # Check to make sure decay rates in budget file are correct.  If there is
     # enough mass in the cell, then the qdecay value in the budget file
@@ -407,25 +396,25 @@ def eval_transport(sim):
     delt = 0.5
     vcell = 0.1 * 0.1 * 1.0
     porosity = 0.1
-    decay_rate = decay[sim.idxsim]
+    decay_rate = decay[idx]
     for i in range(122):
         if conc[i] / delt > decay_rate:
             qknown = -decay_rate * vcell * porosity
             errmsg = (
-                "Decay rate in budget file for cell {} should be "
-                "{} but found {} instead.".format(i, qdecay_budfile[i], qknown)
+                f"Decay rate in budget file for cell {i} should be "
+                f"{qdecay_budfile[i]} but found {qknown} instead."
             )
             assert np.allclose(qdecay_budfile[i], qknown), errmsg
         # print(i, qdecay_budfile[i], conc[i])
 
     # get immobile domain concentration object
-    fpth = os.path.join(sim.simpath, "{}.ist.ucn".format(gwtname))
+    fpth = os.path.join(test.workspace, f"{gwtname}.ist.ucn")
     cimobj = None
     if os.path.isfile(fpth):
         try:
             cimobj = flopy.utils.HeadFile(fpth, precision="double", text="CIM")
         except:
-            assert False, 'could not load data from "{}"'.format(fpth)
+            assert False, f'could not load data from "{fpth}"'
 
         records = bobj.get_data(text="immobile domain")
         qim_budfile = records[0]["q"]
@@ -439,20 +428,11 @@ def eval_transport(sim):
             "Mass transfer rates from the gwt budget file do not "
             "compare with mass transfer rates calculated from "
             "simulated mobile and immobile domain concentrations\n"
-            "{} /= {}".format(qim_budfile, qim_calculated)
+            f"{qim_budfile} /= {qim_calculated}"
         )
         np.allclose(qim_budfile, qim_calculated), errmsg
 
-    makeplot = False
-    if makeplot:
-        fname = "fig-ct.pdf"
-        fname = os.path.join(exdirs[sim.idxsim], fname)
-        make_plot_ct(tssim, fname)
-
-        fname = "fig-cd.pdf"
-        fname = os.path.join(exdirs[sim.idxsim], fname)
-        make_plot_cd(cobj, fname)
-
+    # compare every tenth time
     tssim = tssim[::10]
     # print(tssim)
 
@@ -574,52 +554,23 @@ def eval_transport(sim):
     tsresc = np.array(tsresc)
     tsresd = np.array(tsresd)
     tsreslist = [tsresa, tsresb, tsresc, tsresd]
-    tsres = tsreslist[sim.idxsim]
+    tsres = tsreslist[idx]
     errmsg = (
         "Simulated concentrations do not match with known solution.\n"
-        "{} /= {}".format(tssim, tsres)
+        f"{tssim} /= {tsres}"
     )
     if tsres is not None:
         assert np.allclose(tsres, tssim), errmsg
 
-    return
 
-
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_transport, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_transport, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets, plot):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        plot=lambda t: plot_output(idx, t) if plot else None,
+    )
+    test.run()

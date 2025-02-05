@@ -1,41 +1,25 @@
 """
-MODFLOW 6 Autotest
 Test the specific discharge calculation for an LGR-like simulation that has
 a parent model and a child model.  The child model is inset into the parent
 model, but they both have the same resolution, so it is essentially a simple
 3D grid.  The child qx velocity should be the same as the qx velocity in
 the parent grid.  The heads are also compared.
-
 """
 
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from flopy.utils.lgrutil import Lgr
+from framework import TestFramework
 
-try:
-    import flopy
-    from flopy.utils.lgrutil import Lgr
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["npf04"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-
+cases = ["npf04"]
 namea = "a"
 nameb = "b"
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     # grid properties
     nlay = 3
     nrow = 6
@@ -58,18 +42,16 @@ def build_model(idx, dir):
     ncppl = [1, 1, 1]
     lgr = Lgr(nlay, nrow, ncol, delr, delc, top, botm, idomain, ncpp, ncppl)
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
     # create simulation
     sim = flopy.mf6.MFSimulation(
-        sim_name=name, version="mf6", exe_name="mf6", sim_ws=dir
+        sim_name=name, version="mf6", exe_name="mf6", sim_ws=test.workspace
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, nper=2, perioddata=[(1.0, 1, 1.0), (1.0, 1, 1.0)]
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, nper=2, perioddata=[(1.0, 1, 1.0), (1.0, 1, 1.0)])
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(sim, modelname=namea, save_flows=True)
@@ -110,8 +92,8 @@ def build_model(idx, dir):
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
         pname="oc",
-        budget_filerecord="{}.cbc".format(namea),
-        head_filerecord="{}.hds".format(namea),
+        budget_filerecord=f"{namea}.cbc",
+        head_filerecord=f"{namea}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -144,8 +126,8 @@ def build_model(idx, dir):
     oc = flopy.mf6.ModflowGwfoc(
         cgwf,
         pname="oc",
-        budget_filerecord="{}.cbc".format(nameb),
-        head_filerecord="{}.hds".format(nameb),
+        budget_filerecord=f"{nameb}.cbc",
+        head_filerecord=f"{nameb}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -187,32 +169,30 @@ def qxqyqz(fname, nlay, nrow, ncol):
     return qx, qy, qz
 
 
-def eval_mf6(sim):
-    print("evaluating head and qx in parent and child models...")
-
+def check_output(idx, test):
     # make sure parent head is same as child head in same column
-    fname = os.path.join(sim.simpath, "{}.hds".format(namea))
+    fname = os.path.join(test.workspace, f"{namea}.hds")
     hdobj = flopy.utils.HeadFile(fname)
     ha = hdobj.get_data()
-    fname = os.path.join(sim.simpath, "{}.hds".format(nameb))
+    fname = os.path.join(test.workspace, f"{nameb}.hds")
     hdobj = flopy.utils.HeadFile(fname)
     hb = hdobj.get_data()
-    msg = "Heads should be the same {} {}".format(ha[0, 1, 2], hb[0, 0, 0])
+    msg = f"Heads should be the same {ha[0, 1, 2]} {hb[0, 0, 0]}"
     assert np.allclose(ha[0, 1, 2], hb[0, 0, 0]), msg
 
     # make sure specific discharge is calculated correctly for child and
     # parent models (even though child model has same resolution as parent
-    fname = os.path.join(sim.simpath, "{}.cbc".format(namea))
+    fname = os.path.join(test.workspace, f"{namea}.cbc")
     nlaya, nrowa, ncola = ha.shape
     qxa, qya, qza = qxqyqz(fname, nlaya, nrowa, ncola)
-    fname = os.path.join(sim.simpath, "{}.cbc".format(nameb))
+    fname = os.path.join(test.workspace, f"{nameb}.cbc")
     nlayb, nrowb, ncolb = hb.shape
     qxb, qyb, qzb = qxqyqz(fname, nlayb, nrowb, ncolb)
-    msg = "qx should be the same {} {}".format(qxa[0, 2, 1], qxb[0, 0, 0])
+    msg = f"qx should be the same {qxa[0, 2, 1]} {qxb[0, 0, 0]}"
     assert np.allclose(qxa[0, 2, 1], qxb[0, 0, 0]), msg
 
-    cbcpth = os.path.join(sim.simpath, "{}.cbc".format(namea))
-    grdpth = os.path.join(sim.simpath, "{}.dis.grb".format(namea))
+    cbcpth = os.path.join(test.workspace, f"{namea}.cbc")
+    grdpth = os.path.join(test.workspace, f"{namea}.dis.grb")
     grb = flopy.mf6.utils.MfGrdFile(grdpth)
     cbb = flopy.utils.CellBudgetFile(cbcpth, precision="double")
     flow_ja_face = cbb.get_data(text="FLOW-JA-FACE")
@@ -220,47 +200,17 @@ def eval_mf6(sim):
     for fjf in flow_ja_face:
         fjf = fjf.flatten()
         res = fjf[ia[:-1]]
-        errmsg = "min or max residual too large {} {}".format(
-            res.min(), res.max()
-        )
+        errmsg = f"min or max residual too large {res.min()} {res.max()}"
         assert np.allclose(res, 0.0, atol=1.0e-6), errmsg
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_mf6, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_mf6, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

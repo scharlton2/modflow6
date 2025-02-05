@@ -1,37 +1,14 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = [
-    "tvk03",
-]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["tvk03"]
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     nlay, nrow, ncol = 3, 1, 1
     perlen = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     nper = len(perlen)
@@ -54,17 +31,15 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf_" + name
@@ -72,7 +47,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwf6",
         modelname=gwfname,
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
     gwf.name_file.save_flows = False
 
@@ -90,7 +65,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -104,19 +79,15 @@ def build_model(idx, dir):
         top=top,
         botm=botm,
         idomain=np.ones((nlay, nrow, ncol), dtype=int),
-        filename="{}.dis".format(gwfname),
+        filename=f"{gwfname}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(
-        gwf, strt=strt, filename="{}.ic".format(gwfname)
-    )
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{gwfname}.ic")
 
     # node property flow
     tvk_filename = f"{gwfname}.npf.tvk"
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, icelltype=laytyp, k=hk, k33=hk, tvk_filerecord=[tvk_filename]
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, icelltype=laytyp, k=hk, k33=hk)
 
     # TVK
     tvkspd = {}
@@ -157,7 +128,7 @@ def build_model(idx, dir):
     tvkspd[kper - 1] = spd
 
     tvk = flopy.mf6.ModflowUtltvk(
-        gwf, perioddata=tvkspd, filename=tvk_filename
+        npf, print_input=True, perioddata=tvkspd, filename=tvk_filename
     )
 
     # chd files
@@ -175,7 +146,7 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(gwfname),
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "LAST")],
         printrecord=[("HEAD", "LAST")],
@@ -184,35 +155,28 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model...")
-
-    name = ex[sim.idxsim]
-    gwfname = "gwf_" + name
+def check_output(idx, test):
+    gwfname = "gwf_" + test.name
 
     # head
-    fpth = os.path.join(sim.simpath, "{}.hds".format(gwfname))
+    fpth = os.path.join(test.workspace, f"{gwfname}.hds")
     try:
         hobj = flopy.utils.HeadFile(fpth, precision="double")
         head = hobj.get_alldata()
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # Check against manually calculated results
     expected_results = []
-    expected_results.append(
-        0.5
-    )  # TVK SP1: No changes. Check initial solution.
+    expected_results.append(0.5)  # TVK SP1: No changes. Check initial solution.
     expected_results.append(0.4)  # TVK SP2: Increase K3.
     expected_results.append(0.75)  # TVK SP3: Decrease K3.
     expected_results.append(0.6)  # TVK SP4: Revert K3 and increase K1.
     expected_results.append(0.25)  # TVK SP5: Decrease K1.
-    expected_results.append(
-        0.25
-    )  # TVK SP6: No changes. Check that solution remains as per SP5.
-    expected_results.append(
-        0.5
-    )  # TVK SP7: Revert K1. Check that solution returns to original.
+    # TVK SP6: No changes. Check that solution remains as per SP5.
+    expected_results.append(0.25)
+    # TVK SP7: Revert K1. Check that solution returns to original.
+    expected_results.append(0.5)
     nper = len(expected_results)
     ex_lay = 2
     ex_row = 1
@@ -220,50 +184,19 @@ def eval_model(sim):
 
     for kper, expected_result in enumerate(expected_results):
         h = head[kper, ex_lay - 1, ex_row - 1, ex_col - 1]
-
         print(kper, h, expected_result)
-
-        errmsg = (
+        assert np.isclose(h, expected_result), (
             f"Expected head {expected_result} in period {kper} but found {h}"
         )
-        assert np.isclose(h, expected_result)
-
-    # comment when done testing
-    # assert False
-
-    return
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

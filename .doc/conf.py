@@ -29,9 +29,9 @@ if not on_rtd:
         src = os.path.join(src_pth, on_dir)
         dst = os.path.join(".", on_dir)
         if os.path.exists(dst):
-            print("deleting...{}".format(dst))
+            print(f"deleting...{dst}")
             shutil.rmtree(dst)
-        print("copying {} -> {}".format(src, dst))
+        print(f"copying {src} -> {dst}")
         shutil.copytree(src, dst)
 
     # copy files
@@ -40,16 +40,16 @@ if not on_rtd:
         src = os.path.join(src_pth, file_name)
         dst = os.path.join(".", file_name)
         if os.path.exists(dst):
-            print("deleting...{}".format(dst))
+            print(f"deleting...{dst}")
             os.remove(dst)
-        print("copying {} -> {}".format(src, dst))
+        print(f"copying {src} -> {dst}")
         shutil.copy(src, dst)
 
 
 # -- Project information -----------------------------------------------------
 
-project = "MODFLOW 6 Program Documentation"
-copyright = "2020, MODFLOW Development Team"
+project = "MODFLOW 6"
+copyright = "2024, MODFLOW Development Team"
 author = "MODFLOW Development Team"
 
 # -- General configuration ---------------------------------------------------
@@ -70,7 +70,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "IPython.sphinxext.ipython_console_highlighting",  # lowercase didn't work
     "sphinx.ext.autosectionlabel",
-    "recommonmark",
+    "myst_parser",
     "sphinx_markdown_tables",
 ]
 
@@ -88,7 +88,7 @@ if on_rtd:
     rtds_action_github_token = os.environ.get("GITHUB_TOKEN", None)
 
 # set master doc for readthedoce
-master_doc = 'index'
+master_doc = "index"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -112,14 +112,13 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-
 html_context = {
     "github_repo": "modflow6",
     "doc_path": ".doc",
-    "css_files": [
-        "_static/theme_overrides.css",  # override wide tables in RTD theme
-    ],
 }
+html_css_files = [
+    "_static/theme_overrides.css",  # override wide tables in RTD theme
+]
 
 html_theme_options = {}
 

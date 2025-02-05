@@ -1,36 +1,12 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
-
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
+import pytest
+from framework import TestFramework
 
 cell_dimensions = (300,)
-ex = [
-    "gwf_obs01{}".format(chr(ord("a") + idx))
-    for idx in range(len(cell_dimensions))
-]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
+cases = [f"gwf_obs01{chr(ord('a') + idx)}" for idx in range(len(cell_dimensions))]
 h0, h1 = 1.0, 0.0
 
 
@@ -46,16 +22,16 @@ def get_obs(idx):
         for j in range(ncol):
             node = i * ncol + j + 1
             obs_lst.append([node, "head", (0, i, j)])
-    return {"{}.gwf.obs.csv".format(ex[idx]): obs_lst}
+    return {f"{cases[idx]}.gwf.obs.csv": obs_lst}
 
 
-def get_obs_out(sim):
-    fpth = os.path.join(sim.simpath, "{}.gwf.obs.csv".format(ex[sim.idxsim]))
+def get_obs_out(idx, test):
+    fpth = os.path.join(test.workspace, f"{cases[idx]}.gwf.obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
         return tc.view((float, len(tc.dtype.names)))[1:]
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
 
 def get_chd(idx):
@@ -65,7 +41,7 @@ def get_chd(idx):
     return {0: c}
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     nlay, nrow, ncol = 1, cell_dimensions[idx], cell_dimensions[idx]
     nper = 1
     perlen = [5.0]
@@ -85,17 +61,15 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     flopy.mf6.ModflowIms(
@@ -117,7 +91,7 @@ def build_model(idx, dir):
         sim,
         model_type="gwf6",
         modelname=gwfname,
-        model_nam_file="{}.nam".format(gwfname),
+        model_nam_file=f"{gwfname}.nam",
     )
     gwf.name_file.save_flows = True
 
@@ -132,9 +106,7 @@ def build_model(idx, dir):
         botm=botm,
         idomain=np.ones((nlay, nrow, ncol), dtype=int),
     )
-    flopy.mf6.ModflowUtlobs(
-        gwf, pname="head_obs", digits=20, continuous=get_obs(idx)
-    )
+    flopy.mf6.ModflowUtlobs(gwf, pname="head_obs", digits=20, continuous=get_obs(idx))
 
     # initial conditions
     flopy.mf6.ModflowGwfic(gwf, strt=get_strt_array(idx))
@@ -159,49 +131,22 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model observations...")
-    hres = get_strt_array(sim.idxsim).flatten()
-    obs = get_obs_out(sim)
-    msg = "simulated head observations do not match with known solution."
-    assert np.allclose(hres, obs), msg
-
-    return
+def check_output(idx, test):
+    hres = get_strt_array(idx).flatten()
+    obs = get_obs_out(idx, test)
+    assert np.allclose(hres, obs), (
+        "simulated head observations do not match with known solution."
+    )
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build all of the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build all of the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

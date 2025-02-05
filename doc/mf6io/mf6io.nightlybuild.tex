@@ -45,6 +45,7 @@
 }
 \lstdefinestyle{blockdefinition}{
   moredelim=**[is][\color{blue}]{@}{@},
+  moredelim=**[is][\color{red}]{\$}{\$},
 }
 %usage: \lstinputlisting[style=blockdefinition]{./mf6ivar/tex/gwf-chd-dimensions.dat}
 \lstdefinestyle{inputfile}{
@@ -56,8 +57,9 @@
   backgroundcolor=\color{blue!20},
 }
 
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
 \hypersetup{
+    hidelinks,
     pdftitle={MODFLOW 6 -- Description of Input and Output},
     pdfauthor={MODFLOW 6 Development Team},
     pdfsubject={numerical simulation groundwater flow},

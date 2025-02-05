@@ -1,5 +1,5 @@
 module TimeSeriesRecordModule
-  
+
   use KindModule, only: DP, I4B
   use ListModule, only: ListType
 
@@ -15,22 +15,26 @@ module TimeSeriesRecordModule
 
 contains
 
+  !> @brief Allocate and assign members of a new TimeSeriesRecordType object
+  !<
   subroutine ConstructTimeSeriesRecord(newTsRecord, time, value)
-    ! Allocate and assign members of a new TimeSeriesRecordType object
     implicit none
+    ! -- dummy
     type(TimeSeriesRecordType), pointer, intent(out) :: newTsRecord
     real(DP), intent(in) :: time, value
     !
-    allocate(newTsRecord)
+    allocate (newTsRecord)
     newTsRecord%tsrTime = time
     newTsRecord%tsrValue = value
-    return
   end subroutine ConstructTimeSeriesRecord
 
+  !> @brief Cast an unlimited polymorphic object as TimeSeriesRecordType
+  !<
   function CastAsTimeSeriesRecordType(obj) result(res)
-    ! Cast an unlimited polymorphic object as TimeSeriesRecordType
     implicit none
+    ! -- dummy
     class(*), pointer, intent(inout) :: obj
+    ! -- return
     type(TimeSeriesRecordType), pointer :: res
     !
     res => null()
@@ -40,21 +44,20 @@ contains
     type is (TimeSeriesRecordType)
       res => obj
     end select
-    return
   end function CastAsTimeSeriesRecordType
 
+  !> @brief Add time series record to list
+  !<
   subroutine AddTimeSeriesRecordToList(list, tsrecord)
     implicit none
     ! -- dummy
-    type(ListType),             intent(inout) :: list
+    type(ListType), intent(inout) :: list
     type(TimeSeriesRecordType), pointer, intent(inout) :: tsrecord
     ! -- local
     class(*), pointer :: obj => null()
     !
     obj => tsrecord
     call list%Add(obj)
-    !
-    return
   end subroutine AddTimeSeriesRecordToList
 
 end module TimeSeriesRecordModule

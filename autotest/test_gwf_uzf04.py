@@ -1,52 +1,29 @@
 """
-# Test uzf mass balance.  One cell model with starting water table at -20
-# and GHB with stage of -25.  Uzf infiltration is applied, but water table
-# still falls.  This test looks at the simulated unsat zone storage and
-# unsat volume (stored as an auxiliary variable) and compares the results
-# to calculated values.  Although the Uzf unsat storage and unsat volume
-# should probably be for total water instead of just mobile water (theta -
-# thetar), this is not how Uzf was designed.
-
+Test uzf mass balance.  One cell model with starting water table at -20
+and GHB with stage of -25.  Uzf infiltration is applied, but water table
+still falls.  This test looks at the simulated unsat zone storage and
+unsat volume (stored as an auxiliary variable) and compares the results
+to calculated values.  Although the Uzf unsat storage and unsat volume
+should probably be for total water instead of just mobile water (theta -
+thetar), this is not how Uzf was designed.
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["gwf_uzf04a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+cases = ["gwf_uzf04a"]
 nlay, nrow, ncol = 1, 1, 1
-
 thts = 0.30  # saturated water content
 thtr = 0.05  # residual water content
 thti = 0.10  # initial water content
 strt = -20.0
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
     perlen = [1.0]
     nper = len(perlen)
     nstp = [1]
@@ -71,18 +48,16 @@ def build_model(idx, dir):
     for id in range(nper):
         tdis_rc.append((perlen[id], nstp[id], tsmult[id]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
 
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = name
@@ -111,7 +86,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -131,9 +106,7 @@ def build_model(idx, dir):
     ic = flopy.mf6.ModflowGwfic(gwf, strt=strt)
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -159,9 +132,8 @@ def build_model(idx, dir):
 
     # note: for specifying uzf number, use fortran indexing!
     uzf_obs = {
-        name
-        + ".uzf.obs.csv": [
-            ("wc{}".format(k + 1), "water-content", 1, depth)
+        name + ".uzf.obs.csv": [
+            (f"wc{k + 1}", "water-content", 1, depth)
             for k, depth in enumerate(np.linspace(1, 20, 15))
         ]
     }
@@ -209,17 +181,17 @@ def build_model(idx, dir):
         nuzfcells=len(uzf_pkdat),
         packagedata=uzf_pkdat,
         perioddata=uzf_spd,
-        budget_filerecord="{}.uzf.bud".format(name),
-        wc_filerecord="{}.uzf.bin".format(name),
+        budget_filerecord=f"{name}.uzf.bud",
+        wc_filerecord=f"{name}.uzf.bin",
         observations=uzf_obs,
-        filename="{}.uzf".format(name),
+        filename=f"{name}.uzf",
     )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.bud".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.bud",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -227,25 +199,21 @@ def build_model(idx, dir):
 
     obs_lst = []
     obs_lst.append(["obs1", "head", (0, 0, 0)])
-    obs_dict = {"{}.obs.csv".format(gwfname): obs_lst}
-    obs = flopy.mf6.ModflowUtlobs(
-        gwf, pname="head_obs", digits=20, continuous=obs_dict
-    )
+    obs_dict = {f"{gwfname}.obs.csv": obs_lst}
+    obs = flopy.mf6.ModflowUtlobs(gwf, pname="head_obs", digits=20, continuous=obs_dict)
 
     return sim, None
 
 
-def eval_flow(sim):
-    print("evaluating flow...")
+def check_output(idx, test):
+    name = test.name
+    ws = test.workspace
 
-    name = ex[sim.idxsim]
-    ws = exdirs[sim.idxsim]
-
-    fname = os.path.join(ws, "{}.uzf.bin".format(name))
+    fname = os.path.join(ws, f"{name}.uzf.bin")
     wobj = flopy.utils.HeadFile(fname, text="WATER-CONTENT")
     wc = wobj.get_alldata()
 
-    fname = os.path.join(ws, "{}.hds".format(name))
+    fname = os.path.join(ws, f"{name}.hds")
     wobj = flopy.utils.HeadFile(fname)
     head = wobj.get_alldata()
 
@@ -269,48 +237,19 @@ def eval_flow(sim):
     print("Ending volume of mobile water in unsat zone is ", vw)
     print("Storage change for mobile water in unsat zone should be ", qsto)
     print("Simulated storage is ", qstosim)
-    assert np.allclose(
-        qsto, qstosim
-    ), "Simulated storage not equal known storage"
-    assert np.allclose(
-        vw, volume_mobile_sim
-    ), "Simulated mobile water volume in aux does not match known result"
-
-    return
+    assert np.allclose(qsto, qstosim), "Simulated storage not equal known storage"
+    assert np.allclose(vw, volume_mobile_sim), (
+        "Simulated mobile water volume in aux does not match known result"
+    )
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_flow, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_flow, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

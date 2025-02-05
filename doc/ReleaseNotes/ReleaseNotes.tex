@@ -13,6 +13,7 @@
 \usepackage{bibentry}
 \usepackage{graphicx}
 \usepackage{longtable}
+\usepackage[tight-spacing=true]{siunitx}
 
 \usepackage[T1]{fontenc}
 
@@ -26,7 +27,7 @@
 \usepackage{titlesec}
 
 
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
 \hypersetup{
     pdftitle={MODFLOW~6 Release Notes},
     pdfauthor={MODFLOW~6 Development Team},
@@ -62,7 +63,6 @@
 %\renewcommand{\theauthorslastfirst}{}
 \renewcommand{\reportcitingtheauthors}{MODFLOW~6 Development Team}
 \renewcommand{\colophonmoreinfo}{}
-\renewcommand{\theoffice}{Office of Groundwater \\ U.S. Geological Survey \\ Mail Stop 411 \\ 12201 Sunrise Valley Drive \\ Reston, VA 20192 \\ (703) 648-5001}
 \renewcommand{\reportbodypages}{}
 \urlstyle{rm}
 \renewcommand{\reportwebsiteroot}{https://doi.org/10.5066/}
@@ -93,8 +93,8 @@ Publishing support provided by the U.S. Geological Survey \\
 \newline \newline
 For information concerning this publication, please contact:
 \newline \newline
-Office of Groundwater \\ U.S. Geological Survey \\ Mail Stop 411 \\ 12201 Sunrise Valley Drive \\ Reston, VA 20192 \\ (703) 648--5001 \\
-https://water.usgs.gov/ogw/
+Integrated Modeling and Prediction Division \\ U.S. Geological Survey \\ Mail Stop 411 \\ 12201 Sunrise Valley Drive \\ Reston, VA 20192 \\
+https://www.usgs.gov/mission-areas/water-resources
 }
 
 \renewcommand{\reportrefname}{References Cited}
@@ -143,81 +143,95 @@ https://water.usgs.gov/ogw/
 
 % -------------------------------------------------
 \section{Introduction}
-This document describes MODFLOW~6 Version \modflowversion.  This distribution is packaged for personal computers using the Microsoft Windows 7 and 10 operating systems, although it may run on other versions of Windows.  The executable file was compiled for 64-bit Windows operating systems and should run on most personal computers.
+This document describes MODFLOW~6 Version \modflowversion.  This distribution is packaged for personal computers using modern versions of the Microsoft Windows, Macintosh, and Linux operating systems, although the programs included in the distribution may run on older operating system versions.  The binary executable files in the distribution should run on most personal computers.
 
-Version numbers for MODFLOW~6 will follow a major.minor.revision format.  The major number will be increased when there are substantial new changes that may break backward compatibility.  The minor number will be increased when important, but relatively minor new functionality is added.  The revision number will be added when errors are corrected in either the program or input files.
+Version numbers for MODFLOW~6 follow a major.minor.revision format.  The major number is increased when there are substantial new changes that may break backward compatibility.  The minor number is increased when important, but relatively minor new functionality is added.  The revision number is incremented when errors are corrected in either the program or input files.
 
 MODFLOW~6 is tested with a large number of example problems, and new capabilities are thoroughly tested as they are integrated into the program.  Additional testing can sometimes reveal errors in the program.  These errors are fixed as soon as possible and made available in a subsequent release.  Every effort is made to maintain backward compatibility of the format for MODFLOW~6 input files; however, this goal is not always possible, especially for newer packages and models.  Changes to the program to add new functionality, correct errors, or alter the format for an input file are summarized in this release notes document.
 
+
 % -------------------------------------------------
-\section{History}
-This section describes changes introduced into MODFLOW~6 for the current release.  Changes introduced in previous releases are in Appendix~\ref{app:A}. These changes may substantially affect users.
+\section{Release History}
+A list of all MODFLOW 6 releases is shown in table \ref{tab:releases}.  Changes introduced in previous releases are described in Appendix~\ref{app:A}.
+
+\begin{table}[h]
+\begin{center}
+\caption{List of MODFLOW 6 Releases}
+\small 
+\begin{tabular*}{13cm}{cll}
+\hline
+\hline
+\textbf{MODFLOW Version} & \textbf{Date} & \textbf{Digital Object Identifier}\\
+\hline
+6.0.0 & August 11, 2017 & \url{https://doi.org/10.5066/F76Q1VQV} \\
+6.0.1 & September 28, 2017 & same as above \\
+6.0.2 & February 23, 2018 & same as above \\
+6.0.3 & August 9, 2018 & same as above \\
+6.0.4 & March 7, 2019 & same as above \\
+6.1.0 & December 12, 2019 & same as above \\
+6.1.1 & June 12, 2020 & same as above \\
+6.2.0 & October 20, 2020 & same as above \\
+6.2.1 & February 18, 2021 & same as above \\
+6.2.2 & July 30, 2021 & same as above \\
+6.3.0 & March 4, 2022 & \url{https://doi.org/10.5066/P97FFF9M} \\
+6.4.0 & November 30, 2022 & \url{https://doi.org/10.5066/P9FL1JCC} \\
+6.4.1 & December 9, 2022 & \url{https://doi.org/10.5066/P9FL1JCC} \\
+6.4.2 & June 28, 2023 & \url{https://doi.org/10.5066/P9FL1JCC} \\
+6.4.3 & February 7, 2024 & \url{https://doi.org/10.5066/P9FL1JCC} \\
+6.4.4 & February 13, 2024 & \url{https://doi.org/10.5066/P9FL1JCC} \\
+6.5.0 & May 23, 2024 & \url{https://doi.org/10.5066/P13COJJM} \\
+6.6.0 & December 19, 2024 & \url{https://doi.org/10.5066/P1DXFBUR} \\
+\hline
+\label{tab:releases}
+\end{tabular*}
+\end{center}
+\normalsize
+\end{table}
+
+
+% -------------------------------------------------
+\section{Changes Introduced in this Release}
+This section describes changes introduced into MODFLOW~6 for the current release.  These changes may substantially affect users.
 
 \begin{itemize}
-	\item Version mf6.3.0--Month, Day, Year
-	
-	\underline{NEW FUNCTIONALITY}
-	\begin{itemize}
-	        \item The option already existed to provide binary budget and head file information from a GWF simulation for only the first time step of a given stress period, in which case that information will be used for all time steps in that stress period in a GWT simulation that reads from those files. The behavior of this option has been extended such that if the binary budget and head file information provided for the final stress period of the GWF simulation is for only one time step, that information will be used for any subsequent time steps and stress periods in the GWT simulation. This extended behavior includes as a special case the use of binary budget and head file information from only one time step in only one stress period (for example, a single steady-state GWF stress period) for all time steps in all stress periods in a GWT simulation.
-	        \item Added new file-based input capability for the GWT Source and Sink Mixing (SSM) Package.  The SSM Package previously required that all source and sink concentrations be provided as auxiliary variables for corresponding GWF stress packages.  The SSM Package now supports an optional new FILEINPUT block, which can be provided with package names and file names.  Files referenced in the FILEINPUT block can be used to provide time-varying source and sink concentrations.  A description of this new Stress Package Concentration (SPC) Input file is described in the input and output guide under a new section titled ``File Input for Boundary Concentrations.''  If used, a single SSMI file can be provided for a corresponding GWF stress package.  Either an SPC file or the auxiliary variable approach can be used to supply concentrations for a single GWF stress package, but not both.
-	        \item Added BUDGETCSV option to GWF and GWT model output control.  If activated, this option will cause a comma-separated value (CSV) file of the model budget terms to be written to a user-specified output file.
-	        \item Added option to use irregular cross sections to define the reach geometry for individual reaches in the SFR Package. Cross-section data for irregular cross-sections are defined in a separate Cross-Section Table Input File. The station-elevation data for an irregular cross section are specified as xfraction and height data, which is converted to station position using the specified reach width (RWID) and elevation using the specified bottom elevation of the reach (RTP). Manning's roughness coefficient fractions can optionally be specified with the xfraction-height data for a irregular cross section to represent roughness coefficient variations in a channel (for example, different channel and overbank Manning's roughness coefficients). SFR Package irregular cross sections and the method used to solve for streamflow in a reach with non-uniform Manning's roughness coefficients is a generalization of the methods used for 8-point cross-sections in the SFR Package for previous versions of MODFLOW \citep{modflowsfr1pack}. 
-	\end{itemize}
-	
-	\underline{EXAMPLES}
-	\begin{itemize}
-	        \item --
-	\end{itemize}
-
-	\textbf{\underline{BUG FIXES AND OTHER CHANGES TO EXISTING FUNCTIONALITY}} \\
-	\underline{BASIC FUNCTIONALITY}
-	\begin{itemize}
-	        \item Fixed a bug that caused the last binary budget and head file information provided by a GWF simulation in a given stress period to be used for all subsequent GWT simulation time steps in that stress period, even if binary budget and head file information was provided for more than one time step in that stress period. In that situation, the GWF time steps must match the GWT time steps one-for-one.
-	        \item Boundary packages, such as WEL, DRN and GHB, for example, read lists of data using a general list reader.  For text input, the list of data would not be read correctly if it was longer than 300 characters wide.  Most lists would normally be less than 300 characters unless a large number of auxiliary variables were specified.  In this case, information beyond 300 characters would not be read.  The list reader was modified to use an unlimited character length so that any number of auxiliary variables can be specified.
-	        \item The Observation (OBS) functionality can optionally write simulated values to a comma-separated value (CSV) output file.  The OBS input file contains a DIGITS option, which controls the number of digits written to the CSV output file.  In some cases the ``E'' character was not written, making it difficult to read the CSV output file with other programs.  New functionality was programmed to write observations using the maximum number of digits stored internally by the program using the G0 Fortran specifier.  The default value for DIGITS was five, but this has been changed to this maximum number of digits.  This maximum number of digits can also be activated by specifying a zero for DIGITS.  For most applications, observations should be written with the default number of digits so that no precision is lost in the output.
-	\end{itemize}
-
-	\underline{STRESS PACKAGES}
-	\begin{itemize}
-	        \item Fixed a bug in the Recharge (RCH) and Evapotranspiration (EVT) Packages that would occur with array-based input (READASARRAYS) combined with the Time-Array Series (TAS) functionality.  Because the TAS functionality only works for DIS and DISU models, this fix does not have any effect on models that use DISU discretization.  The bug would occur when one or more cells in the upper layer were removed using the IDOMAIN capability.  In this special case, the time-array series values did not carry over to the correct locations in the RCH and EVT arrays.  This error would be difficult to identify for complex models, because the model would run to completion without any errors.  The RCH and EVT Packages were modified to maintain direct correspondence between the \texttt{nodelist} and \texttt{bound} arrays with the arrays provided to the TAS utility.  A small and intended consequence of this fix is that the ID2 value written to the binary budget file for array-based RCH and EVT Packages will correspond to the consecutive cell number in the top layer.  
-	        \item Recharge and evapotranspiration flows that are written to the GWF Model binary budget file are marked with the text headers ``RCH'' and ``EVT'', respectively.  In order to support the array-based input for SSM concentrations, these text headers are marked as ``RCHA'' and ``EVTA'', respectively, if the READASARRAYS option is specified for the package.  This change will have no effect on simulation results; however, post processing capabilities may need to be adjusted to account for this minor renaming convention.
-	        \item When the PRINT\_FLOWS option was used with the Source and Sink Mixing (SSM) Package, the cell ID numbers written to the listing file were incorrect.  The SSM Package was fixed to output the correct cell ID.
-	\end{itemize}
-
-	\underline{ADVANCED STRESS PACKAGES}
-	\begin{itemize}
-	        \item The Streamflow Routing (SFR) Package would die with a floating point error when calculating the stream depth as a function of flow rate, if the flow rate was slightly negative.  Added a conditional check to ensure that the stream depth is calculated as zero if the calculated flow rate is zero or less.
-	\end{itemize}
-
-	\underline{SOLUTION}
-	\begin{itemize}
-	        \item xxx  
-	        \item xxx  
-	\end{itemize}
-
+\input{develop.tex}
 \end{itemize}
 
-
 % -------------------------------------------------
-\section{Known Issues}
+\section{Known Issues and Incompatibilities}
 This section describes known issues with this release of MODFLOW~6.  
 
 \begin{enumerate}
 
 \item
-The AUXMULTNAME option can be used to scale input values, such as riverbed conductance, using values in an auxiliary column.  When this AUXMULTNAME option is used, the multiplier value in the AUXMULTNAME column should not be represented with a time series unless the value to scale is also represented with a time series.  
+The READARRAY utility is used by some packages to read arrays of numeric values provided by the user.  The READARRAY utility has an IPRN option (as described in the MODFLOW 6 Description of Input and Output), which will cause the array to be written to the model listing file.  Support for the IPRN option has been removed for some packages and will ultimately be removed for all packages.  A new option, called ``EXPORT\_ARRAY\_ASCII'' has been implemented for some packages to support writing of gridded data to external text files.  This option has been implemented to replace the IPRN functionality.
 
 \item
 The capability to use Unsaturated Zone Flow (UZF) routing beneath lakes and streams has not been implemented.
 
 \item
-Multi-point cross-section geometries have not been implemented in the Streamflow Routing (SFR) package.
-
-\item
 For the Groundwater Transport (GWT) Model, the decay and sorption processes do not apply to the LKT, SFT, MWT and UZT Packages.
 
 \item
-The GWT Model does not yet work with the CSUB Package of the GWF Model.  
+The GWT and GWE Models do not work with the CSUB Package of the GWF Model.  
+
+\item
+The GWT-GWT Exchange requires that both GWF Models are run concurrently in the same simulation.  There is not an option to read GWF-GWF flows from a previous simulation.  Likewise, the GWE-GWE Exchange also requires that both of the corresponding GWF Models are run concurrently in the same simulation.
+
+\item
+The Buoyancy (BUY) Package of the GWF Model cannot be used when the XT3D option is activated for the Node Property Flow (NPF) Package.
+
+\item
+If a GWF-GWF Exchange is activated with the XT3D option, then the two connected GWF Models cannot have BUY Packages active.
+
+\item
+The Time-Variable Hydraulic Conductivity (TVK) Package is incompatible with the Horizontal Flow Barrier (HFB) Package if the TVK Package is used to change hydraulic properties of cells near horizontal flow barriers.
+
+\item
+If a GWF-GWF Exchange is active, then neither of the connected GWF Models can have an active Viscosity (VSC) Package.
+
+\item 
+If a GWT-GWT Exchange is active, then constant concentration conditions cannot be assigned on the interface between the two connected models.  
 
 \end{enumerate}
 
@@ -226,32 +240,41 @@ In addition to the issues shown here, a comprehensive and up-to-date list is ava
 
 % -------------------------------------------------
 \section{Distribution File}
-The following distribution file is for use on personal computers: \texttt{\modflowversion.zip}.  The distribution file is a compressed zip file. The following directory structure is incorporated in the zip file:
+The MODFLOW~6 distribution is provided in the form of a compressed zip file.  Distributions are available for several different operating systems, including Windows, Mac, and Linux.  Distributions are marked with an operating system tag, called ``ostag''.  Values for ``ostag'' include ``win64'', ``mac'', and ``linux'', for example.  Distribution files for the current release are labeled as \texttt{\modflowversion\_[ostag].zip}.  Thus, the distribution file for Windows for the current release is \texttt{\modflowversion\_win64.zip}.
 
-% folder structured created by python script
-\input{folder_struct.tex}
-
-It is recommended that no user files are kept in the \modflowversion~directory structure.  If you do plan to put your own files in the \modflowversion~directory structure, do so only by creating additional subdirectories.
+It is recommended that no user files are kept in the release directory.  If you do plan to put your own files in the release directory, do so only by creating additional subdirectories.
 
 % -------------------------------------------------
 \section{Installation and Execution}
-There is no installation of MODFLOW~6 other than the requirement that \texttt{\modflowversion.zip} must be unzipped into a location where it can be accessed.  
+There is no installation of MODFLOW~6 other than the requirement that \texttt{\modflowversion\_[ostag].zip} must be unzipped into a location where it can be accessed.  
 
 To make the executable versions of MODFLOW~6 accessible from any directory, the directory containing the executables should be included in the PATH environment variable.  Also, if a prior release of MODFLOW~6 is installed on your system, the directory containing the executables for the prior release should be removed from the PATH environment variable.
 
-As an alternative, the executable file, ``\texttt{mf6.exe}'', in the \modflowversion{}/bin directory can be copied into a directory already included in the PATH environment variable.
+As an alternative, the executable file (named ``\texttt{mf6.exe}'' on Windows or ``\texttt{mf6}'' on Mac and Linux) in the \modflowversion\_[ostag]/bin directory can be copied into a directory already included in the PATH environment variable.
 
-To run MODFLOW~6, simply type \texttt{mf6} in a terminal window.  The current working directory must be set to a location where the model input files are located.  Upon execution, MODFLOW~6 will immediately look for file with the name \texttt{mfsim.nam} in the current working directory, and will terminate with an error if it does not find this file.
+To run MODFLOW~6, simply type \texttt{mf6} in a terminal window.  The current working directory must be set to a location where the model input files are located.  Upon execution, MODFLOW~6 will immediately look for a file with the name \texttt{mfsim.nam} in the current working directory, and will terminate with an error if it does not find this file.
 
 % -------------------------------------------------
 \section{Compiling MODFLOW~6}
-MODFLOW~6 has been compiled using Intel Visual Fortran and gfortran on the Windows and Mac/OS operating systems.  Because the program uses relatively new Fortran extensions, newer versions of the compilers may be required for successful compilation.  For example, to use gfortran to compile MODFLOW~6, gfortran version 4.9 or newer must be used.  If you have gfortran installed on your computer, you can tell which version it is by entering ``\verb|gfortran --version|'' at a terminal window.
+MODFLOW~6 has been compiled using Intel Fortran and GNU Fortran on Windows, macOS, and several Linux operating systems. All MODFLOW~6 distributions are currently compiled with Intel Fortran. Because the program uses relatively new Fortran functionality, recent versions of the compilers may be required for successful compilation. MODFLOW~6 has been successfully compiled with the latest versions of the Intel toolchain.
 
-This distribution contains the Microsoft Visual Studio solution and project files for compiling MODFLOW~6 on Windows using the Intel Fortran Compiler.  The files have been used successfully with Microsoft Visual Studio Community 2019 and Intel(R) Visual Fortran Compiler 2020.0.166.  To compile MODFLOW~6, open the mf6.sln file in the msvs folder and click Build >  Build Solution.  A separate Visual Studio solution file is also included for building the BMI dynamically linked library version of MODFLOW~6.
+MODFLOW~6 is currently tested with gfortran 11-13 on Linux, macOS, and Windows. The gfortran version can be queried with ``\verb|gfortran --version|''.  Intel Fortran Compiler Classic version 2022.3.0 is currently tested on all three platforms. Some 2021 versions have also been reported compatible. MODFLOW~6 is also compatible with the next-generation Intel Fortran Compiler `ifx`; however, additional testing is underway.
 
-This distribution also comes with a makefile for compiling MODFLOW~6 with \texttt{gfortran}.  The makefile is contained in the \texttt{make} folder.
+Instructions for compiling the parallel version of MODFLOW~6 are available through a dedicated page on the \href{https://github.com/MODFLOW-USGS/modflow6/wiki/Parallel-MODFLOW-User-Guide}{MODFLOW~6 repository}.
 
-For those familiar with Python, the pymake package can also be used to compile MODFLOW~6.  Additional information on the Python pymake utility can be found at: \url{https://github.com/modflowpy/pymake}.  
+There are several options for building MODFLOW, as described below.
+
+\begin{itemize}
+
+\item Meson is the recommended build tool for MODFLOW~6.  Refer to the \href{https://github.com/MODFLOW-USGS/modflow6/blob/develop/DEVELOPER.md#building}{detailed compilation instructions} for more information.
+
+\item The distribution includes Microsoft Visual Studio solution and project files for compiling MODFLOW~6 on Windows using the Intel Fortran Compiler Classic.  The files have been used successfully with recent versions of Microsoft Visual Studio Community 2019 and the Intel Fortran Compiler Classic.
+
+\item This distribution also includes a makefile for compiling MODFLOW~6 with \texttt{gfortran}.  The makefile is contained in the \texttt{make} folder.
+
+\item For those familiar with Python, the \href{https://github.com/modflowpy/pymake}{pymake package} can also be used to compile MODFLOW~6.
+
+\end{itemize}
 
 % -------------------------------------------------
 \section{System Requirements}
@@ -259,7 +282,7 @@ MODFLOW~6 is written in Fortran.  It uses features from the 95, 2003, and 2008 l
 
 % -------------------------------------------------
 \section{Testing}
-The examples distributed with MODFLOW~6 can be run by navigating to the examples folder and executing the ``\texttt{run.bat}'' batch files within each example folder.  Alternatively, there is a ``\texttt{runall.bat}'' batch file under the examples folder that will run all of the test problems.
+The examples distributed with MODFLOW~6 can be run on Windows by navigating to the examples folder and executing the ``\texttt{run.bat}'' batch files within each example folder.  Alternatively, there is a ``\texttt{runall.bat}'' batch file under the examples folder that will run all of the test problems.  For Linux and Mac distributions, equivalent shell scripts (\texttt{run.sh} and \texttt{runall.sh}) are included.
 
 % -------------------------------------------------
 \section{MODFLOW~6 Documentation}
@@ -277,9 +300,21 @@ Details on the numerical methods and the underlying theory for MODFLOW~6 are des
 
 \item \bibentry{morway2021}
 
+\item \bibentry{modflow6api}
+
+\item \bibentry{modflow6gwt}
+
+\item \bibentry{modflow6csub}
+
+\item \bibentry{langevin2024}
+
 \end{itemize}
  
 \noindent Description of the MODFLOW~6 input and output is included in this distribution in the ``doc'' folder as mf6io.pdf.
+
+% -------------------------------------------------
+% if deprecation information exists, then include the deprecation table
+\IfFileExists{./deprecations.tex}{\input{./deprecations.tex}}{}
 
 % -------------------------------------------------
 % if runtime information exists, then include the run time comparison table

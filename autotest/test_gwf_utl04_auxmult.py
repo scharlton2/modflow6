@@ -1,33 +1,21 @@
 """
-MODFLOW 6 Autotest
 Test to make sure that auxmultcol is working when used with a time series
-
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
+cases = ["auxmult01", "auxmult02"]
 
-from framework import testing_framework
-from simulation import Simulation
-
-ex = ["auxmult01"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
+wellist = [[(0, 2, 2), "tsq", "tsqfact"], [(0, 2, 2), 1.0000000, "tsqfact"]]
 
 
-def build_model(idx, dir):
-
+def build_models(idx, test):
+    global numstep
     nlay, nrow, ncol = 1, 3, 3
     perlen = [1.0, 1.0, 1.0, 1.0]
     nstp = [10, 1, 1, 1]
@@ -37,6 +25,7 @@ def build_model(idx, dir):
     delr = delc = lenx / float(nrow)
     botm = -1.0
     hk = 1.0
+    numstep = sum(nstp)
 
     nouter, ninner = 100, 300
     hclose, rclose, relax = 1e-6, 1e-3, 1.0
@@ -45,17 +34,15 @@ def build_model(idx, dir):
     for i in range(nper):
         tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(sim, modelname=name, save_flows=True)
@@ -87,11 +74,11 @@ def build_model(idx, dir):
         top=0.0,
         botm=botm,
         idomain=1,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(gwf, strt=0.0, filename="{}.ic".format(name))
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=0.0, filename=f"{name}.ic")
 
     # node property flow
     npf = flopy.mf6.ModflowGwfnpf(
@@ -100,7 +87,7 @@ def build_model(idx, dir):
         icelltype=0,
         k=hk,
         k33=hk,
-        filename="{}.npf".format(name),
+        filename=f"{name}.npf",
     )
 
     # chd files
@@ -112,22 +99,29 @@ def build_model(idx, dir):
         gwf,
         stress_period_data=chdspdict,
         save_flows=False,
-        filename="{}.chd".format(name),
+        filename=f"{name}.chd",
     )
 
     # wel files
-    wellist1 = []
-    wellist1.append([(0, 2, 2), "tsq", "tsqfact"])
     wel = flopy.mf6.ModflowGwfwel(
         gwf,
         pname="wel",
         print_input=True,
         print_flows=True,
-        stress_period_data={0: wellist1},
+        stress_period_data={0: [wellist[idx]]},
         auxiliary=["auxmult"],
         auxmultname="auxmult",
     )
     # ts_filerecord='well-rates.ts')
+
+    # wel obs
+    obs = {
+        "wel.obs.csv": [["q", "wel", (0, 2, 2)]],
+    }
+    welobs = wel.obs.initialize(
+        print_input=True,
+        continuous=obs,
+    )
 
     # well ts package
     ts_recarray = [
@@ -160,21 +154,20 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.bud".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.bud",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
-        filename="{}.oc".format(name),
+        filename=f"{name}.oc",
     )
 
     return sim, None
 
 
-def eval_model(sim):
-    print("evaluating model...")
-
-    fpth = os.path.join(sim.simpath, "auxmult01.bud")
+def check_output(idx, test):
+    name = cases[idx]
+    fpth = os.path.join(test.workspace, f"{name}.bud")
     bobj = flopy.utils.CellBudgetFile(fpth, precision="double", verbose=False)
     records = bobj.get_data(text="wel")
 
@@ -185,44 +178,29 @@ def eval_model(sim):
     qlist = np.array(qlist)
 
     answer = np.array(7 * [1.0, 0.0])[:-1]
-    msg = "err {} /= {}".format(qlist, answer)
+    msg = f"err {qlist} /= {answer}"
     assert np.allclose(qlist, answer), msg
 
-    # assert False
+    # MODFLOW 6 observations
+    fpth = os.path.join(test.workspace, "wel.obs.csv")
+    try:
+        obs = np.genfromtxt(fpth, names=True, delimiter=",")
+    except:
+        assert False, f'could not load data from "{fpth}"'
 
-    return
-
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
+    rate = obs["Q"]
+    obs_answer = [1.0 if x % 2 == 0 else 0.0 for x in range(numstep)]
+    msg = f"err {rate} /= {obs_answer}"
+    assert np.allclose(rate, obs_answer), msg
 
 
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

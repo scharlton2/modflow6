@@ -1,29 +1,13 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
+import pytest
+from flopy.utils.compare import eval_bud_diff
+from framework import TestFramework
 
 paktest = "sfr"
-ex = ["ts_sfr02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-
-# run all examples on Travis
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-replace_exe = None
+cases = ["ts_sfr02"]
 
 
 def get_model(ws, name, timeseries=False):
@@ -31,7 +15,7 @@ def get_model(ws, name, timeseries=False):
     # temporal discretization
     nper = 1
     tdis_rc = []
-    for idx in range(nper):
+    for _ in range(nper):
         tdis_rc.append((1.0, 1, 1.0))
     ts_times = np.arange(0.0, 2.0, 1.0, dtype=float)
 
@@ -63,9 +47,7 @@ def get_model(ws, name, timeseries=False):
         sim_ws=ws,
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
         sim,
@@ -114,9 +96,7 @@ def get_model(ws, name, timeseries=False):
         [(0, 0, 0), 1.0],
         [(0, nrow - 1, ncol - 1), 0.0],
     ]
-    chd = flopy.mf6.modflow.ModflowGwfchd(
-        gwf, stress_period_data=spd, pname="chd-1"
-    )
+    chd = flopy.mf6.modflow.ModflowGwfchd(gwf, stress_period_data=spd, pname="chd-1")
 
     # drn file
     drn6 = [
@@ -339,8 +319,8 @@ def get_model(ws, name, timeseries=False):
         perioddata.append([0, "inflow", inflow])
         perioddata.append([2, "diversion", 1, divflow])
 
-    budpth = "{}.{}.cbc".format(name, paktest)
-    cnvgpth = "{}.sfr.cnvg.csv".format(name)
+    budpth = f"{name}.{paktest}.cbc"
+    cnvgpth = f"{name}.sfr.cnvg.csv"
     sfr = flopy.mf6.ModflowGwfsfr(
         gwf,
         maximum_picard_iterations=5,
@@ -358,7 +338,7 @@ def get_model(ws, name, timeseries=False):
         pname="sfr-1",
     )
     if timeseries:
-        fname = "{}.sfr.ts".format(name)
+        fname = f"{name}.sfr.ts"
         sfr.ts.initialize(
             filename=fname,
             timeseries=ts_data,
@@ -425,7 +405,7 @@ def get_model(ws, name, timeseries=False):
         (0, "slope", "1.000000000000e-003"),
         (0, "rough", "1.000000000000e-001"),
     ]
-    cnvgpth = "{}.lak.cnvg.csv".format(name)
+    cnvgpth = f"{name}.lak.cnvg.csv"
     lak = flopy.mf6.ModflowGwflak(
         gwf,
         mover=True,
@@ -463,7 +443,7 @@ def get_model(ws, name, timeseries=False):
         [7, 1.0e-8, 0, 0, 0, 0, 0, 0],
         [8, 1.0e-8, 0, 0, 0, 0, 0, 0],
     ]
-    cnvgpth = "{}.uzf.cnvg.csv".format(name)
+    cnvgpth = f"{name}.uzf.cnvg.csv"
     uzf = flopy.mf6.ModflowGwfuzf(
         gwf,
         mover=True,
@@ -501,7 +481,7 @@ def get_model(ws, name, timeseries=False):
     mvr = flopy.mf6.ModflowGwfmvr(
         gwf,
         maxmvr=len(perioddata),
-        budget_filerecord="{}.mvr.bud".format(name),
+        budget_filerecord=f"{name}.mvr.bud",
         maxpackages=len(packages),
         print_flows=True,
         packages=packages,
@@ -511,8 +491,8 @@ def get_model(ws, name, timeseries=False):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("BUDGET", "LAST")],
     )
@@ -520,58 +500,55 @@ def get_model(ws, name, timeseries=False):
     return sim
 
 
-def build_model(idx, dir):
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = get_model(ws, name)
 
     # build MODFLOW 6 files with timeseries
-    ws = os.path.join(dir, "mf6")
+    ws = os.path.join(test.workspace, "mf6")
     mc = get_model(ws, name, timeseries=True)
 
     return sim, mc
 
 
-def eval_model(sim):
-    print("evaluating model budgets...")
-    from budget_file_compare import eval_bud_diff
-
+def check_output(idx, test):
     # get ia/ja from binary grid file
-    fname = "{}.dis.grb".format(os.path.basename(sim.name))
-    fpth = os.path.join(sim.simpath, fname)
+    fname = f"{os.path.basename(test.name)}.dis.grb"
+    fpth = os.path.join(test.workspace, fname)
     grbobj = flopy.mf6.utils.MfGrdFile(fpth)
     ia = grbobj._datadict["IA"] - 1
 
-    fname = "{}.cbc".format(os.path.basename(sim.name))
+    fname = f"{os.path.basename(test.name)}.cbc"
 
     # open first gwf cbc file
-    fpth = os.path.join(sim.simpath, fname)
+    fpth = os.path.join(test.workspace, fname)
     cobj0 = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # open second gwf cbc file
-    fpth = os.path.join(sim.simpath, "mf6", fname)
+    fpth = os.path.join(test.workspace, "mf6", fname)
     cobj1 = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # define file path and evaluate difference
-    fname = "{}.cbc.cmp.out".format(os.path.basename(sim.name))
-    fpth = os.path.join(sim.simpath, fname)
+    fname = f"{os.path.basename(test.name)}.cbc.cmp.out"
+    fpth = os.path.join(test.workspace, fname)
     eval_bud_diff(fpth, cobj0, cobj1, ia)
 
     # evaluate the sfr package budget file
-    fname = "{}.{}.cbc".format(os.path.basename(sim.name), paktest)
+    fname = f"{os.path.basename(test.name)}.{paktest}.cbc"
     # open first sfr cbc file
-    fpth = os.path.join(sim.simpath, fname)
+    fpth = os.path.join(test.workspace, fname)
     cobj0 = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # open second sfr cbc file
-    fpth = os.path.join(sim.simpath, "mf6", fname)
+    fpth = os.path.join(test.workspace, "mf6", fname)
     cobj1 = flopy.utils.CellBudgetFile(fpth, precision="double")
 
     # define file path and evaluate difference
-    fname = "{}.{}.cbc.cmp.out".format(os.path.basename(sim.name), paktest)
-    fpth = os.path.join(sim.simpath, fname)
+    fname = f"{os.path.basename(test.name)}.{paktest}.cbc.cmp.out"
+    fpth = os.path.join(test.workspace, fname)
     eval_bud_diff(fpth, cobj0, cobj1)
 
     # do some spot checks on the first sfr cbc file
@@ -579,9 +556,9 @@ def eval_model(sim):
     # FLOW-JA-FACE
     v0 = cobj0.get_data(totim=1.0, text="FLOW-JA-FACE")[0]
     q = []
-    for idx, node in enumerate(v0["node"]):
+    for i, node in enumerate(v0["node"]):
         if node in nodes:
-            q.append(v0["q"][idx])
+            q.append(v0["q"][i])
     v0 = np.array(q)
     check = np.ones(v0.shape, dtype=float) * 5e-2
     check[1] = 0.76743
@@ -590,68 +567,39 @@ def eval_model(sim):
 
     v0 = cobj0.get_data(totim=1.0, text="EXT-OUTFLOW")[0]
     q = []
-    for idx, node in enumerate(v0["node"]):
+    for i, node in enumerate(v0["node"]):
         if node in nodes:
-            q.append(v0["q"][idx])
+            q.append(v0["q"][i])
     v0 = np.array(q)
     check = np.array([-2.5e-2, -0.80871, -5e-2, -5e-2, -2.0e-2, -5e-2])
     assert np.allclose(v0, check), "EXT-OUTFLOW failed"
 
     v0 = cobj0.get_data(totim=1.0, text="FROM-MVR")[0]
     q = []
-    for idx, node in enumerate(v0["node"]):
+    for i, node in enumerate(v0["node"]):
         if node in nodes:
-            q.append(v0["q"][idx])
+            q.append(v0["q"][i])
     v0 = np.array(q)
     check = np.array([0.0, 4.5e-2, 0.0, 0.0, 0.0, 0.0])
     assert np.allclose(v0, check), "FROM-MVR failed"
 
     v0 = cobj0.get_data(totim=1.0, text="TO-MVR")[0]
     q = []
-    for idx, node in enumerate(v0["node"]):
+    for i, node in enumerate(v0["node"]):
         if node in nodes:
-            q.append(v0["q"][idx])
+            q.append(v0["q"][i])
     v0 = np.array(q)
     check = np.array([-2.5e-2, 0.0, 0.0, 0.0, -2.0e-2, 0.0])
     assert np.allclose(v0, check), "TO-MVR failed"
 
-    return
 
-
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the model
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_model, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_model, idxsim=idx)
-        test.run_mf6(sim)
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

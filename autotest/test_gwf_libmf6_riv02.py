@@ -1,37 +1,17 @@
 """
-MODFLOW 6 Autotest
 Test the api which is used set hcof and rhs in api package compare to river
 package in the non-api simulation.
 """
+
 import os
-import pytest
+
+import flopy
 import numpy as np
-from modflowapi import ModflowApi
+import pytest
+from framework import TestFramework
+from modflow_devtools.markers import requires_pkg
 
-try:
-    import pymake
-except:
-    msg = "Error. Pymake package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install https://github.com/modflowpy/pymake/zipball/master"
-    raise Exception(msg)
-
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation, api_return
-
-ex = ["libgwf_riv02"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-
+cases = ["libgwf_riv02"]
 
 # temporal discretization
 nper = 10
@@ -87,9 +67,7 @@ def get_model(ws, name, riv_spd, api=False):
         memory_print_option="all",
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -143,7 +121,7 @@ def get_model(ws, name, riv_spd, api=False):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        head_filerecord="{}.hds".format(name),
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
@@ -151,24 +129,18 @@ def get_model(ws, name, riv_spd, api=False):
     return sim
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     # build MODFLOW 6 files
-    ws = dir
-    name = ex[idx]
+    ws = test.workspace
+    name = cases[idx]
 
     # create river data
-    rd = [
-        [(0, 0, icol), riv_stage, riv_cond, riv_bot]
-        for icol in range(1, ncol - 1)
-    ]
-    rd2 = [
-        [(0, 0, icol), riv_stage2, riv_cond, riv_bot]
-        for icol in range(1, ncol - 1)
-    ]
+    rd = [[(0, 0, icol), riv_stage, riv_cond, riv_bot] for icol in range(1, ncol - 1)]
+    rd2 = [[(0, 0, icol), riv_stage2, riv_cond, riv_bot] for icol in range(1, ncol - 1)]
     sim = get_model(ws, name, riv_spd={0: rd, 5: rd2})
 
     # build comparison model with zeroed values
-    ws = os.path.join(dir, "libmf6")
+    ws = os.path.join(test.workspace, "libmf6")
     rd_api = [[(0, 0, icol), 999.0, 999.0, 0.0] for icol in range(1, ncol - 1)]
     mc = get_model(ws, name, riv_spd={0: rd_api}, api=True)
 
@@ -187,24 +159,26 @@ def api_riv_pak(stage, h, hcof, rhs):
 
 
 def api_func(exe, idx, model_ws=None):
-    success = False
+    from modflowapi import ModflowApi
 
-    name = ex[idx].upper()
+    name = cases[idx].upper()
     if model_ws is None:
         model_ws = "."
+
+    output_file_path = os.path.join(model_ws, "mfsim.stdout")
 
     try:
         mf6 = ModflowApi(exe, working_directory=model_ws)
     except Exception as e:
-        print("Failed to load " + exe)
+        print("Failed to load " + str(exe))
         print("with message: " + str(e))
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # initialize the model
     try:
         mf6.initialize()
     except:
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # time loop
     current_time = mf6.get_current_time()
@@ -235,7 +209,6 @@ def api_func(exe, idx, model_ws=None):
     # model time loop
     idx = 0
     while current_time < end_time:
-
         # get dt
         dt = mf6.get_time_step()
 
@@ -253,19 +226,14 @@ def api_func(exe, idx, model_ws=None):
 
         while kiter < max_iter:
             # update api package
-            hcof[:], rhs[:] = api_riv_pak(
-                stage,
-                head,
-                hcof,
-                rhs,
-            )
+            hcof[:], rhs[:] = api_riv_pak(stage, head, hcof, rhs)
 
             # solve with updated api data
             has_converged = mf6.solve()
             kiter += 1
 
             if has_converged:
-                msg = "Converged in {}".format(kiter) + " outer iterations"
+                msg = f"Converged in {kiter}" + " outer iterations"
                 print(msg)
                 break
 
@@ -286,45 +254,20 @@ def api_func(exe, idx, model_ws=None):
         mf6.finalize()
         success = True
     except:
-        return api_return(success, model_ws)
+        return False, open(output_file_path).readlines()
 
     # cleanup and return
-    return api_return(success, model_ws)
+    return True, open(output_file_path).readlines()
 
 
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, idxsim=idx, api_func=api_func))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, idxsim=idx, api_func=api_func)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@requires_pkg("modflowapi")
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        api_func=lambda exe, ws: api_func(exe, idx, ws),
+    )
+    test.run()

@@ -1,33 +1,20 @@
 """
-MODFLOW 6 Autotest
 Test the time array series for the recharge package
-
 """
 
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework
-from simulation import Simulation
-
-ex = [
+cases = [
     "utl06_tas_a",
     "utl06_tas_b",
     "utl06_tas_c",
     "utl06_tas_d",
 ]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
 
 nlay, nrow, ncol = 3, 5, 5
 idomain_lay0 = [
@@ -41,7 +28,7 @@ idomain = np.ones((nlay, nrow, ncol), dtype=int)
 idomain[0, :, :] = np.array(idomain_lay0)
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     perlen = [5.0]
     nstp = [5]
     tsmult = [1.0]
@@ -64,14 +51,12 @@ def build_model(idx, dir):
     sim_name = "sim"
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=sim_name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwfname = "gwf"
@@ -95,7 +80,7 @@ def build_model(idx, dir):
         scaling_method="NONE",
         reordering_method="NONE",
         relaxation_factor=relax,
-        filename="{}.ims".format(gwfname),
+        filename=f"{gwfname}.ims",
     )
     sim.register_ims_package(imsgwf, [gwf.name])
 
@@ -182,16 +167,14 @@ def build_model(idx, dir):
             interpolation_methodrecord=interpolation_methodrecord,
         )
         np.savetxt(
-            os.path.join(ws, f"{gwfname}.rch4.tas.dat"),
-            recharge_rate,
-            fmt="%7.1f",
+            os.path.join(ws, f"{gwfname}.rch4.tas.dat"), recharge_rate, fmt="%7.1f"
         )
 
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(gwfname),
-        head_filerecord="{}.hds".format(gwfname),
+        budget_filerecord=f"{gwfname}.cbc",
+        head_filerecord=f"{gwfname}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL"), ("BUDGET", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
@@ -200,29 +183,23 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_transport(sim):
-    print("evaluating transport...")
-
+def check_output(idx, test):
     gwfname = "gwf"
-    idx = sim.idxsim
 
     # load concentration file
-    fpth = os.path.join(sim.simpath, "{}.hds".format(gwfname))
+    fpth = os.path.join(test.workspace, f"{gwfname}.hds")
     try:
         hobj = flopy.utils.HeadFile(fpth, precision="double")
         head = hobj.get_data()
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # load gwf budget file
-    fpth = os.path.join(sim.simpath, "{}.cbc".format(gwfname))
+    fpth = os.path.join(test.workspace, f"{gwfname}.cbc")
     try:
-        bobj = flopy.utils.CellBudgetFile(
-            fpth,
-            precision="double",
-        )
+        bobj = flopy.utils.CellBudgetFile(fpth, precision="double")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     rchbudall = bobj.get_data(text="RCH")
     times = bobj.get_times()
@@ -234,7 +211,7 @@ def eval_transport(sim):
         # Check records for each of the four recharge packages
         rchbud = rchbudall[itime]
         print(rchbud)
-        print(f"  Checking records for recharge package")
+        print("  Checking records for recharge package")
 
         # id1 is the GWF user-based cell number
         print("    Checking id1")
@@ -359,13 +336,7 @@ def eval_transport(sim):
             frac = (totim - 0.5) / 5.0
         else:
             frac = 1.0
-        area = np.zeros(
-            (
-                5,
-                5,
-            ),
-            dtype=float,
-        )
+        area = np.zeros((5, 5), dtype=float)
         for i in range(5):
             for j in range(5):
                 area[i, j] = float((i + 1) * (j + 1))
@@ -374,42 +345,14 @@ def eval_transport(sim):
         qa = [a * rate * frac for a, rate in zip(area, id2a)]
         assert np.allclose(q, qa), f"{q} /=\n {qa}"
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    test.run_mf6(Simulation(dir, exfunc=eval_transport, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_transport, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()

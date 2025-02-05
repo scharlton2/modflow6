@@ -1,36 +1,17 @@
 import os
-import pytest
-import sys
+
+import flopy
 import numpy as np
+import pytest
+from conftest import project_root_path
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = ["npf03_sfra", "npf03_sfrb"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
-# run all examples on CI
-continuous_integration = [True for idx in range(len(exdirs))]
-# continuous_integration = [False for idx in range(len(exdirs))]
-
-# read hk data
-fpth = os.path.join(ddir, "npf03_hk.ref")
+cases = ["npf03_sfra", "npf03_sfrb"]
+fpth = str(project_root_path / "autotest" / "data" / "npf03_hk.ref")
 shape = (50, 108)
 hk = flopy.utils.Util2d.load_txt(shape, fpth, dtype=float, fmtin="(FREE)")
 n1 = hk.shape[1]
 nd = 40
-
 ncols = [[n1], [n1 - nd, nd]]
 
 # static model data
@@ -48,7 +29,8 @@ strt = 9.5
 hbndl = [12.0, 8.0]
 
 # sfr data
-unit_conv = 1.0
+len_conv = 1.0
+time_conv = 1.0
 slope = 1.2012012e-03
 width = 20.0
 bthick = 1.5
@@ -67,13 +49,13 @@ def get_local_data(idx):
     nmodels = len(ncolst)
     mnames = []
     for jdx in range(nmodels):
-        mname = "gwf{}".format(jdx + 1)
+        mname = f"gwf{jdx + 1}"
         mnames.append(mname)
     return ncolst, nmodels, mnames
 
 
-def build_model(idx, dir):
-    name = ex[idx]
+def build_models(idx, test):
+    name = cases[idx]
 
     # set local data for this model
     ncolst, nmodels, mnames = get_local_data(idx)
@@ -90,7 +72,7 @@ def build_model(idx, dir):
     cd6right = {0: c6right}
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name,
         memory_print_option="all",
@@ -99,13 +81,11 @@ def build_model(idx, dir):
         sim_ws=ws,
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # set ims csv files
-    csv0 = "{}.outer.ims.csv".format(name)
-    csv1 = "{}.inner.ims.csv".format(name)
+    csv0 = f"{name}.outer.ims.csv"
+    csv1 = f"{name}.inner.ims.csv"
 
     # create iterative model solution and register the gwf model with it
     ims = flopy.mf6.ModflowIms(
@@ -129,7 +109,7 @@ def build_model(idx, dir):
     # create mover and exchange file, if needed
     if nmodels > 1:
         # mover file and package name
-        fnmvr = "{}.mvr".format(name)
+        fnmvr = f"{name}.mvr"
         pmvr = "simmvr"
 
         # exchange data
@@ -147,7 +127,6 @@ def build_model(idx, dir):
         excf = flopy.mf6.ModflowGwfgwf(
             sim,
             exgtype="GWF6-GWF6",
-            mvr_filerecord=fnmvr,
             nexg=len(exchd),
             exgmnamea=mnames[0],
             exgmnameb=mnames[1],
@@ -160,7 +139,7 @@ def build_model(idx, dir):
         packages = []
         for jdx in range(nmodels):
             mname = mnames[jdx]
-            pname = "sfr{}".format(jdx + 1)
+            pname = f"sfr{jdx + 1}"
             packages.append([mname, pname])
             id = 0
             if jdx == 0:
@@ -179,7 +158,7 @@ def build_model(idx, dir):
         )
         # create mvr package
         mmvr = flopy.mf6.ModflowMvr(
-            sim,
+            excf,
             print_input=True,
             modelnames=True,
             maxmvr=len(mvrpd),
@@ -199,9 +178,7 @@ def build_model(idx, dir):
         i1 = i0 + ncolst[jdx]
         hkt = hk[:, i0:i1]
 
-        gwf = flopy.mf6.ModflowGwf(
-            sim, modelname=mname, model_nam_file="{}.nam".format(mname)
-        )
+        gwf = flopy.mf6.ModflowGwf(sim, modelname=mname, model_nam_file=f"{mname}.nam")
 
         dis = flopy.mf6.ModflowGwfdis(
             gwf,
@@ -212,22 +189,18 @@ def build_model(idx, dir):
             delc=delc,
             top=top,
             botm=bot,
-            filename="{}.dis".format(mname),
+            filename=f"{mname}.dis",
         )
 
         # initial conditions
-        ic = flopy.mf6.ModflowGwfic(
-            gwf, strt=strt, filename="{}.ic".format(mname)
-        )
+        ic = flopy.mf6.ModflowGwfic(gwf, strt=strt, filename=f"{mname}.ic")
 
         # node property flow
-        npf = flopy.mf6.ModflowGwfnpf(
-            gwf, save_flows=False, icelltype=0, k=hkt
-        )
+        npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=0, k=hkt)
 
         # chd files
         if jdx == 0:
-            fn = "{}.chd1.chd".format(mname)
+            fn = f"{mname}.chd1.chd"
             chd1 = flopy.mf6.modflow.ModflowGwfchd(
                 gwf,
                 boundnames=True,
@@ -238,7 +211,7 @@ def build_model(idx, dir):
                 print_input=True,
             )
         if jdx == nmodels - 1:
-            fn = "{}.chd2.chd".format(mname)
+            fn = f"{mname}.chd2.chd"
             chd2 = flopy.mf6.modflow.ModflowGwfchd(
                 gwf,
                 boundnames=True,
@@ -285,13 +258,14 @@ def build_model(idx, dir):
         if jdx == 0:
             perioddata = [[0, "inflow", 5.0]]
 
-        pname = "sfr{}".format(jdx + 1)
-        fn = "{}.{}.sfr".format(mname, pname)
-        cnvgpth = "{}.sfr.cnvg.csv".format(mname)
+        pname = f"sfr{jdx + 1}"
+        fn = f"{mname}.{pname}.sfr"
+        cnvgpth = f"{mname}.sfr.cnvg.csv"
 
         sfr = flopy.mf6.ModflowGwfsfr(
             gwf,
-            unit_conversion=unit_conv,
+            length_conversion=len_conv,
+            time_conversion=time_conv,
             print_stage=True,
             print_flows=True,
             package_convergence_filerecord=cnvgpth,
@@ -308,9 +282,7 @@ def build_model(idx, dir):
         # maw files
         if jdx == nmodels - 1:
             mpd = [[0, 0.25, bot, strt, "THIEM", 1, "MYWELL"]]
-            mcd = [
-                [0, 0, (0, 15, int(ncolst[jdx]) - 31), top, bot, 999.0, 999.0]
-            ]
+            mcd = [[0, 0, (0, 15, int(ncolst[jdx]) - 31), top, bot, 999.0, 999.0]]
             perioddata = [[0, "RATE", -1e-5]]
             maw = flopy.mf6.ModflowGwfmaw(
                 gwf,
@@ -328,7 +300,7 @@ def build_model(idx, dir):
             if nmodels == 1:
                 packages = [(pname,), ("maw",)]
                 mpd = [("maw", 0, pname, sfrdst, "FACTOR", 1.0)]
-                fn = "{}.mvr".format(mname)
+                fn = f"{mname}.mvr"
                 # create mvr package
                 mvr = flopy.mf6.ModflowGwfmvr(
                     gwf,
@@ -343,11 +315,9 @@ def build_model(idx, dir):
         # output control
         oc = flopy.mf6.ModflowGwfoc(
             gwf,
-            budget_filerecord="{}.cbc".format(mname),
-            head_filerecord="{}.hds".format(mname),
-            headprintrecord=[
-                ("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")
-            ],
+            budget_filerecord=f"{mname}.cbc",
+            head_filerecord=f"{mname}.hds",
+            headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
             saverecord=[("HEAD", "LAST")],
             printrecord=[("HEAD", "LAST"), ("BUDGET", "LAST")],
         )
@@ -355,9 +325,7 @@ def build_model(idx, dir):
     return sim, None
 
 
-def eval_hds(sim):
-    print("evaluating mover test heads...")
-
+def check_output(idx, test):
     hdata = np.array(
         [
             1.200000000000000000e01,
@@ -5764,7 +5732,6 @@ def eval_hds(sim):
     )
     hdata = hdata.reshape((1, 50, 108))
 
-    idx = sim.idxsim
     ncolst, nmodels, mnames = get_local_data(idx)
 
     # make single head array
@@ -5775,7 +5742,7 @@ def eval_hds(sim):
 
     i0 = 0
     for j in range(nmodels):
-        fn = os.path.join(sim.simpath, "{}.hds".format(mnames[j]))
+        fn = os.path.join(test.workspace, f"{mnames[j]}.hds")
         hobj = flopy.utils.HeadFile(fn)
         h = hobj.get_data()
         i1 = i0 + h.shape[2]
@@ -5786,57 +5753,25 @@ def eval_hds(sim):
     diff = hval - hdata
     diffmax = np.abs(diff).max()
     dtol = 1e-8
-    msg = "maximum absolute maw head difference ({}) ".format(diffmax)
+    msg = f"maximum absolute maw head difference ({diffmax}) "
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
-    return
 
-
-# - No need to change any code below
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(Simulation(dir, exfunc=eval_hds, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(dir, exfunc=eval_hds, idxsim=idx)
-        test.run_mf6(sim)
-
-    return
-
-
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.slow
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        targets=targets,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+    )
+    test.run()

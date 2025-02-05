@@ -1,39 +1,17 @@
 import os
-import pytest
+
+import flopy
 import numpy as np
+import pytest
+from framework import TestFramework
 
-try:
-    import flopy
-except:
-    msg = "Error. FloPy package is not available.\n"
-    msg += "Try installing using the following command:\n"
-    msg += " pip install flopy"
-    raise Exception(msg)
-
-from framework import testing_framework, running_on_CI
-from simulation import Simulation
-
-ex = ["csub_dbgeo01a"]
-exdirs = []
-for s in ex:
-    exdirs.append(os.path.join("temp", s))
-ddir = "data"
-
+cases = ["csub_dbgeo01a"]
 ndcell = [19]
 strt = [0.0]
 chdh = [0]
 gso = [True]
 bso = [True]
 # sstate = [None, True]
-
-# run all examples on Travis
-# continuous_integration = [True for idx in range(len(exdirs))]
-# the delay bed problems only run on the development version of MODFLOW-2005
-# set travis to True when version 1.13.0 is released
-continuous_integration = [True for idx in range(len(exdirs))]
-
-# set replace_exe to None to use default executable
-replace_exe = None
 
 # comparison data
 compdataa = [
@@ -151,13 +129,13 @@ botm = [top] + bots
 
 # temporal discretization
 nper = 1
-perlen = [1000.0 for i in range(nper)]
-nstp = [100 for i in range(nper)]
-tsmult = [1.05 for i in range(nper)]
-steady = [False for i in range(nper)]
+perlen = [1000.0 for _ in range(nper)]
+nstp = [100 for _ in range(nper)]
+tsmult = [1.05 for _ in range(nper)]
+steady = [False for _ in range(nper)]
 tdis_rc = []
-for idx in range(nper):
-    tdis_rc.append((perlen[idx], nstp[idx], tsmult[idx]))
+for i in range(nper):
+    tdis_rc.append((perlen[i], nstp[i], tsmult[i]))
 
 hnoflo = 1e30
 hdry = -1e30
@@ -211,7 +189,7 @@ def calc_stress(sgm0, sgs0, h, bt):
     return geo, es
 
 
-def build_model(idx, dir):
+def build_models(idx, test):
     c6 = []
     for j in range(0, ncol, 2):
         c6.append([(0, 0, j), chdh[idx]])
@@ -220,17 +198,15 @@ def build_model(idx, dir):
     geo, es = calc_stress(sgm, sgs, strt[idx], botm)
     sub6 = [[0, (0, 0, 1), "delay", -1.0, thick, 1.0, cc, cr, theta, kv, 1.0]]
 
-    name = ex[idx]
+    name = cases[idx]
 
     # build MODFLOW 6 files
-    ws = dir
+    ws = test.workspace
     sim = flopy.mf6.MFSimulation(
         sim_name=name, version="mf6", exe_name="mf6", sim_ws=ws
     )
     # create tdis package
-    tdis = flopy.mf6.ModflowTdis(
-        sim, time_units="DAYS", nper=nper, perioddata=tdis_rc
-    )
+    tdis = flopy.mf6.ModflowTdis(sim, time_units="DAYS", nper=nper, perioddata=tdis_rc)
 
     # create gwf model
     gwf = flopy.mf6.ModflowGwf(sim, modelname=name)
@@ -261,18 +237,14 @@ def build_model(idx, dir):
         delc=delc,
         top=top,
         botm=bots,
-        filename="{}.dis".format(name),
+        filename=f"{name}.dis",
     )
 
     # initial conditions
-    ic = flopy.mf6.ModflowGwfic(
-        gwf, strt=strt[idx], filename="{}.ic".format(name)
-    )
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=strt[idx], filename=f"{name}.ic")
 
     # node property flow
-    npf = flopy.mf6.ModflowGwfnpf(
-        gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk
-    )
+    npf = flopy.mf6.ModflowGwfnpf(gwf, save_flows=False, icelltype=laytyp, k=hk, k33=hk)
     # storage
     sto = flopy.mf6.ModflowGwfsto(
         gwf,
@@ -290,9 +262,9 @@ def build_model(idx, dir):
     )
 
     # csub files
-    opth = "{}.csub.obs".format(name)
-    ibcsv = "{}.ib.strain.csv".format(name)
-    skcsv = "{}.sk.strain.csv".format(name)
+    opth = f"{name}.csub.obs"
+    ibcsv = f"{name}.ib.strain.csv"
+    skcsv = f"{name}.sk.strain.csv"
     csub = flopy.mf6.ModflowGwfcsub(
         gwf,
         print_input=True,
@@ -323,8 +295,8 @@ def build_model(idx, dir):
     # output control
     oc = flopy.mf6.ModflowGwfoc(
         gwf,
-        budget_filerecord="{}.cbc".format(name),
-        head_filerecord="{}.hds".format(name),
+        budget_filerecord=f"{name}.cbc",
+        head_filerecord=f"{name}.hds",
         headprintrecord=[("COLUMNS", 10, "WIDTH", 15, "DIGITS", 6, "GENERAL")],
         saverecord=[("HEAD", "ALL")],
         printrecord=[("HEAD", "LAST"), ("BUDGET", "ALL")],
@@ -335,98 +307,54 @@ def build_model(idx, dir):
     return sim, mc
 
 
-def eval_sub(sim):
-    print("evaluating subsidence...")
-
+def check_output(idx, test):
     # MODFLOW 6 total compaction results
-    fpth = os.path.join(sim.simpath, "csub_obs.csv")
+    fpth = os.path.join(test.workspace, "csub_obs.csv")
     try:
         tc = np.genfromtxt(fpth, names=True, delimiter=",")
     except:
-        assert False, 'could not load data from "{}"'.format(fpth)
+        assert False, f'could not load data from "{fpth}"'
 
     # set comparison data
-    tc0 = compdata[sim.idxsim]
+    tc0 = compdata[0]
 
     # calculate maximum absolute error
     diff = tc["TCOMP"] - tc0[:]
     diffmax = np.abs(diff).max()
     dtol = 1e-6
-    msg = "maximum absolute total-compaction difference ({}) ".format(diffmax)
+    msg = f"maximum absolute total-compaction difference ({diffmax}) "
 
     # write summary
-    fpth = os.path.join(
-        sim.simpath, "{}.comp.cmp.out".format(os.path.basename(sim.name))
-    )
-    f = open(fpth, "w")
-    line = "{:>15s}".format("TOTIM")
-    line += " {:>15s}".format("CSUB")
-    line += " {:>15s}".format("MF")
-    line += " {:>15s}".format("DIFF")
-    f.write(line + "\n")
-    for i in range(diff.shape[0]):
-        line = "{:15g}".format(tc0[i])
-        line += " {:15g}".format(tc["TCOMP"][i])
-        line += " {:15g}".format(tc0[i])
-        line += " {:15g}".format(diff[i])
+    fpth = os.path.join(test.workspace, f"{os.path.basename(test.name)}.comp.cmp.out")
+    with open(fpth, "w") as f:
+        line = f"{'TOTIM':>15s}"
+        line += f" {'CSUB':>15s}"
+        line += f" {'MF':>15s}"
+        line += f" {'DIFF':>15s}"
         f.write(line + "\n")
-    f.close()
+        for i in range(diff.shape[0]):
+            line = f"{tc0[i]:15g}"
+            line += f" {tc['TCOMP'][i]:15g}"
+            line += f" {tc0[i]:15g}"
+            line += f" {diff[i]:15g}"
+            f.write(line + "\n")
 
     if diffmax > dtol:
-        sim.success = False
-        msg += "exceeds {}".format(dtol)
+        test.success = False
+        msg += f"exceeds {dtol}"
         assert diffmax < dtol, msg
     else:
-        sim.success = True
+        test.success = True
         print("    " + msg)
 
-    return
 
-
-# - No need to change any code below
-
-
-@pytest.mark.parametrize(
-    "idx, dir",
-    list(enumerate(exdirs)),
-)
-def test_mf6model(idx, dir):
-    # determine if running on Travis or GitHub actions
-    is_CI = running_on_CI()
-    r_exe = None
-    if not is_CI:
-        if replace_exe is not None:
-            r_exe = replace_exe
-
-    # initialize testing framework
-    test = testing_framework()
-
-    # build the models
-    test.build_mf6_models(build_model, idx, dir)
-
-    # run the test model
-    if is_CI and not continuous_integration[idx]:
-        return
-    test.run_mf6(Simulation(dir, exfunc=eval_sub, exe_dict=r_exe, idxsim=idx))
-
-
-def main():
-    # initialize testing framework
-    test = testing_framework()
-
-    # run the test model
-    for idx, dir in enumerate(exdirs):
-        test.build_mf6_models(build_model, idx, dir)
-        sim = Simulation(
-            dir, exfunc=eval_sub, exe_dict=replace_exe, idxsim=idx
-        )
-        test.run_mf6(sim)
-
-
-# use python testmf6_csub_sub01.py --mf2005 mf2005devdbl
-if __name__ == "__main__":
-    # print message
-    print("standalone run of {}".format(os.path.basename(__file__)))
-
-    # run main routine
-    main()
+@pytest.mark.parametrize("idx, name", enumerate(cases))
+def test_mf6model(idx, name, function_tmpdir, targets):
+    test = TestFramework(
+        name=name,
+        workspace=function_tmpdir,
+        build=lambda t: build_models(idx, t),
+        check=lambda t: check_output(idx, t),
+        targets=targets,
+    )
+    test.run()
